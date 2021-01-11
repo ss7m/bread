@@ -37,6 +37,8 @@ flt_node_binop_destroy(struct flt_node *n)
         struct flt_node_binop *b = (struct flt_node_binop *)n;
         flt_node_destroy(b->l);
         flt_node_destroy(b->r);
+        free(b->l);
+        free(b->r);
 }
 
 void
