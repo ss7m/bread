@@ -22,6 +22,8 @@ enum flt_binop {
         FLT_MINUS,
         FLT_MUL,
         FLT_DIV,
+        FLT_AND,
+        FLT_OR,
 };
 
 struct flt_node_binop {
