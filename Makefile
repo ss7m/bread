@@ -2,13 +2,13 @@ INSTALL_DIR=$(HOME)/.local/bin
 
 LIBS=
 
-CFLAGS=-Wall -Wextra -Wpedantic -std=c99 -pedantic \
+CFLAGS=-Wall -Wextra -std=c99 \
 	   -Wdeclaration-after-statement \
 	   $(foreach p,$(LIBS),$(shell pkg-config --cflags --libs $(p)))
 
 SRCS=main.c ast.c
 OBJS=$(SRCS:.c=.o)
-HDRS=ast.h
+HDRS=ast.h common.h
 EXE=fleet
 
 #
