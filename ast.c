@@ -12,8 +12,11 @@ flt_node_nop(struct flt_node *n)
 }
 
 size_t
-flt_node_type_sizeof(enum flt_node_type t) {
+flt_node_type_sizeof(enum flt_node_type t)
+{
         switch(t) {
+        case FLT_NODE_BINOP:
+                return sizeof(struct flt_node_binop);
         case FLT_NODE_INT_LIT:
                 return sizeof(struct flt_node_int_lit);
         case FLT_NODE_STRING_LIT:
@@ -24,6 +27,24 @@ flt_node_type_sizeof(enum flt_node_type t) {
                 BARF("Invalid node of type FLT_NODE_MAX");
         }
         return -1;
+}
+
+static void
+flt_node_binop_destroy(struct flt_node *n)
+{
+        struct flt_node_binop *b = (struct flt_node_binop *)n;
+        flt_node_destroy(b->l);
+        flt_node_destroy(b->r);
+}
+
+void
+flt_node_binop_init(struct flt_node_binop *n, enum flt_binop btype, struct flt_node *l, struct flt_node *r)
+{
+        n->_node.ntype = FLT_NODE_BINOP;
+        n->_node.destroy = flt_node_binop_destroy;
+        n->btype = btype;
+        n->l = l;
+        n->r = r;
 }
 
 void
