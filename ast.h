@@ -6,6 +6,7 @@ enum flt_node_type {
         FLT_NODE_INT_LIT,
         FLT_NODE_STRING_LIT,
         FLT_NODE_BOOL_LIT,
+        FLT_NODE_UNIT_LIT,
         FLT_NODE_MAX,
 };
 
@@ -47,6 +48,10 @@ struct flt_node_bool_lit {
         int b;
 };
 
+struct flt_node_unit_lit {
+        struct flt_node _node;
+};
+
 size_t flt_node_type_sizeof(enum flt_node_type t);
 #define flt_node_sizeof(n) flt_node_type_sizeof(((struct flt_node) *n).ntype)
 
@@ -54,6 +59,7 @@ void flt_node_binop_init(struct flt_node_binop *n, enum flt_binop btype, struct 
 void flt_node_int_lit_init(struct flt_node_int_lit *n, long long v);
 void flt_node_string_lit_init(struct flt_node_string_lit *n, char *s);
 void flt_node_bool_lit_init(struct flt_node_bool_lit *n, int b);
+void flt_node_unit_lit_init(struct flt_node_unit_lit *n);
 
 #define flt_node_destroy(n) (((struct flt_node *)n)->destroy((struct flt_node *)n))
 

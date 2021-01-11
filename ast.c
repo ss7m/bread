@@ -23,6 +23,8 @@ flt_node_type_sizeof(enum flt_node_type t)
                 return sizeof(struct flt_node_string_lit);
         case FLT_NODE_BOOL_LIT:
                 return sizeof(struct flt_node_bool_lit);
+        case FLT_NODE_UNIT_LIT:
+                return sizeof(struct flt_node_unit_lit);
         case FLT_NODE_MAX:
                 BARF("Invalid node of type FLT_NODE_MAX");
         }
@@ -62,15 +64,24 @@ flt_node_string_lit_destroy(struct flt_node *n)
 }
 
 void
-flt_node_string_lit_init(struct flt_node_string_lit *n, char *s) {
+flt_node_string_lit_init(struct flt_node_string_lit *n, char *s)
+{
         n->_node.ntype = FLT_NODE_STRING_LIT;
         n->_node.destroy = flt_node_string_lit_destroy;
         n->s = s;
 }
 
 void
-flt_node_bool_lit_init(struct flt_node_bool_lit *n, int b) {
+flt_node_bool_lit_init(struct flt_node_bool_lit *n, int b)
+{
         n->_node.ntype = FLT_NODE_BOOL_LIT;
         n->_node.destroy = flt_node_nop;
         n->b = b;
+}
+
+void
+flt_node_unit_lit_init(struct flt_node_unit_lit *n)
+{
+        n->_node.ntype = FLT_NODE_UNIT_LIT;
+        n->_node.destroy = flt_node_nop;
 }
