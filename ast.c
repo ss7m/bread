@@ -17,6 +17,8 @@ flt_node_type_sizeof(enum flt_node_type t)
         switch(t) {
         case FLT_NODE_BINOP:
                 return sizeof(struct flt_node_binop);
+        case FLT_NODE_UNARY:
+                return sizeof(struct flt_node_unary);
         case FLT_NODE_VAR:
                 return sizeof(struct flt_node_var);
         case FLT_NODE_NUM_LIT:
@@ -51,6 +53,24 @@ flt_node_binop_init(struct flt_node **n, enum flt_binop btype, struct flt_node *
         nn->btype = btype;
         nn->l = l;
         nn->r = r;
+        *n = (struct flt_node *)nn;
+}
+
+static void
+flt_node_unary_destroy(struct flt_node *n)
+{
+        flt_node_destroy(((struct flt_node_unary *)n)->u);
+        _flt_node_destroy(n);
+}
+
+void
+flt_node_unary_init(struct flt_node **n, enum flt_unary utype, struct flt_node *u)
+{
+        struct flt_node_unary *nn = malloc(sizeof(*nn));
+        nn->_node.ntype = FLT_NODE_UNARY;
+        nn->_node.destroy = flt_node_unary_destroy;
+        nn->utype = utype;
+        nn->u = u;
         *n = (struct flt_node *)nn;
 }
 
