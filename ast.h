@@ -77,13 +77,13 @@ struct flt_node_unit_lit {
 size_t flt_node_type_sizeof(enum flt_node_type t);
 #define flt_node_sizeof(n) flt_node_type_sizeof(((struct flt_node *)n)->ntype)
 
-void flt_node_binop_init(struct flt_node **n, enum flt_binop btype, struct flt_node *l, struct flt_node *r);
-void flt_node_unary_init(struct flt_node **n, enum flt_unary utype, struct flt_node *u);
-void flt_node_var_init(struct flt_node **n, char *id);
-void flt_node_num_lit_init(struct flt_node **n, long double v);
-void flt_node_string_lit_init(struct flt_node **n, char *s);
-void flt_node_bool_lit_init(struct flt_node **n, int b);
-void flt_node_unit_lit_init(struct flt_node **n);
+struct flt_node *flt_node_binop_new(enum flt_binop btype, struct flt_node *l, struct flt_node *r);
+struct flt_node *flt_node_unary_new(enum flt_unary utype, struct flt_node *u);
+struct flt_node *flt_node_var_new(char *id);
+struct flt_node *flt_node_num_lit_new(long double v);
+struct flt_node *flt_node_string_lit_new(char *s);
+struct flt_node *flt_node_bool_lit_new(int b);
+struct flt_node *flt_node_unit_lit_new();
 
 #define flt_node_destroy(n) (((struct flt_node *)n)->destroy((struct flt_node *)n))
 

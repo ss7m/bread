@@ -44,16 +44,16 @@ flt_node_binop_destroy(struct flt_node *n)
         _flt_node_destroy(n);
 }
 
-void
-flt_node_binop_init(struct flt_node **n, enum flt_binop btype, struct flt_node *l, struct flt_node *r)
+struct flt_node *
+flt_node_binop_new(enum flt_binop btype, struct flt_node *l, struct flt_node *r)
 {
-        struct flt_node_binop *nn = malloc(sizeof(*nn));
-        nn->_node.ntype = FLT_NODE_BINOP;
-        nn->_node.destroy = flt_node_binop_destroy;
-        nn->btype = btype;
-        nn->l = l;
-        nn->r = r;
-        *n = (struct flt_node *)nn;
+        struct flt_node_binop *n = malloc(sizeof(*n));
+        n->_node.ntype = FLT_NODE_BINOP;
+        n->_node.destroy = flt_node_binop_destroy;
+        n->btype = btype;
+        n->l = l;
+        n->r = r;
+        return (struct flt_node *)n;
 }
 
 static void
@@ -63,15 +63,15 @@ flt_node_unary_destroy(struct flt_node *n)
         _flt_node_destroy(n);
 }
 
-void
-flt_node_unary_init(struct flt_node **n, enum flt_unary utype, struct flt_node *u)
+struct flt_node *
+flt_node_unary_new(enum flt_unary utype, struct flt_node *u)
 {
-        struct flt_node_unary *nn = malloc(sizeof(*nn));
-        nn->_node.ntype = FLT_NODE_UNARY;
-        nn->_node.destroy = flt_node_unary_destroy;
-        nn->utype = utype;
-        nn->u = u;
-        *n = (struct flt_node *)nn;
+        struct flt_node_unary *n = malloc(sizeof(*n));
+        n->_node.ntype = FLT_NODE_UNARY;
+        n->_node.destroy = flt_node_unary_destroy;
+        n->utype = utype;
+        n->u = u;
+        return (struct flt_node *)n;
 }
 
 static void
@@ -81,24 +81,24 @@ flt_node_var_destroy(struct flt_node *n)
         _flt_node_destroy(n);
 }
 
-void
-flt_node_var_init(struct flt_node **n, char *id)
+struct flt_node *
+flt_node_var_new(char *id)
 {
-        struct flt_node_var *nn = malloc(sizeof(*nn));
-        nn->_node.ntype = FLT_NODE_VAR;
-        nn->_node.destroy = flt_node_var_destroy;
-        nn->id = id;
-        *n = (struct flt_node *)nn;
+        struct flt_node_var *n = malloc(sizeof(*n));
+        n->_node.ntype = FLT_NODE_VAR;
+        n->_node.destroy = flt_node_var_destroy;
+        n->id = id;
+        return (struct flt_node *)n;
 }
 
-void
-flt_node_num_lit_init(struct flt_node **n, long double v)
+struct flt_node *
+flt_node_num_lit_new(long double v)
 {
-        struct flt_node_num_lit *nn = malloc(sizeof(*nn));
-        nn->_node.ntype = FLT_NODE_NUM_LIT;
-        nn->_node.destroy = _flt_node_destroy;
-        nn->v = v;
-        *n = (struct flt_node *)nn;
+        struct flt_node_num_lit *n = malloc(sizeof(*n));
+        n->_node.ntype = FLT_NODE_NUM_LIT;
+        n->_node.destroy = _flt_node_destroy;
+        n->v = v;
+        return (struct flt_node *)n;
 }
 
 static void
@@ -108,31 +108,31 @@ flt_node_string_lit_destroy(struct flt_node *n)
         _flt_node_destroy(n);
 }
 
-void
-flt_node_string_lit_init(struct flt_node **n, char *s)
+struct flt_node *
+flt_node_string_lit_new(char *s)
 {
-        struct flt_node_string_lit *nn = malloc(sizeof(*nn));
-        nn->_node.ntype = FLT_NODE_STRING_LIT;
-        nn->_node.destroy = flt_node_string_lit_destroy;
-        nn->s = s;
-        *n = (struct flt_node *)nn;
+        struct flt_node_string_lit *n = malloc(sizeof(*n));
+        n->_node.ntype = FLT_NODE_STRING_LIT;
+        n->_node.destroy = flt_node_string_lit_destroy;
+        n->s = s;
+        return (struct flt_node *)n;
 }
 
-void
-flt_node_bool_lit_init(struct flt_node **n, int b)
+struct flt_node *
+flt_node_bool_lit_new(int b)
 {
-        struct flt_node_bool_lit *nn = malloc(sizeof(*nn));
-        nn->_node.ntype = FLT_NODE_BOOL_LIT;
-        nn->_node.destroy = _flt_node_destroy;
-        nn->b = b;
-        *n = (struct flt_node *)nn;
+        struct flt_node_bool_lit *n = malloc(sizeof(*n));
+        n->_node.ntype = FLT_NODE_BOOL_LIT;
+        n->_node.destroy = _flt_node_destroy;
+        n->b = b;
+        return (struct flt_node *)n;
 }
 
-void
-flt_node_unit_lit_init(struct flt_node **n)
+struct flt_node *
+flt_node_unit_lit_new()
 {
-        struct flt_node_unit_lit *nn = malloc(sizeof(*nn));
-        nn->_node.ntype = FLT_NODE_UNIT_LIT;
-        nn->_node.destroy = _flt_node_destroy;
-        *n = (struct flt_node *)nn;
+        struct flt_node_unit_lit *n = malloc(sizeof(*n));
+        n->_node.ntype = FLT_NODE_UNIT_LIT;
+        n->_node.destroy = _flt_node_destroy;
+        return (struct flt_node *)n;
 }
