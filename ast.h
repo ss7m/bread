@@ -1,9 +1,13 @@
 #ifndef FLT_AST_H
 #define FLT_AST_H
 
+/*
+ * Nodes are ALWAYS allocated on the heap!
+ */
+
 enum flt_node_type {
         FLT_NODE_BINOP,
-        FLT_NODE_INT_LIT,
+        FLT_NODE_NUM_LIT,
         FLT_NODE_STRING_LIT,
         FLT_NODE_BOOL_LIT,
         FLT_NODE_UNIT_LIT,
@@ -33,9 +37,9 @@ struct flt_node_binop {
         struct flt_node *l, *r;
 };
 
-struct flt_node_int_lit {
+struct flt_node_num_lit {
         struct flt_node _node;
-        long long v;
+        long double v;
 };
 
 struct flt_node_string_lit {
@@ -53,13 +57,13 @@ struct flt_node_unit_lit {
 };
 
 size_t flt_node_type_sizeof(enum flt_node_type t);
-#define flt_node_sizeof(n) flt_node_type_sizeof(((struct flt_node) *n).ntype)
+#define flt_node_sizeof(n) flt_node_type_sizeof(((struct flt_node *)n)->ntype)
 
-void flt_node_binop_init(struct flt_node_binop *n, enum flt_binop btype, struct flt_node *l, struct flt_node *r);
-void flt_node_int_lit_init(struct flt_node_int_lit *n, long long v);
-void flt_node_string_lit_init(struct flt_node_string_lit *n, char *s);
-void flt_node_bool_lit_init(struct flt_node_bool_lit *n, int b);
-void flt_node_unit_lit_init(struct flt_node_unit_lit *n);
+void flt_node_binop_init(struct flt_node **n, enum flt_binop btype, struct flt_node *l, struct flt_node *r);
+void flt_node_num_lit_init(struct flt_node **n, long double v);
+void flt_node_string_lit_init(struct flt_node **n, char *s);
+void flt_node_bool_lit_init(struct flt_node **n, int b);
+void flt_node_unit_lit_init(struct flt_node **n);
 
 #define flt_node_destroy(n) (((struct flt_node *)n)->destroy((struct flt_node *)n))
 
