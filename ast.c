@@ -53,6 +53,11 @@ flt_node_binop_new(enum flt_binop btype, struct flt_node *l, struct flt_node *r)
         n->btype = btype;
         n->l = l;
         n->r = r;
+
+        if (btype == FLT_ASSIGN) {
+                assert(flt_node_is_lvalue(l));
+        }
+
         return (struct flt_node *)n;
 }
 
@@ -135,4 +140,17 @@ flt_node_unit_lit_new()
         n->_node.ntype = FLT_NODE_UNIT_LIT;
         n->_node.destroy = _flt_node_destroy;
         return (struct flt_node *)n;
+}
+
+/*
+ * Utility functions
+ */
+
+int flt_node_is_lvalue(struct flt_node *n) {
+        switch (n->ntype) {
+        case FLT_NODE_VAR:
+                return true;
+        default:
+                return false;
+        }
 }

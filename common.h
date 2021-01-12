@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #define BARF(fmt, ...) do { \
         fprintf(stderr, fmt "\n", ##__VA_ARGS__); \

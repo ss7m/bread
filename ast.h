@@ -25,12 +25,23 @@ struct flt_node {
 };
 
 enum flt_binop {
+        /* arith */
         FLT_PLUS,
         FLT_MINUS,
         FLT_MUL,
         FLT_DIV,
+
+        /* comp */
+        FLT_LT,
+        FLT_LEQ,
+        FLT_EQ,
+
+        /* boolean */
         FLT_AND,
         FLT_OR,
+
+        /* assign */
+        FLT_ASSIGN,
 };
 
 struct flt_node_binop {
@@ -86,5 +97,7 @@ struct flt_node *flt_node_bool_lit_new(int b);
 struct flt_node *flt_node_unit_lit_new();
 
 #define flt_node_destroy(n) (((struct flt_node *)n)->destroy((struct flt_node *)n))
+
+int flt_node_is_lvalue(struct flt_node *n);
 
 #endif
