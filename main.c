@@ -1,9 +1,12 @@
 #include "common.h"
 #include "ast.h"
+#include "vm.h"
 
 int main(void)
 {
         struct flt_node *un, *var, *num, *str, *b, *unit, *bin1, *bin2, *bin3, *bin4;
+        struct flt_value_map map;
+        struct flt_value val;
 
         var = flt_node_var_new(strdup("x"));
         num = flt_node_num_lit_new(123);
@@ -18,4 +21,21 @@ int main(void)
         bin4 = flt_node_binop_new(FLT_PLUS, bin3, var);
 
         flt_node_destroy(bin4);
+
+        val.vtype = FLT_VAL_NUM;
+        val.as.num = 123;
+        flt_value_map_init(&map);
+        flt_value_map_set(&map, "abc", &val);
+        flt_value_map_set(&map, "hello", &val);
+        flt_value_map_set(&map, "world", &val);
+        flt_value_map_set(&map, "xyz", &val);
+        flt_value_map_set(&map, "test", &val);
+        flt_value_map_set(&map, "test", &val);
+        flt_value_map_set(&map, "here", &val);
+
+        printf("%Lf\n", flt_value_map_get(&map, "test")->as.num);
+        printf("%s\n", flt_value_map_get(&map, "here") ? "true" : "false");
+        printf("%s\n", flt_value_map_get(&map, "not here") ? "true" : "false");
+
+        flt_value_map_destroy(&map);
 }

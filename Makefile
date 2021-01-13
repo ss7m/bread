@@ -6,9 +6,9 @@ CFLAGS=-Wall -Wextra -std=c99 \
 	   -Wdeclaration-after-statement \
 	   $(foreach p,$(LIBS),$(shell pkg-config --cflags --libs $(p)))
 
-SRCS=main.c ast.c
+SRCS=main.c ast.c vm.c
 OBJS=$(SRCS:.c=.o)
-HDRS=ast.h common.h
+HDRS=ast.h common.h vm.h
 EXE=fleet
 
 #
