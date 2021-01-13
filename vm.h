@@ -1,7 +1,11 @@
 #ifndef FLT_VM_H
 #define FLT_VM_H
 
-#define BUCKET_SIZE 1024
+/* 
+ * If I were smarter I'd make the bucket grow
+ * But for the mean time that feels like a premature optimization
+ */
+#define BUCKET_SIZE 32
 
 enum flt_value_type {
         FLT_VAL_NUM,

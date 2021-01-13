@@ -3,12 +3,12 @@ INSTALL_DIR=$(HOME)/.local/bin
 LIBS=
 
 CFLAGS=-Wall -Wextra -std=c99 \
-	   -Wdeclaration-after-statement \
+	   -Wdeclaration-after-statement -Wno-sign-compare \
 	   $(foreach p,$(LIBS),$(shell pkg-config --cflags --libs $(p)))
 
-SRCS=main.c ast.c vm.c
+SRCS=main.c ast.c vm.c token.c
 OBJS=$(SRCS:.c=.o)
-HDRS=ast.h common.h vm.h
+HDRS=ast.h common.h vm.h token.h
 EXE=fleet
 
 #
@@ -60,7 +60,8 @@ $(RELDIR)/%.o: %.c $(HDRS)
 
 .PHONY: clean
 clean:
-	rm $(RELEXE) $(RELOBJS) $(DBGEXE) $(DBGOBJS)
+	rm $(RELEXE) $(RELOBJS)
+	rm $(DBGEXE) $(DBGOBJS)
 
 .PHONY: remake
 remake: clean all
