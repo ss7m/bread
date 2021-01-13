@@ -47,7 +47,7 @@ flt_node_assign_destroy(struct flt_node *n)
 }
 
 struct flt_node *
-flt_node_assin_new(struct flt_node *l, struct flt_node *r)
+flt_node_assign_new(struct flt_node *l, struct flt_node *r)
 {
         struct flt_node_assign *n = malloc(sizeof(*n));
         assert(flt_node_is_lvalue(l));

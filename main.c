@@ -4,7 +4,7 @@
 
 int main(void)
 {
-        struct flt_node *un, *var, *num, *str, *b, *unit, *bin1, *bin2, *bin3, *bin4;
+        struct flt_node *un, *var, *num, *str, *b, *unit, *bin1, *bin2, *bin3, *ass;
         struct flt_value_map map;
         struct flt_value val;
 
@@ -16,11 +16,12 @@ int main(void)
 
         bin1 = flt_node_binop_new(FLT_PLUS, num, str);
         un = flt_node_unary_new(FLT_NOT, bin1);
+        /* ass = flt_node_assign_new(un ,var) */ /* fails b/c un isn't an lvalue */
+        ass = flt_node_assign_new(var, un);
         bin2 = flt_node_binop_new(FLT_PLUS, b, unit);
-        bin3 = flt_node_binop_new(FLT_PLUS, un, bin2);
-        bin4 = flt_node_binop_new(FLT_PLUS, bin3, var);
+        bin3 = flt_node_binop_new(FLT_PLUS, ass, bin2);
 
-        flt_node_destroy(bin4);
+        flt_node_destroy(bin3);
 
         val.vtype = FLT_VAL_NUM;
         val.as.num = 123;
