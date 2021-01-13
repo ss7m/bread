@@ -40,6 +40,8 @@ enum flt_binop {
         /* comp */
         FLT_LT,
         FLT_LEQ,
+        FLT_GT,
+        FLT_GEQ,
         FLT_EQ,
 
         /* boolean */
