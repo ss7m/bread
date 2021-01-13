@@ -1,13 +1,16 @@
 #include "common.h"
 #include "ast.h"
 #include "vm.h"
+#include "token.h"
 
 int main(void)
 {
         struct flt_node *un, *var, *num, *str, *b, *unit, *bin1, *bin2, *bin3, *ass;
         struct flt_value_map map;
         struct flt_value val;
+        struct flt_token_list list;
 
+        /* test ast node */
         var = flt_node_var_new(strdup("x"));
         num = flt_node_num_lit_new(123);
         str = flt_node_string_lit_new(strdup("Hello, World!"));
@@ -23,6 +26,7 @@ int main(void)
 
         flt_node_destroy(bin3);
 
+        /* test hash map */
         val.vtype = FLT_VAL_NUM;
         val.as.num = 123;
         flt_value_map_init(&map);
@@ -39,4 +43,17 @@ int main(void)
         printf("%s\n", flt_value_map_get(&map, "not here") ? "true" : "false");
 
         flt_value_map_destroy(&map);
+
+        /* test token list */
+        flt_token_list_init(&list);
+        for (int i = 0; i < 100; i++) {
+                flt_token_list_add_string(&list, "Hello, World!");
+        }
+        for (int i = 0; i < 100; i++) {
+                flt_token_list_add_num(&list, i * i * i * i * i);
+        }
+        for (int i = 0; i < 100; i++) {
+                flt_token_list_add_token(&list, FLT_TOK_SET);
+        }
+        flt_token_list_destroy(&list);
 }
