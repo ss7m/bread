@@ -6,6 +6,7 @@
  */
 
 enum flt_node_type {
+        FLT_NODE_ASSIGN,
         FLT_NODE_BINOP,
         FLT_NODE_UNARY,
         FLT_NODE_VAR,
@@ -24,6 +25,11 @@ struct flt_node {
         flt_node_fn destroy;
 };
 
+struct flt_node_assign {
+        struct flt_node _node;
+        struct flt_node *l, *r;
+};
+
 enum flt_binop {
         /* arith */
         FLT_PLUS,
@@ -39,9 +45,6 @@ enum flt_binop {
         /* boolean */
         FLT_AND,
         FLT_OR,
-
-        /* assign */
-        FLT_ASSIGN,
 };
 
 struct flt_node_binop {
@@ -88,6 +91,7 @@ struct flt_node_unit_lit {
 size_t flt_node_type_sizeof(enum flt_node_type t);
 #define flt_node_sizeof(n) flt_node_type_sizeof(((struct flt_node *)n)->ntype)
 
+struct flt_node *flt_node_assign_new(struct flt_node *l, struct flt_node *r);
 struct flt_node *flt_node_binop_new(enum flt_binop btype, struct flt_node *l, struct flt_node *r);
 struct flt_node *flt_node_unary_new(enum flt_unary utype, struct flt_node *u);
 struct flt_node *flt_node_var_new(char *id);

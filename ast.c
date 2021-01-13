@@ -15,6 +15,8 @@ size_t
 flt_node_type_sizeof(enum flt_node_type t)
 {
         switch(t) {
+        case FLT_NODE_ASSIGN:
+                return sizeof(struct flt_node_assign);
         case FLT_NODE_BINOP:
                 return sizeof(struct flt_node_binop);
         case FLT_NODE_UNARY:
@@ -36,6 +38,28 @@ flt_node_type_sizeof(enum flt_node_type t)
 }
 
 static void
+flt_node_assign_destroy(struct flt_node *n)
+{
+        struct flt_node_assign *a = (struct flt_node_assign *)n;
+        flt_node_destroy(a->l);
+        flt_node_destroy(a->r);
+        _flt_node_destroy(n);
+}
+
+struct flt_node *
+flt_node_assin_new(struct flt_node *l, struct flt_node *r)
+{
+        struct flt_node_assign *n = malloc(sizeof(*n));
+        assert(flt_node_is_lvalue(l));
+        n->_node.ntype = FLT_NODE_ASSIGN;
+        n->_node.destroy = flt_node_assign_destroy;
+        n->l = l;
+        n->r = r;
+
+        return (struct flt_node *)n;
+}
+
+static void
 flt_node_binop_destroy(struct flt_node *n)
 {
         struct flt_node_binop *b = (struct flt_node_binop *)n;
@@ -53,10 +77,6 @@ flt_node_binop_new(enum flt_binop btype, struct flt_node *l, struct flt_node *r)
         n->btype = btype;
         n->l = l;
         n->r = r;
-
-        if (btype == FLT_ASSIGN) {
-                assert(flt_node_is_lvalue(l));
-        }
 
         return (struct flt_node *)n;
 }
