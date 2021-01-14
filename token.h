@@ -13,6 +13,7 @@ enum brd_token {
         BRD_TOK_LPAREN,
         BRD_TOK_RPAREN,
         BRD_TOK_NEWLINE,
+        BRD_TOKEN_EOF,
 
         /* arithmetic */
         BRD_TOK_PLUS,

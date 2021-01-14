@@ -123,6 +123,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
         for (;;) {
                 while (is_insig_space(string[0])) string++;
                 if (string[0] == '\0') {
+                        brd_token_list_add_token(list, BRD_TOKEN_EOF);
                         break;
                 }
 
