@@ -48,4 +48,6 @@ void flt_token_list_add_token(struct flt_token_list *list, enum flt_token tok);
 void flt_token_list_add_num(struct flt_token_list *list, long double num);
 void flt_token_list_add_string(struct flt_token_list *list, const char *string);
 
+void flt_token_list_tokenize(struct flt_token_list *list, char *string);
+
 #endif

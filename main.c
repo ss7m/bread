@@ -46,14 +46,9 @@ int main(void)
 
         /* test token list */
         flt_token_list_init(&list);
-        for (int i = 0; i < 100; i++) {
-                flt_token_list_add_string(&list, "Hello, World!");
-        }
-        for (int i = 0; i < 100; i++) {
-                flt_token_list_add_num(&list, i * i * i * i * i);
-        }
-        for (int i = 0; i < 100; i++) {
-                flt_token_list_add_token(&list, FLT_TOK_SET);
-        }
+        flt_token_list_tokenize(&list, "123.5 + - <= > ( ) ; = < >=");
+        flt_token_list_tokenize(&list, "false true and set or sdf_e312_dD   ");
+        flt_token_list_tokenize(&list, "\"Hello, World!\\n\" 33422342.23  ");
+        /* flt_token_list_tokenize(&list, "\"Hello, World!\\n "); */ /* parsing error */
         flt_token_list_destroy(&list);
 }
