@@ -46,6 +46,7 @@ brd_node_program_destroy(struct brd_node *n)
         for (int i = 0; i < p->num_stmts; i++) {
                 brd_node_destroy(p->stmts[i]);
         }
+        free(p->stmts);
         _brd_node_destroy(n);
 }
 

@@ -3,7 +3,39 @@
 #include "ast.h"
 #include "parse.h"
 
+#define GROW 1.5
+#define LIST_SIZE 4
+
 int skip_newlines = false;
+
+struct brd_node_program *
+brd_parse_program(struct brd_token_list *tokens)
+{
+        size_t length = 0, capacity = LIST_SIZE;
+        struct brd_node **stmts = malloc(sizeof(struct brd_node *) * capacity);
+        struct brd_node *node;
+
+        skip_newlines = false;
+        while ((node = brd_parse_expression_stmt(tokens)) != NULL) {
+                if (length == capacity) {
+                        capacity *= GROW;
+                        stmts = realloc(stmts, sizeof(struct brd_node *) * capacity);
+                }
+                stmts[length] = node;
+                length++;
+
+                if (tokens->data == tokens->end) {
+                        break;
+                }
+        }
+
+        if (tokens->data != tokens->end) {
+                BARF("Parsing finished prematurely");
+                return NULL;
+        }
+
+        return (struct brd_node_program *)brd_node_program_new(stmts, length);
+}
 
 /* skip_newlines should be false when this is called */
 struct brd_node *
