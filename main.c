@@ -6,7 +6,7 @@
 
 int main(void)
 {
-        char *test_string = "set x = (2.8 + \n y * \n\n-4e9 = 200) \n or (set ab_r = not true and false)";
+        char *test_string = "set x = (2.8 + \n y * \n\n-4e9 = \"Hello, World!\\n\") or (set ab_r = not true and false)";
         struct brd_token_list list, copy;
         struct brd_node *node;
 
