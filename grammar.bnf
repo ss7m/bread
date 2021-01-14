@@ -3,6 +3,8 @@ string = /"([^\\](\\[nt"]))*"/
 id     = /[a-zA-Z][a-zA-Z0-9_]*/
 nl     = \n
 
+program = $expression_stmt*
+
 expression_stmt =
     | $expression $nl
     | $expression $eof
@@ -41,3 +43,4 @@ base =
     | $id
     | $num
     | $string
+    | unit

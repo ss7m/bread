@@ -31,10 +31,34 @@ brd_node_type_sizeof(enum brd_node_type t)
                 return sizeof(struct brd_node_bool_lit);
         case BRD_NODE_UNIT_LIT:
                 return sizeof(struct brd_node_unit_lit);
+        case BRD_NODE_PROGRAM:
+                return sizeof(struct brd_node_program);
         case BRD_NODE_MAX:
                 BARF("Invalid node of type BRD_NODE_MAX");
         }
         return -1;
+}
+
+static void
+brd_node_program_destroy(struct brd_node *n)
+{
+        struct brd_node_program *p = (struct brd_node_program *)n;
+        for (int i = 0; i < p->num_stmts; i++) {
+                brd_node_destroy(p->stmts[i]);
+        }
+        _brd_node_destroy(n);
+}
+
+struct brd_node *
+brd_node_program_new(struct brd_node **stmts, size_t num_stmts)
+{
+        struct brd_node_program *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_PROGRAM;
+        n->_node.destroy = brd_node_program_destroy;
+        n->stmts = stmts;
+        n->num_stmts = num_stmts;
+
+        return (struct brd_node *)n;
 }
 
 static void

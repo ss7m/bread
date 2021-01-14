@@ -14,6 +14,8 @@ enum brd_node_type {
         BRD_NODE_STRING_LIT,
         BRD_NODE_BOOL_LIT,
         BRD_NODE_UNIT_LIT,
+
+        BRD_NODE_PROGRAM, /* the top level program */
         BRD_NODE_MAX,
 };
 
@@ -23,6 +25,12 @@ typedef void (*brd_node_fn)(struct brd_node *);
 struct brd_node {
         enum brd_node_type ntype;
         brd_node_fn destroy;
+};
+
+struct brd_node_program {
+        struct brd_node _node;
+        struct brd_node **stmts;
+        size_t num_stmts;
 };
 
 struct brd_node_assign {
@@ -93,6 +101,7 @@ struct brd_node_unit_lit {
 size_t brd_node_type_sizeof(enum brd_node_type t);
 #define brd_node_sizeof(n) brd_node_type_sizeof(((struct brd_node *)n)->ntype)
 
+struct brd_node *brd_node_program_new(struct brd_node **stmts, size_t num_stmts);
 struct brd_node *brd_node_assign_new(struct brd_node *l, struct brd_node *r);
 struct brd_node *brd_node_binop_new(enum brd_binop btype, struct brd_node *l, struct brd_node *r);
 struct brd_node *brd_node_unary_new(enum brd_unary utype, struct brd_node *u);
