@@ -1,0 +1,43 @@
+num    = whatever strtold accepts
+string = /"([^\\](\\[nt"]))*"/
+id     = /[a-zA-Z][a-zA-Z0-9_]*/
+nl     = \n
+
+expression_stmt =
+    | $expression $nl
+    | $expression $eof
+
+expression =
+    | set $lvalue = $expression
+    | $compexp
+
+lvalue = $var
+
+compop = < | <= | = | > | >=
+
+compexp =
+    | $addexp $compop $addexp
+    | $addexp
+
+addop = + / -
+
+addexp =
+    | $addexp $addop $mulexp
+    | $mulexp
+
+mulop = * | /
+
+mulexp =
+    | $mulexp $mulop $prefix
+    | $prefix
+
+prefix =
+    | not $prefix
+    | - $prefix
+    | $base
+
+base =
+    | ( $expression )
+    | $id
+    | $num
+    | $string
