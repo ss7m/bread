@@ -1,53 +1,53 @@
-#ifndef FLT_TOKEN_H
-#define FLT_TOKEN_H
+#ifndef BRD_TOKEN_H
+#define BRD_TOKEN_H
 
-enum flt_token {
+enum brd_token {
         /* literals */
-        FLT_TOK_NUM,
-        FLT_TOK_STR,
-        FLT_TOK_VAR,
-        FLT_TOK_TRUE,
-        FLT_TOK_FALSE,
+        BRD_TOK_NUM,
+        BRD_TOK_STR,
+        BRD_TOK_VAR,
+        BRD_TOK_TRUE,
+        BRD_TOK_FALSE,
 
         /* grammatical stuff */
-        FLT_TOK_LPAREN,
-        FLT_TOK_RPAREN,
-        FLT_TOK_NEWLINE,
+        BRD_TOK_LPAREN,
+        BRD_TOK_RPAREN,
+        BRD_TOK_NEWLINE,
 
         /* arithmetic */
-        FLT_TOK_PLUS,
-        FLT_TOK_MINUS,
-        FLT_TOK_MUL,
-        FLT_TOK_DIV,
+        BRD_TOK_PLUS,
+        BRD_TOK_MINUS,
+        BRD_TOK_MUL,
+        BRD_TOK_DIV,
 
         /* comp */
-        FLT_TOK_LT,
-        FLT_TOK_LEQ,
-        FLT_TOK_GT,
-        FLT_TOK_GEQ,
-        FLT_TOK_EQ,
+        BRD_TOK_LT,
+        BRD_TOK_LEQ,
+        BRD_TOK_GT,
+        BRD_TOK_GEQ,
+        BRD_TOK_EQ,
         /* let's use = for settings and equality, what could go wrong */
 
         /* boolean */
-        FLT_TOK_AND,
-        FLT_TOK_OR,
+        BRD_TOK_AND,
+        BRD_TOK_OR,
 
         /* keywords */
-        FLT_TOK_SET,
+        BRD_TOK_SET,
 };
 
-struct flt_token_list {
+struct brd_token_list {
         void *data, *end;
         size_t capacity;
 };
 
-void flt_token_list_init(struct flt_token_list *list);
-void flt_token_list_destroy(struct flt_token_list *list);
+void brd_token_list_init(struct brd_token_list *list);
+void brd_token_list_destroy(struct brd_token_list *list);
 
-void flt_token_list_add_token(struct flt_token_list *list, enum flt_token tok);
-void flt_token_list_add_num(struct flt_token_list *list, long double num);
-void flt_token_list_add_string(struct flt_token_list *list, const char *string);
+void brd_token_list_add_token(struct brd_token_list *list, enum brd_token tok);
+void brd_token_list_add_num(struct brd_token_list *list, long double num);
+void brd_token_list_add_string(struct brd_token_list *list, const char *string);
 
-void flt_token_list_tokenize(struct flt_token_list *list, char *string);
+void brd_token_list_tokenize(struct brd_token_list *list, char *string);
 
 #endif

@@ -9,7 +9,7 @@ CFLAGS=-Wall -Wextra -std=c99 \
 SRCS=main.c ast.c vm.c token.c
 OBJS=$(SRCS:.c=.o)
 HDRS=ast.h common.h vm.h token.h
-EXE=fleet
+EXE=bread
 
 #
 # Release variables

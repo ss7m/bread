@@ -1,5 +1,5 @@
-#ifndef FLT_VM_H
-#define FLT_VM_H
+#ifndef BRD_VM_H
+#define BRD_VM_H
 
 /* 
  * If I were smarter I'd make the bucket grow
@@ -7,15 +7,15 @@
  */
 #define BUCKET_SIZE 32
 
-enum flt_value_type {
-        FLT_VAL_NUM,
-        FLT_VAL_STRING,
-        FLT_VAL_BOOL,
-        FLT_VAL_UNIT,
+enum brd_value_type {
+        BRD_VAL_NUM,
+        BRD_VAL_STRING,
+        BRD_VAL_BOOL,
+        BRD_VAL_UNIT,
 };
 
-struct flt_value {
-        enum flt_value_type vtype;
+struct brd_value {
+        enum brd_value_type vtype;
         union {
                 long double num;
                 char *string;
@@ -23,19 +23,19 @@ struct flt_value {
         } as;
 };
 
-struct flt_value_map_list {
+struct brd_value_map_list {
         char *key;
-        struct flt_value val;
-        struct flt_value_map_list *next;
+        struct brd_value val;
+        struct brd_value_map_list *next;
 };
 
-struct flt_value_map {
-        struct flt_value_map_list bucket[BUCKET_SIZE];
+struct brd_value_map {
+        struct brd_value_map_list bucket[BUCKET_SIZE];
 };
 
-void flt_value_map_init(struct flt_value_map *map);
-void flt_value_map_destroy(struct flt_value_map *map);
-void flt_value_map_set(struct flt_value_map *map, char *key, struct flt_value *val);
-struct flt_value *flt_value_map_get(struct flt_value_map *map, char *key);
+void brd_value_map_init(struct brd_value_map *map);
+void brd_value_map_destroy(struct brd_value_map *map);
+void brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val);
+struct brd_value *brd_value_map_get(struct brd_value_map *map, char *key);
 
 #endif

@@ -7,7 +7,7 @@
 #define GROW 1.5
 
 static void
-flt_token_list_grow(struct flt_token_list *list)
+brd_token_list_grow(struct brd_token_list *list)
 {
         ptrdiff_t diff = list->end - list->data;
         list->capacity *= GROW;
@@ -16,34 +16,34 @@ flt_token_list_grow(struct flt_token_list *list)
 }
 
 void
-flt_token_list_init(struct flt_token_list *list)
+brd_token_list_init(struct brd_token_list *list)
 {
         list->capacity = LIST_INITIAL_SIZE;
         list->end = list->data = malloc(list->capacity);
 }
 
 void
-flt_token_list_destroy(struct flt_token_list *list)
+brd_token_list_destroy(struct brd_token_list *list)
 {
         free(list->data);
 }
 
 void
-flt_token_list_add_token(struct flt_token_list *list, enum flt_token tok)
+brd_token_list_add_token(struct brd_token_list *list, enum brd_token tok)
 {
         if (sizeof(tok) + list->end - list->data >= list->capacity) {
-                flt_token_list_grow(list);
+                brd_token_list_grow(list);
         }
 
-        *((enum flt_token *)list->end) = tok;
+        *((enum brd_token *)list->end) = tok;
         list->end += sizeof(tok);
 }
 
 void
-flt_token_list_add_num(struct flt_token_list *list, long double num)
+brd_token_list_add_num(struct brd_token_list *list, long double num)
 {
         if (sizeof(num) + list->end - list->data >= list->capacity) {
-                flt_token_list_grow(list);
+                brd_token_list_grow(list);
         }
 
         *((long double *)list->end) = num;
@@ -51,7 +51,7 @@ flt_token_list_add_num(struct flt_token_list *list, long double num)
 }
 
 void
-flt_token_list_add_string(struct flt_token_list *list, const char *string)
+brd_token_list_add_string(struct brd_token_list *list, const char *string)
 {
         /* 
          * we copy the whole string into the list.
@@ -59,7 +59,7 @@ flt_token_list_add_string(struct flt_token_list *list, const char *string)
          */
         size_t len = strlen(string) + 1;
         while (len + list->end - list->data >= list->capacity) {
-                flt_token_list_grow(list);
+                brd_token_list_grow(list);
         }
 
         strcpy((char *)list->end, string);
@@ -81,7 +81,7 @@ is_insig_space(char c)
 }
 
 static void
-flt_parse_string_literal(char **string, char *out)
+brd_parse_string_literal(char **string, char *out)
 {
         char *p = out;
         (*string)++; /* first char is " */
@@ -112,7 +112,7 @@ flt_parse_string_literal(char **string, char *out)
 }
 
 void
-flt_token_list_tokenize(struct flt_token_list *list, char *string)
+brd_token_list_tokenize(struct brd_token_list *list, char *string)
 {
         /* 
          * NOTE: this limits variable names and strings listerals
@@ -128,8 +128,8 @@ flt_token_list_tokenize(struct flt_token_list *list, char *string)
 
                 /* number */
                 if (isdigit(string[0])) {
-                        flt_token_list_add_token(list, FLT_TOK_NUM);
-                        flt_token_list_add_num(list, strtold(string, &string));
+                        brd_token_list_add_token(list, BRD_TOK_NUM);
+                        brd_token_list_add_num(list, strtold(string, &string));
                         continue;
                 }
 
@@ -141,78 +141,78 @@ flt_token_list_tokenize(struct flt_token_list *list, char *string)
                         *p = '\0';
 
                         if (strcmp(buffer, "true") == 0) {
-                                flt_token_list_add_token(list, FLT_TOK_TRUE);
+                                brd_token_list_add_token(list, BRD_TOK_TRUE);
                         } else if (strcmp(buffer, "false") == 0) {
-                                flt_token_list_add_token(list, FLT_TOK_FALSE);
+                                brd_token_list_add_token(list, BRD_TOK_FALSE);
                         } else if (strcmp(buffer, "and") == 0) {
-                                flt_token_list_add_token(list, FLT_TOK_AND);
+                                brd_token_list_add_token(list, BRD_TOK_AND);
                         } else if (strcmp(buffer, "or") == 0) {
-                                flt_token_list_add_token(list, FLT_TOK_OR);
+                                brd_token_list_add_token(list, BRD_TOK_OR);
                         } else if (strcmp(buffer, "set") == 0) {
-                                flt_token_list_add_token(list, FLT_TOK_SET);
+                                brd_token_list_add_token(list, BRD_TOK_SET);
                         } else {
-                                flt_token_list_add_token(list, FLT_TOK_VAR);
-                                flt_token_list_add_string(list, buffer);
+                                brd_token_list_add_token(list, BRD_TOK_VAR);
+                                brd_token_list_add_string(list, buffer);
                         }
                         continue;
                 }
 
                 if (string[0] == '"') {
-                        flt_parse_string_literal(&string, buffer);
-                        flt_token_list_add_token(list, FLT_TOK_STR);
-                        flt_token_list_add_string(list, buffer);
+                        brd_parse_string_literal(&string, buffer);
+                        brd_token_list_add_token(list, BRD_TOK_STR);
+                        brd_token_list_add_string(list, buffer);
                         continue;
                 }
 
                 switch (string[0]) {
                 case '(':
-                        flt_token_list_add_token(list, FLT_TOK_LPAREN);
+                        brd_token_list_add_token(list, BRD_TOK_LPAREN);
                         string++;
                         break;
                 case ')':
-                        flt_token_list_add_token(list, FLT_TOK_RPAREN);
+                        brd_token_list_add_token(list, BRD_TOK_RPAREN);
                         string++;
                         break;
                 case '\n':
-                        flt_token_list_add_token(list, FLT_TOK_NEWLINE);
+                        brd_token_list_add_token(list, BRD_TOK_NEWLINE);
                         string++;
                         break;
                 case '+':
-                        flt_token_list_add_token(list, FLT_TOK_PLUS);
+                        brd_token_list_add_token(list, BRD_TOK_PLUS);
                         string++;
                         break;
                 case '-':
-                        flt_token_list_add_token(list, FLT_TOK_MINUS);
+                        brd_token_list_add_token(list, BRD_TOK_MINUS);
                         string++;
                         break;
                 case '*':
-                        flt_token_list_add_token(list, FLT_TOK_MUL);
+                        brd_token_list_add_token(list, BRD_TOK_MUL);
                         string++;
                         break;
                 case '/':
-                        flt_token_list_add_token(list, FLT_TOK_DIV);
+                        brd_token_list_add_token(list, BRD_TOK_DIV);
                         string++;
                         break;
                 case '<':
                         if (string[1] == '=') {
-                                flt_token_list_add_token(list, FLT_TOK_LEQ);
+                                brd_token_list_add_token(list, BRD_TOK_LEQ);
                                 string += 2;
                         } else {
-                                flt_token_list_add_token(list, FLT_TOK_LT);
+                                brd_token_list_add_token(list, BRD_TOK_LT);
                                 string ++;
                         }
                         break;
                 case '>':
                         if (string[1] == '=') {
-                                flt_token_list_add_token(list, FLT_TOK_GEQ);
+                                brd_token_list_add_token(list, BRD_TOK_GEQ);
                                 string += 2;
                         } else {
-                                flt_token_list_add_token(list, FLT_TOK_GT);
+                                brd_token_list_add_token(list, BRD_TOK_GT);
                                 string ++;
                         }
                         break;
                 case '=':
-                        flt_token_list_add_token(list, FLT_TOK_EQ);
+                        brd_token_list_add_token(list, BRD_TOK_EQ);
                         string++;
                         break;
                 default:

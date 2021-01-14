@@ -1,109 +1,109 @@
-#ifndef FLT_AST_H
-#define FLT_AST_H
+#ifndef BRD_AST_H
+#define BRD_AST_H
 
 /*
  * Nodes are ALWAYS allocated on the heap!
  */
 
-enum flt_node_type {
-        FLT_NODE_ASSIGN,
-        FLT_NODE_BINOP,
-        FLT_NODE_UNARY,
-        FLT_NODE_VAR,
-        FLT_NODE_NUM_LIT,
-        FLT_NODE_STRING_LIT,
-        FLT_NODE_BOOL_LIT,
-        FLT_NODE_UNIT_LIT,
-        FLT_NODE_MAX,
+enum brd_node_type {
+        BRD_NODE_ASSIGN,
+        BRD_NODE_BINOP,
+        BRD_NODE_UNARY,
+        BRD_NODE_VAR,
+        BRD_NODE_NUM_LIT,
+        BRD_NODE_STRING_LIT,
+        BRD_NODE_BOOL_LIT,
+        BRD_NODE_UNIT_LIT,
+        BRD_NODE_MAX,
 };
 
-struct flt_node;
-typedef void (*flt_node_fn)(struct flt_node *);
+struct brd_node;
+typedef void (*brd_node_fn)(struct brd_node *);
 
-struct flt_node {
-        enum flt_node_type ntype;
-        flt_node_fn destroy;
+struct brd_node {
+        enum brd_node_type ntype;
+        brd_node_fn destroy;
 };
 
-struct flt_node_assign {
-        struct flt_node _node;
-        struct flt_node *l, *r;
+struct brd_node_assign {
+        struct brd_node _node;
+        struct brd_node *l, *r;
 };
 
-enum flt_binop {
+enum brd_binop {
         /* arith */
-        FLT_PLUS,
-        FLT_MINUS,
-        FLT_MUL,
-        FLT_DIV,
+        BRD_PLUS,
+        BRD_MINUS,
+        BRD_MUL,
+        BRD_DIV,
 
         /* comp */
-        FLT_LT,
-        FLT_LEQ,
-        FLT_GT,
-        FLT_GEQ,
-        FLT_EQ,
+        BRD_LT,
+        BRD_LEQ,
+        BRD_GT,
+        BRD_GEQ,
+        BRD_EQ,
 
         /* boolean */
-        FLT_AND,
-        FLT_OR,
+        BRD_AND,
+        BRD_OR,
 };
 
-struct flt_node_binop {
-        struct flt_node _node;
-        enum flt_binop btype;
-        struct flt_node *l, *r;
+struct brd_node_binop {
+        struct brd_node _node;
+        enum brd_binop btype;
+        struct brd_node *l, *r;
 };
 
-enum flt_unary {
-        FLT_NEGATE,
-        FLT_NOT,
+enum brd_unary {
+        BRD_NEGATE,
+        BRD_NOT,
 };
 
-struct flt_node_unary {
-        struct flt_node _node;
-        enum flt_unary utype;
-        struct flt_node *u;
+struct brd_node_unary {
+        struct brd_node _node;
+        enum brd_unary utype;
+        struct brd_node *u;
 };
 
-struct flt_node_var {
-        struct flt_node _node;
+struct brd_node_var {
+        struct brd_node _node;
         char *id;
 };
 
-struct flt_node_num_lit {
-        struct flt_node _node;
+struct brd_node_num_lit {
+        struct brd_node _node;
         long double v;
 };
 
-struct flt_node_string_lit {
-        struct flt_node _node;
+struct brd_node_string_lit {
+        struct brd_node _node;
         char *s;
 };
 
-struct flt_node_bool_lit {
-        struct flt_node _node;
+struct brd_node_bool_lit {
+        struct brd_node _node;
         int b;
 };
 
-struct flt_node_unit_lit {
-        struct flt_node _node;
+struct brd_node_unit_lit {
+        struct brd_node _node;
 };
 
-size_t flt_node_type_sizeof(enum flt_node_type t);
-#define flt_node_sizeof(n) flt_node_type_sizeof(((struct flt_node *)n)->ntype)
+size_t brd_node_type_sizeof(enum brd_node_type t);
+#define brd_node_sizeof(n) brd_node_type_sizeof(((struct brd_node *)n)->ntype)
 
-struct flt_node *flt_node_assign_new(struct flt_node *l, struct flt_node *r);
-struct flt_node *flt_node_binop_new(enum flt_binop btype, struct flt_node *l, struct flt_node *r);
-struct flt_node *flt_node_unary_new(enum flt_unary utype, struct flt_node *u);
-struct flt_node *flt_node_var_new(char *id);
-struct flt_node *flt_node_num_lit_new(long double v);
-struct flt_node *flt_node_string_lit_new(char *s);
-struct flt_node *flt_node_bool_lit_new(int b);
-struct flt_node *flt_node_unit_lit_new();
+struct brd_node *brd_node_assign_new(struct brd_node *l, struct brd_node *r);
+struct brd_node *brd_node_binop_new(enum brd_binop btype, struct brd_node *l, struct brd_node *r);
+struct brd_node *brd_node_unary_new(enum brd_unary utype, struct brd_node *u);
+struct brd_node *brd_node_var_new(char *id);
+struct brd_node *brd_node_num_lit_new(long double v);
+struct brd_node *brd_node_string_lit_new(char *s);
+struct brd_node *brd_node_bool_lit_new(int b);
+struct brd_node *brd_node_unit_lit_new();
 
-#define flt_node_destroy(n) (((struct flt_node *)n)->destroy((struct flt_node *)n))
+#define brd_node_destroy(n) (((struct brd_node *)n)->destroy((struct brd_node *)n))
 
-int flt_node_is_lvalue(struct flt_node *n);
+int brd_node_is_lvalue(struct brd_node *n);
 
 #endif

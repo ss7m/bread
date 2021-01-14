@@ -1,5 +1,5 @@
-#ifndef FLT_COMMON_H
-#define FLT_COMMON_H
+#ifndef BRD_COMMON_H
+#define BRD_COMMON_H
 
 #define _POSIX_C_SOURCE 200809L
 

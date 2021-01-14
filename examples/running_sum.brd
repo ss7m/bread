@@ -23,7 +23,7 @@ set RunningSum = class
     end
 end
 
-set x = new RunningSum()
+set x = RunningSum.new()
 x.update(50)
 x.update(123.1234)
 @writeln(x.mean())
