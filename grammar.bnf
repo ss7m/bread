@@ -8,8 +8,8 @@ nl     = \n
 program = $expression_stmt*
 
 expression_stmt =
-    | $expression $nl
-    | $expression $eof
+    | $expression $nl+
+    | $expression $nl* $eof
 
 expression =
     | set $lvalue = $expression

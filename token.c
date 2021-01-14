@@ -28,6 +28,14 @@ brd_token_list_destroy(struct brd_token_list *list)
         free(list->data);
 }
 
+
+/* does not respect skip_newlines */
+enum brd_token
+brd_token_list_peek(struct brd_token_list *list)
+{
+        return *(enum brd_token *)list->data;
+}
+
 enum brd_token
 brd_token_list_pop_token(struct brd_token_list *list)
 {
@@ -157,7 +165,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
         for (;;) {
                 while (is_insig_space(string[0])) string++;
                 if (string[0] == '\0') {
-                        brd_token_list_add_token(list, BRD_TOKEN_EOF);
+                        brd_token_list_add_token(list, BRD_TOK_EOF);
                         break;
                 }
 

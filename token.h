@@ -14,7 +14,7 @@ enum brd_token {
         BRD_TOK_LPAREN,
         BRD_TOK_RPAREN,
         BRD_TOK_NEWLINE,
-        BRD_TOKEN_EOF,
+        BRD_TOK_EOF,
 
         /* arithmetic */
         BRD_TOK_PLUS,
@@ -47,6 +47,7 @@ struct brd_token_list {
 void brd_token_list_init(struct brd_token_list *list);
 void brd_token_list_destroy(struct brd_token_list *list);
 
+enum brd_token brd_token_list_peek(struct brd_token_list *list);
 enum brd_token brd_token_list_pop_token(struct brd_token_list *list);
 long double brd_token_list_pop_num(struct brd_token_list *list);
 char *brd_token_list_pop_string(struct brd_token_list *list);

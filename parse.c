@@ -3,8 +3,41 @@
 #include "ast.h"
 #include "parse.h"
 
-/* this is a global var btw */
 int skip_newlines = false;
+
+/* skip_newlines should be false when this is called */
+struct brd_node *
+brd_parse_expression_stmt(struct brd_token_list *tokens)
+{
+        struct brd_token_list copy = *tokens;
+        struct brd_node *node;
+        int found_term;
+
+        node = brd_parse_expression(tokens);
+        if (node == NULL) {
+                return NULL;
+        }
+
+        found_term = false;
+        for (;;) {
+                switch (brd_token_list_peek(tokens)) {
+                case BRD_TOK_EOF:
+                        brd_token_list_pop_token(tokens);
+                        return node;
+                case BRD_TOK_NEWLINE:
+                        brd_token_list_pop_token(tokens);
+                        found_term = true;
+                        break;
+                default:
+                        if (found_term) {
+                                return node;
+                        } else {
+                                *tokens = copy;
+                                return NULL;
+                        }
+                }
+        }
+}
 
 struct brd_node *
 brd_parse_expression(struct brd_token_list *tokens)
