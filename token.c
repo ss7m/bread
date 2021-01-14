@@ -28,6 +28,30 @@ brd_token_list_destroy(struct brd_token_list *list)
         free(list->data);
 }
 
+enum brd_token
+brd_token_list_pop_token(struct brd_token_list *list)
+{
+        enum brd_token tok = *(enum brd_token *)list->data;
+        list->data += sizeof(enum brd_token);
+        return tok;
+}
+
+long double
+brd_token_list_pop_num(struct brd_token_list *list)
+{
+        long double num = *(long double *)list->data;
+        list->data += sizeof(long double);
+        return num;
+}
+
+char *
+brd_token_list_pop_string(struct brd_token_list *list)
+{
+        char *string = (char *)list->data;
+        list->data += strlen(string) + 1;
+        return string;
+}
+
 void
 brd_token_list_add_token(struct brd_token_list *list, enum brd_token tok)
 {
@@ -149,6 +173,8 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_AND);
                         } else if (strcmp(buffer, "or") == 0) {
                                 brd_token_list_add_token(list, BRD_TOK_OR);
+                        } else if (strcmp(buffer, "not") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_NOT);
                         } else if (strcmp(buffer, "set") == 0) {
                                 brd_token_list_add_token(list, BRD_TOK_SET);
                         } else {

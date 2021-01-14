@@ -136,7 +136,7 @@ brd_node_var_new(char *id)
         struct brd_node_var *n = malloc(sizeof(*n));
         n->_node.ntype = BRD_NODE_VAR;
         n->_node.destroy = brd_node_var_destroy;
-        n->id = id;
+        n->id = strdup(id);
         return (struct brd_node *)n;
 }
 
@@ -163,7 +163,7 @@ brd_node_string_lit_new(char *s)
         struct brd_node_string_lit *n = malloc(sizeof(*n));
         n->_node.ntype = BRD_NODE_STRING_LIT;
         n->_node.destroy = brd_node_string_lit_destroy;
-        n->s = s;
+        n->s = strdup(s);
         return (struct brd_node *)n;
 }
 

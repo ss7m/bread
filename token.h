@@ -8,6 +8,7 @@ enum brd_token {
         BRD_TOK_VAR,
         BRD_TOK_TRUE,
         BRD_TOK_FALSE,
+        BRD_TOK_UNIT,
 
         /* grammatical stuff */
         BRD_TOK_LPAREN,
@@ -32,6 +33,7 @@ enum brd_token {
         /* boolean */
         BRD_TOK_AND,
         BRD_TOK_OR,
+        BRD_TOK_NOT,
 
         /* keywords */
         BRD_TOK_SET,
@@ -44,6 +46,10 @@ struct brd_token_list {
 
 void brd_token_list_init(struct brd_token_list *list);
 void brd_token_list_destroy(struct brd_token_list *list);
+
+enum brd_token brd_token_list_pop_token(struct brd_token_list *list);
+long double brd_token_list_pop_num(struct brd_token_list *list);
+char *brd_token_list_pop_string(struct brd_token_list *list);
 
 void brd_token_list_add_token(struct brd_token_list *list, enum brd_token tok);
 void brd_token_list_add_num(struct brd_token_list *list, long double num);

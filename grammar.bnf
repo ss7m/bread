@@ -1,3 +1,5 @@
+# all math operators are right associative because I'm a hack
+
 num    = whatever strtold accepts
 string = /"([^\\](\\[nt"]))*"/
 id     = /[a-zA-Z][a-zA-Z0-9_]*/
@@ -11,9 +13,17 @@ expression_stmt =
 
 expression =
     | set $lvalue = $expression
-    | $compexp
+    | $orexp
 
 lvalue = $var
+
+orexp =
+    | $andexp or $orexp
+    | $andexp
+
+andexp =
+    | $compexp and $andexp
+    | $andexp
 
 compop = < | <= | = | > | >=
 
@@ -24,13 +34,13 @@ compexp =
 addop = + / -
 
 addexp =
-    | $addexp $addop $mulexp
+    | $mulexp $addop $addexp
     | $mulexp
 
 mulop = * | /
 
 mulexp =
-    | $mulexp $mulop $prefix
+    | $prefix $mulop $mulexp
     | $prefix
 
 prefix =
@@ -43,4 +53,6 @@ base =
     | $id
     | $num
     | $string
+    | true
+    | false
     | unit
