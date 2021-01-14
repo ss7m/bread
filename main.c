@@ -46,7 +46,7 @@ int main(void)
 
         /* test token list */
         flt_token_list_init(&list);
-        flt_token_list_tokenize(&list, "123.5 + - <= > ( ) ; = < >=");
+        flt_token_list_tokenize(&list, "123.5 + - <= > ( ) \n = < >=");
         flt_token_list_tokenize(&list, "false true and set or sdf_e312_dD   ");
         flt_token_list_tokenize(&list, "\"Hello, World!\\n\" 33422342.23  ");
         /* flt_token_list_tokenize(&list, "\"Hello, World!\\n "); */ /* parsing error */

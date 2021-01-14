@@ -73,6 +73,13 @@ is_id_char(char c)
         return isalnum(c) || c == '_';
 }
 
+/* is a whitespace character that isn't a newline */
+static bool
+is_insig_space(char c)
+{
+        return isspace(c) && c != '\n';
+}
+
 static void
 flt_parse_string_literal(char **string, char *out)
 {
@@ -114,11 +121,10 @@ flt_token_list_tokenize(struct flt_token_list *list, char *string)
         char buffer[1024];
 
         for (;;) {
-                while (isspace(string[0])) string++;
+                while (is_insig_space(string[0])) string++;
                 if (string[0] == '\0') {
                         break;
                 }
-                printf("%s\n", string);
 
                 /* number */
                 if (isdigit(string[0])) {
@@ -167,8 +173,8 @@ flt_token_list_tokenize(struct flt_token_list *list, char *string)
                         flt_token_list_add_token(list, FLT_TOK_RPAREN);
                         string++;
                         break;
-                case ';':
-                        flt_token_list_add_token(list, FLT_TOK_SEMICOLON);
+                case '\n':
+                        flt_token_list_add_token(list, FLT_TOK_NEWLINE);
                         string++;
                         break;
                 case '+':

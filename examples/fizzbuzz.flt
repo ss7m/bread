@@ -1,15 +1,23 @@
-set x = 1;
+# statements are terminated by a newline, except when:
+# 1. in the do block of a loop
+# 2. in a begin ... end block
+# 3. in an if/elif/else
+# 4. other block things (class/ function body)
+# In those situations, different tokens can terminate a statement
+# such as else, elif, and end.
+
+set x = 1
 
 while x <= 100 do
-    set three = x % 3 = 0;
-    set five = x % 5 = 0;
+    set three = x % 3 = 0
+    set five = x % 5 = 0
 
     if three or five then
         @writeln(
-            if three then "fizz"; else ""; end,
-            if five  then "buzz"; else ""; end
-        );
+            if three then "fizz" else "" end,
+            if five  then "buzz" else "" end
+        )
     else
-        @writeln(x);
-    end;
-end;
+        @writeln(x)
+    end
+end

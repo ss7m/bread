@@ -3,28 +3,28 @@
 
 set RunningSum = class
     set new = function()
-        set self.sum = 0;
-        set self.sum_sq = 0;
-        set self.n = 0;
-    end;
+        set self.sum = 0
+        set self.sum_sq = 0
+        set self.n = 0
+    end
 
     set update = function(num)
-        set self.sum = self.sum + num;
-        set self.sum_sq = self.sum_sq + num^2;
-        set n = n + 1;
-    end;
+        set self.sum = self.sum + num
+        set self.sum_sq = self.sum_sq + num^2
+        set n = n + 1
+    end
 
     set mean = function()
-        return self.sum / self.n;
-    end;
+        return self.sum / self.n
+    end
 
     set stdev = function()
-        return ((self.sum_sq / self.n) - ((self.sum / self.n) ^ 2)) ^ 0.5;
-    end;
-end;
+        return ((self.sum_sq / self.n) - ((self.sum / self.n) ^ 2)) ^ 0.5
+    end
+end
 
-set x = new RunningSum();
-x.update(50);
-x.update(123.1234);
-@writeln(x.mean());
-@writeln(x.stdev());
+set x = new RunningSum()
+x.update(50)
+x.update(123.1234)
+@writeln(x.mean())
+@writeln(x.stdev())

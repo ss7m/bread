@@ -12,7 +12,7 @@ enum flt_token {
         /* grammatical stuff */
         FLT_TOK_LPAREN,
         FLT_TOK_RPAREN,
-        FLT_TOK_SEMICOLON,
+        FLT_TOK_NEWLINE,
 
         /* arithmetic */
         FLT_TOK_PLUS,
