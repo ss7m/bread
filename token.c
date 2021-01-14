@@ -31,8 +31,18 @@ brd_token_list_destroy(struct brd_token_list *list)
 enum brd_token
 brd_token_list_pop_token(struct brd_token_list *list)
 {
-        enum brd_token tok = *(enum brd_token *)list->data;
-        list->data += sizeof(enum brd_token);
+        enum brd_token tok;
+
+        if (skip_newlines) {
+                do {
+                        tok = *(enum brd_token *)list->data;
+                        list->data += sizeof(enum brd_token);
+                } while (tok == BRD_TOK_NEWLINE);
+        } else {
+                tok = *(enum brd_token *)list->data;
+                list->data += sizeof(enum brd_token);
+        }
+
         return tok;
 }
 

@@ -3,6 +3,9 @@
 #include "ast.h"
 #include "parse.h"
 
+/* this is a global var btw */
+int skip_newlines = false;
+
 struct brd_node *
 brd_parse_expression(struct brd_token_list *tokens)
 {
@@ -263,18 +266,23 @@ brd_parse_base(struct brd_token_list *tokens)
 {
         struct brd_token_list copy = *tokens;
         struct brd_node *node;
+        int skip_copy = skip_newlines;
 
         switch (brd_token_list_pop_token(tokens)) {
         case BRD_TOK_LPAREN:
+                skip_newlines = true;
                 node = brd_parse_expression(tokens);
                 if (node == NULL) {
                         *tokens = copy;
+                        skip_newlines = skip_copy;
                         return NULL;
                 } else if (brd_token_list_pop_token(tokens) == BRD_TOK_RPAREN) {
+                        skip_newlines = skip_copy;
                         return node;
                 } else {
                         BARF("You're missing a right paren there m8");
                         *tokens = copy;
+                        skip_newlines = skip_copy;
                         return NULL;
                 }
         case BRD_TOK_VAR:

@@ -10,6 +10,12 @@
 #include <stdbool.h>
 #include <assert.h>
 
+/* 
+ * spooky global variable
+ * whether or not the parser is allowed to skip newlines
+ */
+extern int skip_newlines;
+
 #ifdef DEBUG
 #define BARF(fmt, ...) do { \
         fprintf(stderr, "Error: " fmt "\n", ##__VA_ARGS__); \
