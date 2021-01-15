@@ -72,6 +72,7 @@ enum brd_bytecode {
 
         BRD_VM_SET_VAR, /* has arg: string */
 
+        /* this will do more when we have functions and classes */
         BRD_VM_RETURN,
 };
 
