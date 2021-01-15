@@ -11,6 +11,9 @@
 /* That should be enough, right? */
 #define STACK_SIZE 256
 
+#define LIST_SIZE 32
+#define GROW 1.5
+
 enum brd_value_type {
         BRD_VAL_NUM,
         BRD_VAL_STRING,
@@ -51,7 +54,8 @@ enum brd_bytecode {
         BRD_VM_NUM, /* has arg: long double */
         BRD_VM_STR, /* has arg: string */
         BRD_VM_GET_VAR, /* has arg: string */
-        BRD_VM_BOOL, /* has arg: int */
+        BRD_VM_TRUE,
+        BRD_VM_FALSE,
         BRD_VM_UNIT,
 
         /* arithmetic */
@@ -59,10 +63,13 @@ enum brd_bytecode {
         BRD_VM_MINUS,
         BRD_VM_MUL,
         BRD_VM_DIV,
+        BRD_VM_NEGATE,
 
         /* comp */
         BRD_VM_LT,
         BRD_VM_LEQ,
+        BRD_VM_GT,
+        BRD_VM_GEQ,
         BRD_VM_EQ,
 
         /* boolean */
@@ -91,4 +98,5 @@ struct brd_vm {
 void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
 struct brd_value *brd_stack_pop(struct brd_stack *stack);
 
+void *brd_node_compile(struct brd_node *node);
 #endif
