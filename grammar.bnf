@@ -2,7 +2,7 @@
 
 num    = whatever strtold accepts
 string = /"([^\\](\\[nt"]))*"/
-id     = /[a-zA-Z][a-zA-Z0-9_]*/
+id     = /[a-zA-Z_][a-zA-Z0-9_]*/
 nl     = \n
 
 program = $expression_stmt*

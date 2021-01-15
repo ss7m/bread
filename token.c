@@ -176,7 +176,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         continue;
                 }
 
-                if (isalpha(string[0])) {
+                if (isalpha(string[0]) || string[0] == '_') {
                         char *p = buffer;
                         while (is_id_char(string[0])) {
                                 *(p++) = *(string++);
