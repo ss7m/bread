@@ -3,9 +3,9 @@
 
 enum brd_token {
         /* literals */
-        BRD_TOK_NUM,
-        BRD_TOK_STR,
-        BRD_TOK_VAR,
+        BRD_TOK_NUM, /* has arg: long double */
+        BRD_TOK_STR, /* has arg: string */
+        BRD_TOK_VAR, /* has arg: string */
         BRD_TOK_TRUE,
         BRD_TOK_FALSE,
         BRD_TOK_UNIT,

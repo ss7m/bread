@@ -81,3 +81,34 @@ brd_value_map_get(struct brd_value_map *map, char *key)
 
         return NULL;
 }
+
+void
+brd_value_debug(struct brd_value *value)
+{
+        switch (value->vtype) {
+        case BRD_VAL_NUM:
+                printf("%Lf\n", value->as.num);
+                break;
+        case BRD_VAL_STRING:
+                printf("%s\n", value->as.string);
+                break;
+        case BRD_VAL_BOOL:
+                printf("%s\n", value->as.boolean ? "true" : "false");
+                break;
+        case BRD_VAL_UNIT:
+                printf("unit\n");
+                break;
+        }
+}
+
+void
+brd_stack_push(struct brd_stack *stack, struct brd_value *value)
+{
+        *(stack->sp++) = *value;
+}
+
+struct brd_value *
+brd_stack_pop(struct brd_stack *stack)
+{
+        return stack->sp--;
+}

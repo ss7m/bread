@@ -7,6 +7,10 @@
  */
 #define BUCKET_SIZE 32
 
+/* stack is limited to 256 values */
+/* That should be enough, right? */
+#define STACK_SIZE 256
+
 enum brd_value_type {
         BRD_VAL_NUM,
         BRD_VAL_STRING,
@@ -37,5 +41,53 @@ void brd_value_map_init(struct brd_value_map *map);
 void brd_value_map_destroy(struct brd_value_map *map);
 void brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val);
 struct brd_value *brd_value_map_get(struct brd_value_map *map, char *key);
+
+void brd_value_debug(struct brd_value *value);
+
+/* VM bytecode */
+/* Stack based virtual machine */
+
+enum brd_bytecode {
+        BRD_VM_NUM, /* has arg: long double */
+        BRD_VM_STR, /* has arg: string */
+        BRD_VM_GET_VAR, /* has arg: string */
+        BRD_VM_BOOL, /* has arg: int */
+        BRD_VM_UNIT,
+
+        /* arithmetic */
+        BRD_VM_PLUS,
+        BRD_VM_MINUS,
+        BRD_VM_MUL,
+        BRD_VM_DIV,
+
+        /* comp */
+        BRD_VM_LT,
+        BRD_VM_LEQ,
+        BRD_VM_EQ,
+
+        /* boolean */
+        BRD_VM_AND,
+        BRD_VM_OR,
+        BRD_VM_NOT,
+
+        BRD_VM_SET_VAR, /* has arg: string */
+
+        BRD_VM_RETURN,
+};
+
+struct brd_stack {
+        struct brd_value values[STACK_SIZE];
+        struct brd_value *sp;
+};
+
+struct brd_vm {
+        struct brd_value_map globals;
+        struct brd_stack stack;
+        void *bytecode;
+        size_t pc;
+};
+
+void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
+struct brd_value *brd_stack_pop(struct brd_stack *stack);
 
 #endif
