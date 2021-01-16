@@ -115,7 +115,6 @@ brd_stack_pop(struct brd_stack *stack)
 }
 
 #define ADD_OP(x) do {\
-        printf(#x "\n");\
         if(sizeof(enum brd_bytecode) + *length >= *capacity) {\
                 *capacity *= GROW;\
                 *bytecode = realloc(*bytecode, *capacity);\
@@ -125,7 +124,6 @@ brd_stack_pop(struct brd_stack *stack)
 } while (0)
 
 #define ADD_NUM(x) do {\
-        printf("%Lf\n", x);\
         if(sizeof(long double) + *length >= *capacity) {\
                 *capacity *= GROW;\
                 *bytecode = realloc(*bytecode, *capacity);\
@@ -136,7 +134,6 @@ brd_stack_pop(struct brd_stack *stack)
 
 #define ADD_STR(x) do {\
         size_t len = strlen(x) + 1;\
-        printf("%s\n", x);\
         while (len + *length >= *capacity) {\
                 *capacity *= GROW;\
                 *bytecode = realloc(*bytecode, *capacity);\
@@ -177,8 +174,8 @@ _brd_node_compile(
                 brd_node_compile_lvalue(AS(assign, node)->l, bytecode, length, capacity);
                 break;
         case BRD_NODE_BINOP:
-                _brd_node_compile(AS(binop, node)->r, bytecode, length, capacity);
                 _brd_node_compile(AS(binop, node)->l, bytecode, length, capacity);
+                _brd_node_compile(AS(binop, node)->r, bytecode, length, capacity);
 
                 switch (AS(binop, node)->btype) {
                 case BRD_PLUS: ADD_OP(BRD_VM_PLUS); break;
@@ -317,75 +314,75 @@ brd_vm_run(struct brd_vm *vm)
                 case BRD_VM_PLUS:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.num += value2.as.num;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.num += value1.as.num;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_MINUS:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.num -= value2.as.num;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.num -= value1.as.num;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_MUL:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.num *= value2.as.num;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.num *= value1.as.num;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_DIV:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.num /= value2.as.num;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.num /= value1.as.num;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_LT:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.boolean = value1.as.num < value2.as.num;
-                        value1.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.boolean = value2.as.num < value1.as.num;
+                        value2.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_LEQ:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.boolean = value1.as.num <= value2.as.num;
-                        value1.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.boolean = value2.as.num <= value1.as.num;
+                        value2.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_GT:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.boolean = value1.as.num > value2.as.num;
-                        value1.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.boolean = value2.as.num > value1.as.num;
+                        value2.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_GEQ:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.boolean = value1.as.num >= value2.as.num;
-                        value1.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.boolean = value2.as.num >= value1.as.num;
+                        value2.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_EQ:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.boolean = value1.as.num == value2.as.num;
-                        value1.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.boolean = value2.as.num == value1.as.num;
+                        value2.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                         /* TODO boolean short circuiting */
                         /* I'll need a JMP op code */
                 case BRD_VM_AND:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.boolean &= value2.as.boolean;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.boolean &= value1.as.boolean;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_OR:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value1.as.boolean |= value2.as.boolean;
-                        brd_stack_push(&vm->stack, &value1);
+                        value2.as.boolean |= value1.as.boolean;
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_NEGATE:
                         value1 = *brd_stack_pop(&vm->stack);
