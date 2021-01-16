@@ -23,8 +23,8 @@ struct brd_node;
 typedef void (*brd_node_fn)(struct brd_node *);
 
 struct brd_node {
-        enum brd_node_type ntype;
         brd_node_fn destroy;
+        enum brd_node_type ntype;
 };
 
 struct brd_node_program {
