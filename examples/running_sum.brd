@@ -1,7 +1,7 @@
 # implementation:
 # put 'self' in the closure environment for all of these functions
 
-set RunningSum = class
+set RunningSum = define Object subclass
     set new = function()
         set self.sum = 0
         set self.sum_sq = 0

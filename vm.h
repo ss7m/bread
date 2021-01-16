@@ -11,9 +11,6 @@
 /* That should be enough, right? */
 #define STACK_SIZE 256
 
-#define LIST_SIZE 32
-#define GROW 1.5
-
 enum brd_value_type {
         BRD_VAL_NUM,
         BRD_VAL_STRING,

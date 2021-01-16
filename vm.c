@@ -2,6 +2,11 @@
 #include "ast.h"
 #include "vm.h"
 
+#define ABS(x) (((x) > 0) ? (x) : (-x))
+
+#define LIST_SIZE 32
+#define GROW 1.5
+
 /* http://www.cse.yorku.ca/~oz/hash.html djb2 hash algorithm */
 static unsigned long
 hash(char *str)
@@ -89,7 +94,7 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
         case BRD_VAL_UNIT:
                 switch (b->vtype) {
                 case BRD_VAL_NUM:
-                        return -b->as.num;
+                        return -ABS(b->as.num);
                 case BRD_VAL_STRING:
                         return -(b->as.string[0] != '\0');
                 case BRD_VAL_BOOL:
