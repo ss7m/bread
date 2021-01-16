@@ -16,6 +16,94 @@ hash(char *str)
 }
 
 void
+brd_value_coerce_num(struct brd_value *value)
+{
+        switch (value->vtype) {
+        case BRD_VAL_NUM:
+                break;
+        case BRD_VAL_STRING:
+                value->as.num = strtold(value->as.string, NULL);
+                break;
+        case BRD_VAL_BOOL:
+                value->as.num = value->as.boolean ? 1 : 0;
+                break;
+        case BRD_VAL_UNIT:
+                value->as.num = 0;
+        }
+
+        value->vtype = BRD_VAL_NUM;
+}
+
+int
+brd_value_truthify(struct brd_value *value)
+{
+        switch (value->vtype) {
+        case BRD_VAL_NUM:
+                return value->as.num != 0;
+        case BRD_VAL_STRING:
+                return value->as.string[0] != '\0';
+        case BRD_VAL_BOOL:
+                return value->as.boolean;
+        case BRD_VAL_UNIT:
+                return false;
+        }
+        BARF("what?");
+        return false;
+}
+
+int
+brd_value_compare(struct brd_value *a, struct brd_value *b)
+{
+        switch (a->vtype) {
+        case BRD_VAL_NUM:
+                brd_value_coerce_num(b);
+                return (int) (a->as.num - b->as.num);
+        case BRD_VAL_STRING:
+                switch (b->vtype) {
+                case BRD_VAL_NUM:
+                        brd_value_coerce_num(a);
+                        return (int) (a->as.num - b->as.num);
+                case BRD_VAL_STRING:
+                        return strcmp(a->as.string, b->as.string);
+                case BRD_VAL_BOOL:
+                        /* This is obviously a very good idea */
+                        return strcmp(a->as.string, b->as.boolean ? "true" : "false");
+                case BRD_VAL_UNIT:
+                        return a->as.string[0] != '\0';
+                }
+                break;
+        case BRD_VAL_BOOL:
+                switch (b->vtype) {
+                case BRD_VAL_NUM:
+                        brd_value_coerce_num(a);
+                        return (int) (a->as.num - b->as.num);
+                case BRD_VAL_STRING:
+                        /* Again, this is the obvious thing to do there */
+                        return strcmp(a->as.boolean ? "true" : "false", b->as.string);
+                case BRD_VAL_BOOL:
+                        return a->as.boolean - b->as.boolean;
+                case BRD_VAL_UNIT:
+                        return a->as.boolean;
+                }
+                break;
+        case BRD_VAL_UNIT:
+                switch (b->vtype) {
+                case BRD_VAL_NUM:
+                        return -b->as.num;
+                case BRD_VAL_STRING:
+                        return -(b->as.string[0] != '\0');
+                case BRD_VAL_BOOL:
+                        return -b->as.boolean;
+                case BRD_VAL_UNIT:
+                        return 0;
+                }
+                break;
+        }
+        BARF("what?");
+        return -1;
+}
+
+void
 brd_value_map_init(struct brd_value_map *map)
 {
         for (int i = 0; i < BUCKET_SIZE; i++) {
@@ -314,59 +402,67 @@ brd_vm_run(struct brd_vm *vm)
                 case BRD_VM_PLUS:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
+                        brd_value_coerce_num(&value1);
+                        brd_value_coerce_num(&value2);
                         value2.as.num += value1.as.num;
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_MINUS:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
+                        brd_value_coerce_num(&value1);
+                        brd_value_coerce_num(&value2);
                         value2.as.num -= value1.as.num;
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_MUL:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
+                        brd_value_coerce_num(&value1);
+                        brd_value_coerce_num(&value2);
                         value2.as.num *= value1.as.num;
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_DIV:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
+                        brd_value_coerce_num(&value1);
+                        brd_value_coerce_num(&value2);
                         value2.as.num /= value1.as.num;
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_LT:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value2.as.boolean = value2.as.num < value1.as.num;
+                        value2.as.boolean = brd_value_compare(&value2, &value1) < 0;
                         value2.vtype = BRD_VAL_BOOL;
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_LEQ:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value2.as.boolean = value2.as.num <= value1.as.num;
+                        value2.as.boolean = brd_value_compare(&value2, &value1) <= 0;
                         value2.vtype = BRD_VAL_BOOL;
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_GT:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value2.as.boolean = value2.as.num > value1.as.num;
+                        value2.as.boolean = brd_value_compare(&value2, &value1) > 0;
                         value2.vtype = BRD_VAL_BOOL;
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_GEQ:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value2.as.boolean = value2.as.num >= value1.as.num;
+                        value2.as.boolean = brd_value_compare(&value2, &value1) >= 0;
                         value2.vtype = BRD_VAL_BOOL;
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_EQ:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        value2.as.boolean = value2.as.num == value1.as.num;
+                        value2.as.boolean = brd_value_compare(&value2, &value1) == 0;
                         value2.vtype = BRD_VAL_BOOL;
                         brd_stack_push(&vm->stack, &value2);
                         break;
@@ -386,12 +482,14 @@ brd_vm_run(struct brd_vm *vm)
                         break;
                 case BRD_VM_NEGATE:
                         value1 = *brd_stack_pop(&vm->stack);
-                        value1.as.num = -value1.as.num;
+                        brd_value_coerce_num(&value1);
+                        value1.as.num *= -1;
                         brd_stack_push(&vm->stack, &value1);
                         break;
                 case BRD_VM_NOT:
                         value1 = *brd_stack_pop(&vm->stack);
-                        value1.as.boolean = !value1.as.boolean;
+                        value1.as.boolean = !brd_value_truthify(&value1);
+                        value1.vtype = BRD_VAL_BOOL;
                         brd_stack_push(&vm->stack, &value1);
                         break;
                 case BRD_VM_SET_VAR:

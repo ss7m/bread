@@ -30,6 +30,10 @@ struct brd_value {
         } as;
 };
 
+void brd_value_coerce_num(struct brd_value *value);
+int brd_value_truthify(struct brd_value *value);
+int brd_value_compare(struct brd_value *a, struct brd_value *b);
+
 struct brd_value_map_list {
         char *key;
         struct brd_value_map_list *next;
