@@ -27,3 +27,11 @@ the command is
 ```
 bread file.brd
 ```
+
+## Acknowledgements
+
+[Crafting Interpreters](https://craftinginterpreters.com/) For reference/inspiration
+in implementing various parts of the interpreter, especially the virtual
+machine and garbage collector.
+
+The [Lua](https://www.lua.org/) programming language, for inspiration on syntax.
