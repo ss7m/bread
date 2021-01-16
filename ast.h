@@ -59,8 +59,8 @@ enum brd_binop {
 
 struct brd_node_binop {
         struct brd_node _node;
-        enum brd_binop btype;
         struct brd_node *l, *r;
+        enum brd_binop btype;
 };
 
 enum brd_unary {
@@ -70,8 +70,8 @@ enum brd_unary {
 
 struct brd_node_unary {
         struct brd_node _node;
-        enum brd_unary utype;
         struct brd_node *u;
+        enum brd_unary utype;
 };
 
 struct brd_node_var {

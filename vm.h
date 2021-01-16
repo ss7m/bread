@@ -32,8 +32,8 @@ struct brd_value {
 
 struct brd_value_map_list {
         char *key;
-        struct brd_value val;
         struct brd_value_map_list *next;
+        struct brd_value val;
 };
 
 struct brd_value_map {
@@ -79,6 +79,9 @@ enum brd_bytecode {
 
         BRD_VM_SET_VAR, /* has arg: string */
 
+        //BRD_VM_JMP_IF, /* has arg: void * */
+        //BRD_VM_JMP_IFN,
+
         /* this will do more when we have functions and classes */
         BRD_VM_RETURN,
         BRD_VM_CLEAR, /* reset the stack */
@@ -90,10 +93,10 @@ struct brd_stack {
 };
 
 struct brd_vm {
-        struct brd_value_map globals;
         struct brd_stack stack;
         void *bytecode;
         size_t pc;
+        struct brd_value_map globals;
 };
 
 void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
