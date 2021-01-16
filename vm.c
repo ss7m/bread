@@ -111,7 +111,7 @@ brd_stack_push(struct brd_stack *stack, struct brd_value *value)
 struct brd_value *
 brd_stack_pop(struct brd_stack *stack)
 {
-        return stack->sp--;
+        return --stack->sp;
 }
 
 #define ADD_OP(x) do {\
@@ -227,8 +227,9 @@ _brd_node_compile(
                                 length,
                                 capacity
                         );
-                        ADD_OP(BRD_VM_RETURN);
+                        ADD_OP(BRD_VM_CLEAR);
                 }
+                ADD_OP(BRD_VM_RETURN);
                 break;
         case BRD_NODE_MAX:
                 BARF("This shouldn't happen.");
@@ -249,4 +250,170 @@ brd_node_compile(struct brd_node *node)
 
         _brd_node_compile(node, &bytecode, &length, &capacity);
         return bytecode;
+}
+
+void
+brd_vm_destroy(struct brd_vm *vm)
+{
+        brd_value_map_destroy(&vm->globals);
+        free(vm->bytecode);
+}
+
+void
+brd_vm_init(struct brd_vm *vm, void *bytecode)
+{
+        brd_value_map_init(&vm->globals);
+        vm->bytecode = bytecode;
+        vm->pc = 0;
+        vm->stack.sp = vm->stack.values;
+}
+
+void
+brd_vm_run(struct brd_vm *vm)
+{
+        enum brd_bytecode op;
+        struct brd_value value1, value2;
+        char *id;
+        int go = true;
+
+        while (go) {
+                op = *(enum brd_bytecode *)(vm->bytecode + vm->pc);
+                vm->pc += sizeof(enum brd_bytecode);
+
+                switch (op) {
+                case BRD_VM_NUM:
+                        value1.vtype = BRD_VAL_NUM;
+                        value1.as.num = *(long double *)(vm->bytecode + vm->pc);
+                        vm->pc += sizeof(long double);
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_STR:
+                        value1.vtype = BRD_VAL_STRING;
+                        value1.as.string = (char *)(vm->bytecode + vm->pc);
+                        vm->pc += strlen(value1.as.string) + 1;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_GET_VAR:
+                        id = (char *)(vm->bytecode + vm->pc);
+                        vm->pc += strlen(id) + 1;
+                        value1 = *brd_value_map_get(&vm->globals, id);
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_TRUE:
+                        value1.vtype = BRD_VAL_BOOL;
+                        value1.as.boolean = true;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_FALSE:
+                        value1.vtype = BRD_VAL_BOOL;
+                        value1.as.boolean = false;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_UNIT:
+                        value1.vtype = BRD_VAL_UNIT;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                        /* TODO: error checking/coersion on math ops */
+                case BRD_VM_PLUS:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.num += value2.as.num;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_MINUS:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.num -= value2.as.num;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_MUL:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.num *= value2.as.num;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_DIV:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.num /= value2.as.num;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_LT:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.boolean = value1.as.num < value2.as.num;
+                        value1.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_LEQ:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.boolean = value1.as.num <= value2.as.num;
+                        value1.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_GT:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.boolean = value1.as.num > value2.as.num;
+                        value1.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_GEQ:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.boolean = value1.as.num >= value2.as.num;
+                        value1.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_EQ:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.boolean = value1.as.num == value2.as.num;
+                        value1.vtype = BRD_VAL_BOOL;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                        /* TODO boolean short circuiting */
+                        /* I'll need a JMP op code */
+                case BRD_VM_AND:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.boolean &= value2.as.boolean;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_OR:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        value1.as.boolean |= value2.as.boolean;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_NEGATE:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value1.as.num = -value1.as.num;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_NOT:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value1.as.boolean = !value1.as.boolean;
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_SET_VAR:
+                        id = (char *)(vm->bytecode + vm->pc);
+                        vm->pc += strlen(id) + 1;
+                        value1 = *brd_stack_pop(&vm->stack);
+                        brd_value_map_set(&vm->globals, id, &value1);
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_RETURN:
+                        go = false;
+                        break;
+                case BRD_VM_CLEAR:
+#ifdef DEBUG
+                        value1 = *brd_stack_pop(&vm->stack);
+                        brd_value_debug(&value1);
+#endif
+                        vm->stack.sp = vm->stack.values;
+                        break;
+                }
+        }
 }

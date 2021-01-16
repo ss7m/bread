@@ -195,6 +195,8 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_NOT);
                         } else if (strcmp(buffer, "set") == 0) {
                                 brd_token_list_add_token(list, BRD_TOK_SET);
+                        } else if (strcmp(buffer, "unit") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_UNIT);
                         } else {
                                 brd_token_list_add_token(list, BRD_TOK_VAR);
                                 brd_token_list_add_string(list, buffer);

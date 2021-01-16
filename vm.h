@@ -81,6 +81,7 @@ enum brd_bytecode {
 
         /* this will do more when we have functions and classes */
         BRD_VM_RETURN,
+        BRD_VM_CLEAR, /* reset the stack */
 };
 
 struct brd_stack {
@@ -99,4 +100,8 @@ void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
 struct brd_value *brd_stack_pop(struct brd_stack *stack);
 
 void *brd_node_compile(struct brd_node *node);
+
+void brd_vm_destroy(struct brd_vm *vm);
+void brd_vm_init(struct brd_vm *vm, void *bytecode);
+void brd_vm_run(struct brd_vm *vm);
 #endif
