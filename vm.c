@@ -287,12 +287,12 @@ brd_vm_run(struct brd_vm *vm)
                 case BRD_VM_STR:
                         value1.vtype = BRD_VAL_STRING;
                         value1.as.string = (char *)(vm->bytecode + vm->pc);
-                        vm->pc += strlen(value1.as.string) + 1;
+                        while (*(char *)(vm->bytecode + vm->pc++));
                         brd_stack_push(&vm->stack, &value1);
                         break;
                 case BRD_VM_GET_VAR:
                         id = (char *)(vm->bytecode + vm->pc);
-                        vm->pc += strlen(id) + 1;
+                        while (*(char *)(vm->bytecode + vm->pc++));
                         value1 = *brd_value_map_get(&vm->globals, id);
                         brd_stack_push(&vm->stack, &value1);
                         break;
@@ -396,7 +396,7 @@ brd_vm_run(struct brd_vm *vm)
                         break;
                 case BRD_VM_SET_VAR:
                         id = (char *)(vm->bytecode + vm->pc);
-                        vm->pc += strlen(id) + 1;
+                        while (*(char *)(vm->bytecode + vm->pc++));
                         value1 = *brd_stack_pop(&vm->stack);
                         brd_value_map_set(&vm->globals, id, &value1);
                         brd_stack_push(&vm->stack, &value1);
