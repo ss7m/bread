@@ -20,6 +20,58 @@ hash(char *str)
         return hash;
 }
 
+#ifdef DEBUG
+static void
+brd_value_debug(struct brd_value *value)
+{
+        switch (value->vtype) {
+        case BRD_VAL_NUM:
+                printf("%Lf\n", value->as.num);
+                break;
+        case BRD_VAL_STRING:
+                printf("%s\n", value->as.string);
+                break;
+        case BRD_VAL_BOOL:
+                printf("%s\n", value->as.boolean ? "true" : "false");
+                break;
+        case BRD_VAL_UNIT:
+                printf("unit\n");
+                break;
+        }
+}
+
+static void
+brd_bytecode_debug(enum brd_bytecode op)
+{
+        switch (op) {
+        case BRD_VM_NUM: printf("BRD_VM_NUM\n"); break;
+        case BRD_VM_STR: printf("BRD_VM_STR\n"); break;
+        case BRD_VM_GET_VAR: printf("BRD_VM_GET_VAR\n"); break;
+        case BRD_VM_TRUE: printf("BRD_VM_TRUE\n"); break;
+        case BRD_VM_FALSE: printf("BRD_VM_FALSE\n"); break;
+        case BRD_VM_UNIT: printf("BRD_VM_UNIT\n"); break;
+        case BRD_VM_PLUS: printf("BRD_VM_PLUS\n"); break;
+        case BRD_VM_MINUS: printf("BRD_VM_MINUS\n"); break;
+        case BRD_VM_MUL: printf("BRD_VM_MUL\n"); break;
+        case BRD_VM_DIV: printf("BRD_VM_DIV\n"); break;
+        case BRD_VM_NEGATE: printf("BRD_VM_NEGATE\n"); break;
+        case BRD_VM_LT: printf("BRD_VM_LT\n"); break;
+        case BRD_VM_LEQ: printf("BRD_VM_LEQ\n"); break;
+        case BRD_VM_GT: printf("BRD_VM_GT\n"); break;
+        case BRD_VM_GEQ: printf("BRD_VM_GEQ\n"); break;
+        case BRD_VM_EQ: printf("BRD_VM_EQ\n"); break;
+        case BRD_VM_NOT: printf("BRD_VM_NOT\n"); break;
+        case BRD_VM_TEST: printf("BRD_VM_TEST\n"); break;
+        case BRD_VM_TESTN: printf("BRD_VM_TESTN\n"); break;
+        case BRD_VM_SET_VAR: printf("BRD_VM_SET_VAR\n"); break;
+        case BRD_VM_JMP: printf("BRD_VM_JMP\n"); break;
+        case BRD_VM_RETURN: printf("BRD_VM_RETURN\n"); break;
+        case BRD_VM_POP: printf("BRD_VM_CLEAR\n"); break;
+        default: printf("oops\n");
+        }
+}
+#endif
+
 void
 brd_value_coerce_num(struct brd_value *value)
 {
@@ -177,25 +229,6 @@ brd_value_map_get(struct brd_value_map *map, char *key)
 }
 
 void
-brd_value_debug(struct brd_value *value)
-{
-        switch (value->vtype) {
-        case BRD_VAL_NUM:
-                printf("%Lf\n", value->as.num);
-                break;
-        case BRD_VAL_STRING:
-                printf("%s\n", value->as.string);
-                break;
-        case BRD_VAL_BOOL:
-                printf("%s\n", value->as.boolean ? "true" : "false");
-                break;
-        case BRD_VAL_UNIT:
-                printf("unit\n");
-                break;
-        }
-}
-
-void
 brd_stack_push(struct brd_stack *stack, struct brd_value *value)
 {
         *(stack->sp++) = *value;
@@ -207,6 +240,12 @@ brd_stack_pop(struct brd_stack *stack)
         return --stack->sp;
 }
 
+struct brd_value *
+brd_stack_peek(struct brd_stack *stack)
+{
+        return stack->sp - 1;
+}
+
 #define ADD_OP(x) do {\
         if(sizeof(enum brd_bytecode) + *length >= *capacity) {\
                 *capacity *= GROW;\
@@ -214,6 +253,15 @@ brd_stack_pop(struct brd_stack *stack)
         }\
         *(enum brd_bytecode *)(*bytecode + *length) = (x);\
         *length += sizeof(enum brd_bytecode);\
+} while (0)
+
+#define MK_OFFSET do {\
+        if(sizeof(size_t) + *length >= *capacity) {\
+                *capacity *= GROW;\
+                *bytecode = realloc(*bytecode, *capacity);\
+        }\
+        *(size_t *)(*bytecode + *length) = 0;\
+        *length += sizeof(size_t);\
 } while (0)
 
 #define ADD_NUM(x) do {\
@@ -261,27 +309,42 @@ _brd_node_compile(
         size_t *length,
         size_t *capacity)
 {
+        enum brd_bytecode op;
+        size_t temp, jmp;
+
         switch (node->ntype) {
         case BRD_NODE_ASSIGN: 
                 _brd_node_compile(AS(assign, node)->r, bytecode, length, capacity);
                 brd_node_compile_lvalue(AS(assign, node)->l, bytecode, length, capacity);
                 break;
         case BRD_NODE_BINOP:
-                _brd_node_compile(AS(binop, node)->l, bytecode, length, capacity);
-                _brd_node_compile(AS(binop, node)->r, bytecode, length, capacity);
-
+                /* yeah this code is ugly */
                 switch (AS(binop, node)->btype) {
-                case BRD_PLUS: ADD_OP(BRD_VM_PLUS); break;
-                case BRD_MINUS: ADD_OP(BRD_VM_MINUS); break;
-                case BRD_MUL: ADD_OP(BRD_VM_MUL); break;
-                case BRD_DIV: ADD_OP(BRD_VM_DIV); break;
-                case BRD_LT: ADD_OP(BRD_VM_LT); break;
-                case BRD_LEQ: ADD_OP(BRD_VM_LEQ); break;
-                case BRD_GT: ADD_OP(BRD_VM_GT); break;
-                case BRD_GEQ: ADD_OP(BRD_VM_GEQ); break;
-                case BRD_EQ: ADD_OP(BRD_VM_EQ); break;
-                case BRD_AND: ADD_OP(BRD_VM_AND); break;
-                case BRD_OR: ADD_OP(BRD_VM_OR); break;
+                case BRD_OR:
+                case BRD_AND: 
+                        _brd_node_compile(AS(binop, node)->l, bytecode, length, capacity);
+                        op = (AS(binop, node)->btype == BRD_AND) ? BRD_VM_TEST : BRD_VM_TESTN;
+                        ADD_OP(op);
+                        ADD_OP(BRD_VM_JMP);
+                        temp = *length;
+                        MK_OFFSET;
+                        _brd_node_compile(AS(binop, node)->r, bytecode, length, capacity);
+                        jmp = *length - temp;
+                        *(size_t *)(*bytecode + temp) = jmp;
+                        break;
+                case BRD_PLUS: op = BRD_VM_PLUS; goto mkbinop;
+                case BRD_MINUS: op = BRD_VM_MINUS; goto mkbinop;
+                case BRD_MUL: op = BRD_VM_MUL; goto mkbinop;
+                case BRD_DIV: op = BRD_VM_DIV; goto mkbinop;
+                case BRD_LT: op = BRD_VM_LT; goto mkbinop;
+                case BRD_LEQ: op = BRD_VM_LEQ; goto mkbinop;
+                case BRD_GT: op = BRD_VM_GT; goto mkbinop;
+                case BRD_GEQ: op = BRD_VM_GEQ; goto mkbinop;
+                case BRD_EQ: op = BRD_VM_EQ; goto mkbinop;
+mkbinop:
+                        _brd_node_compile(AS(binop, node)->l, bytecode, length, capacity);
+                        _brd_node_compile(AS(binop, node)->r, bytecode, length, capacity);
+                        ADD_OP(op);
                 }
                 break;
         case BRD_NODE_UNARY:
@@ -317,7 +380,7 @@ _brd_node_compile(
                                 length,
                                 capacity
                         );
-                        ADD_OP(BRD_VM_CLEAR);
+                        ADD_OP(BRD_VM_POP);
                 }
                 ADD_OP(BRD_VM_RETURN);
                 break;
@@ -365,10 +428,15 @@ brd_vm_run(struct brd_vm *vm)
         struct brd_value value1, value2;
         char *id;
         int go = true;
+        ptrdiff_t jmp;
 
         while (go) {
                 op = *(enum brd_bytecode *)(vm->bytecode + vm->pc);
                 vm->pc += sizeof(enum brd_bytecode);
+
+#ifdef DEBUG
+                brd_bytecode_debug(op);
+#endif
 
                 switch (op) {
                 case BRD_VM_NUM:
@@ -386,7 +454,8 @@ brd_vm_run(struct brd_vm *vm)
                 case BRD_VM_GET_VAR:
                         id = (char *)(vm->bytecode + vm->pc);
                         while (*(char *)(vm->bytecode + vm->pc++));
-                        value1 = *brd_value_map_get(&vm->globals, id);
+                        value1.vtype = BRD_VAL_UNIT;
+                        value1 = *(brd_value_map_get(&vm->globals, id) ?: &value1);
                         brd_stack_push(&vm->stack, &value1);
                         break;
                 case BRD_VM_TRUE:
@@ -403,7 +472,6 @@ brd_vm_run(struct brd_vm *vm)
                         value1.vtype = BRD_VAL_UNIT;
                         brd_stack_push(&vm->stack, &value1);
                         break;
-                        /* TODO: error checking/coersion on math ops */
                 case BRD_VM_PLUS:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
@@ -471,20 +539,6 @@ brd_vm_run(struct brd_vm *vm)
                         value2.vtype = BRD_VAL_BOOL;
                         brd_stack_push(&vm->stack, &value2);
                         break;
-                        /* TODO boolean short circuiting */
-                        /* I'll need a JMP op code */
-                case BRD_VM_AND:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
-                        value2.as.boolean &= value1.as.boolean;
-                        brd_stack_push(&vm->stack, &value2);
-                        break;
-                case BRD_VM_OR:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
-                        value2.as.boolean |= value1.as.boolean;
-                        brd_stack_push(&vm->stack, &value2);
-                        break;
                 case BRD_VM_NEGATE:
                         value1 = *brd_stack_pop(&vm->stack);
                         brd_value_coerce_num(&value1);
@@ -497,6 +551,18 @@ brd_vm_run(struct brd_vm *vm)
                         value1.vtype = BRD_VAL_BOOL;
                         brd_stack_push(&vm->stack, &value1);
                         break;
+                case BRD_VM_TEST:
+                        if (brd_value_truthify(brd_stack_peek(&vm->stack))) {
+                                brd_stack_pop(&vm->stack);
+                                vm->pc += sizeof(enum brd_bytecode) + sizeof(ptrdiff_t);
+                        }
+                        break;
+                case BRD_VM_TESTN:
+                        if (!brd_value_truthify(brd_stack_peek(&vm->stack))) {
+                                brd_stack_pop(&vm->stack);
+                                vm->pc += sizeof(enum brd_bytecode) + sizeof(ptrdiff_t);
+                        }
+                        break;
                 case BRD_VM_SET_VAR:
                         id = (char *)(vm->bytecode + vm->pc);
                         while (*(char *)(vm->bytecode + vm->pc++));
@@ -504,15 +570,20 @@ brd_vm_run(struct brd_vm *vm)
                         brd_value_map_set(&vm->globals, id, &value1);
                         brd_stack_push(&vm->stack, &value1);
                         break;
+                case BRD_VM_JMP:
+                        jmp = *(size_t *)(vm->bytecode + vm->pc);
+                        vm->pc += jmp;
+                        break;
                 case BRD_VM_RETURN:
                         go = false;
                         break;
-                case BRD_VM_CLEAR:
+                case BRD_VM_POP:
 #ifdef DEBUG
                         value1 = *brd_stack_pop(&vm->stack);
                         brd_value_debug(&value1);
+#else
+                        brd_stack_pop(&vm->stack);
 #endif
-                        vm->stack.sp = vm->stack.values;
                         break;
                 }
         }

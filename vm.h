@@ -46,8 +46,6 @@ void brd_value_map_destroy(struct brd_value_map *map);
 void brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val);
 struct brd_value *brd_value_map_get(struct brd_value_map *map, char *key);
 
-void brd_value_debug(struct brd_value *value);
-
 /* VM bytecode */
 /* Stack based virtual machine */
 
@@ -74,18 +72,18 @@ enum brd_bytecode {
         BRD_VM_EQ,
 
         /* boolean */
-        BRD_VM_AND,
-        BRD_VM_OR,
         BRD_VM_NOT,
+        BRD_VM_TEST, /* if peek() then pop(); pc++ */
+        BRD_VM_TESTN,/* if not peek() then pop(); pc++*/
+        /* these two instructions are ALWAYS to be followed by a JMP instruction */
 
         BRD_VM_SET_VAR, /* has arg: string */
 
-        //BRD_VM_JMP_IF, /* has arg: void * */
-        //BRD_VM_JMP_IFN,
+        BRD_VM_JMP, /* has arg: ptrdiff_t */
 
         /* this will do more when we have functions and classes */
         BRD_VM_RETURN,
-        BRD_VM_CLEAR, /* reset the stack */
+        BRD_VM_POP,
 };
 
 struct brd_stack {
@@ -102,6 +100,7 @@ struct brd_vm {
 
 void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
 struct brd_value *brd_stack_pop(struct brd_stack *stack);
+struct brd_value *brd_stack_peek(struct brd_stack *stack);
 
 void *brd_node_compile(struct brd_node *node);
 

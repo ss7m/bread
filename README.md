@@ -34,4 +34,5 @@ bread file.brd
 in implementing various parts of the interpreter, especially the virtual
 machine and garbage collector.
 
-The [Lua](https://www.lua.org/) programming language, for inspiration on syntax.
+The [Lua](https://www.lua.org/) programming language, for inspiration on syntax
+and in the virtual machine.

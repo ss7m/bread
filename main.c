@@ -12,7 +12,8 @@ main(void)
                 "set x = 10 * (set y \n = 2) \n x + y\n 10 - 2\n"
                 "17 + \"19.3\"\n"
                 "not \"\" \n"
-                "unit <= -1";
+                "unit <= -1 \n"
+                "unknown_var\n";
         struct brd_token_list list, copy;
         struct brd_node_program *program;
         void *bytecode;
