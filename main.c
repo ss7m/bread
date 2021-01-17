@@ -7,13 +7,7 @@
 int
 main(void)
 {
-        char *test_string = "3 + 10 * 10\n \"Hello, World!\" \n true or false \n"
-                "set x = \"woweeee\"\n"
-                "set x = 10 * (set y \n = 2) \n x + y\n 10 - 2\n"
-                "17 + \"19.3\"\n"
-                "not \"\" \n"
-                "unit <= -1 \n"
-                "unknown_var\n";
+        char *test_string = "\"Hello, \" .. 15 + 2 .. \" World!\"";
         struct brd_token_list list, copy;
         struct brd_node_program *program;
         void *bytecode;

@@ -262,6 +262,14 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         brd_token_list_add_token(list, BRD_TOK_EQ);
                         string++;
                         break;
+                case '.':
+                        if (string[1] == '.') {
+                                brd_token_list_add_token(list, BRD_TOK_CONCAT);
+                                string += 2;
+                        } else {
+                                BARF("We don't have a dot operator yet!");
+                        }
+                        break;
                 default:
                         BARF("Tokenizer broke on char <<%c>>\n", *string);
                 }

@@ -28,6 +28,7 @@ struct brd_value {
 };
 
 void brd_value_coerce_num(struct brd_value *value);
+int brd_value_coerce_string(struct brd_value *value);
 int brd_value_truthify(struct brd_value *value);
 int brd_value_compare(struct brd_value *a, struct brd_value *b);
 
@@ -71,6 +72,8 @@ enum brd_bytecode {
         BRD_VM_GEQ,
         BRD_VM_EQ,
 
+        BRD_VM_CONCAT,
+
         /* boolean */
         BRD_VM_NOT,
         BRD_VM_TEST, /* if peek() then pop(); pc++ */
@@ -91,8 +94,14 @@ struct brd_stack {
         struct brd_value *sp;
 };
 
+struct brd_heap {
+        struct brd_heap *next;
+        char *string;
+};
+
 struct brd_vm {
         struct brd_stack stack;
+        struct brd_heap *heap;
         void *bytecode;
         size_t pc;
         struct brd_value_map globals;
@@ -102,9 +111,12 @@ void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
 struct brd_value *brd_stack_pop(struct brd_stack *stack);
 struct brd_value *brd_stack_peek(struct brd_stack *stack);
 
+void brd_vm_allocate(struct brd_vm *vm, char *string);
+
 void *brd_node_compile(struct brd_node *node);
 
 void brd_vm_destroy(struct brd_vm *vm);
 void brd_vm_init(struct brd_vm *vm, void *bytecode);
+void brd_vm_allocate(struct brd_vm *vm, char *s);
 void brd_vm_run(struct brd_vm *vm);
 #endif

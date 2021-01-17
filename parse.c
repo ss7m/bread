@@ -93,7 +93,7 @@ brd_parse_expression(struct brd_token_list *tokens)
                 }
         default:
                 *tokens = copy;
-                return brd_parse_orexp(tokens);
+                return brd_parse_concatexp(tokens);
         }
 }
 
@@ -107,6 +107,34 @@ brd_parse_lvalue(struct brd_token_list *tokens)
         default:
                 *tokens = copy;
                 return NULL;
+        }
+}
+
+struct brd_node *
+brd_parse_concatexp(struct brd_token_list *tokens)
+{
+        struct brd_token_list copy;
+        struct brd_node *l, *r;
+
+        l = brd_parse_orexp(tokens);
+        if (l == NULL) {
+                return NULL;
+        }
+
+        /* these if (r == NULL) clauses might just be a failure state */
+        copy = *tokens;
+        switch (brd_token_list_pop_token(tokens)) {
+        case BRD_TOK_CONCAT:
+                r = brd_parse_concatexp(tokens);
+                if (r == NULL) {
+                        *tokens = copy;
+                        return l;
+                } else {
+                        return brd_node_binop_new(BRD_CONCAT, l, r);
+                }
+        default:
+                *tokens = copy;
+                return l;
         }
 }
 

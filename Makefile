@@ -4,7 +4,8 @@ LIBS=
 
 CFLAGS=-Wall -Wextra -std=c99 -fshort-enums \
 	   -Wdeclaration-after-statement -Wno-sign-compare \
-	   $(foreach p,$(LIBS),$(shell pkg-config --cflags --libs $(p)))
+	   $(foreach p,$(LIBS),$(shell pkg-config --cflags --libs $(p))) \
+	   -D_GNU_SOURCE
 
 SRCS=main.c ast.c vm.c token.c parse.c
 OBJS=$(SRCS:.c=.o)

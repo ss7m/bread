@@ -22,6 +22,8 @@ enum brd_token {
         BRD_TOK_MUL,
         BRD_TOK_DIV,
 
+        BRD_TOK_CONCAT,
+
         /* comp */
         BRD_TOK_LT,
         BRD_TOK_LEQ,

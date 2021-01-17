@@ -13,9 +13,13 @@ expression_stmt =
 
 expression =
     | set $lvalue = $expression
-    | $orexp
+    | $concatexp
 
 lvalue = $var
+
+concatexp =
+    | $orexp .. $concatexp
+    | $orexp
 
 orexp =
     | $andexp or $orexp

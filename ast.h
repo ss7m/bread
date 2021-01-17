@@ -55,6 +55,8 @@ enum brd_binop {
         /* boolean */
         BRD_AND,
         BRD_OR,
+
+        BRD_CONCAT,
 };
 
 struct brd_node_binop {

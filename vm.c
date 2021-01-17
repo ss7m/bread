@@ -66,7 +66,8 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_SET_VAR: printf("BRD_VM_SET_VAR\n"); break;
         case BRD_VM_JMP: printf("BRD_VM_JMP\n"); break;
         case BRD_VM_RETURN: printf("BRD_VM_RETURN\n"); break;
-        case BRD_VM_POP: printf("BRD_VM_CLEAR\n"); break;
+        case BRD_VM_POP: printf("BRD_VM_POP\n"); break;
+        case BRD_VM_CONCAT: printf("BRD_VM_CONCAT\n"); break;
         default: printf("oops\n");
         }
 }
@@ -89,6 +90,32 @@ brd_value_coerce_num(struct brd_value *value)
         }
 
         value->vtype = BRD_VAL_NUM;
+}
+
+int
+brd_value_coerce_string(struct brd_value *value)
+{
+        /* return true if string is malloced */
+        int malloced = false;
+        char *string;
+        switch (value->vtype) {
+        case BRD_VAL_NUM:
+                asprintf(&string, "%Lg", value->as.num);
+                malloced = true;
+                break;
+        case BRD_VAL_STRING:
+                string = value->as.string;
+                break;
+        case BRD_VAL_BOOL:
+                string = value->as.boolean ? "true" : "false";
+                break;
+        case BRD_VAL_UNIT:
+                string = "unit";
+                break;
+        }
+        value->vtype = BRD_VAL_STRING;
+        value->as.string = string;
+        return malloced;
 }
 
 int
@@ -246,6 +273,15 @@ brd_stack_peek(struct brd_stack *stack)
         return stack->sp - 1;
 }
 
+void
+brd_vm_allocate(struct brd_vm *vm, char *string)
+{
+        struct brd_heap *new = malloc(sizeof(*new));
+        new->next = vm->heap;
+        new->string = string;
+        vm->heap = new;
+}
+
 #define ADD_OP(x) do {\
         if(sizeof(enum brd_bytecode) + *length >= *capacity) {\
                 *capacity *= GROW;\
@@ -283,6 +319,8 @@ brd_stack_peek(struct brd_stack *stack)
         *length += len;\
 } while (0)
 
+#define RECURSE_ON(x) (_brd_node_compile((x), bytecode, length, capacity))
+
 #define AS(type, x) ((struct brd_node_ ## type *)(x))
 
 static void
@@ -314,7 +352,7 @@ _brd_node_compile(
 
         switch (node->ntype) {
         case BRD_NODE_ASSIGN: 
-                _brd_node_compile(AS(assign, node)->r, bytecode, length, capacity);
+                RECURSE_ON(AS(assign, node)->r);
                 brd_node_compile_lvalue(AS(assign, node)->l, bytecode, length, capacity);
                 break;
         case BRD_NODE_BINOP:
@@ -322,13 +360,14 @@ _brd_node_compile(
                 switch (AS(binop, node)->btype) {
                 case BRD_OR:
                 case BRD_AND: 
-                        _brd_node_compile(AS(binop, node)->l, bytecode, length, capacity);
-                        op = (AS(binop, node)->btype == BRD_AND) ? BRD_VM_TEST : BRD_VM_TESTN;
+                        RECURSE_ON(AS(binop, node)->l);
+                        op = (AS(binop, node)->btype == BRD_AND)
+                                ? BRD_VM_TEST : BRD_VM_TESTN;
                         ADD_OP(op);
                         ADD_OP(BRD_VM_JMP);
                         temp = *length;
                         MK_OFFSET;
-                        _brd_node_compile(AS(binop, node)->r, bytecode, length, capacity);
+                        RECURSE_ON(AS(binop, node)->r);
                         jmp = *length - temp;
                         *(size_t *)(*bytecode + temp) = jmp;
                         break;
@@ -336,19 +375,20 @@ _brd_node_compile(
                 case BRD_MINUS: op = BRD_VM_MINUS; goto mkbinop;
                 case BRD_MUL: op = BRD_VM_MUL; goto mkbinop;
                 case BRD_DIV: op = BRD_VM_DIV; goto mkbinop;
+                case BRD_CONCAT: op = BRD_VM_CONCAT; goto mkbinop;
                 case BRD_LT: op = BRD_VM_LT; goto mkbinop;
                 case BRD_LEQ: op = BRD_VM_LEQ; goto mkbinop;
                 case BRD_GT: op = BRD_VM_GT; goto mkbinop;
                 case BRD_GEQ: op = BRD_VM_GEQ; goto mkbinop;
                 case BRD_EQ: op = BRD_VM_EQ; goto mkbinop;
 mkbinop:
-                        _brd_node_compile(AS(binop, node)->l, bytecode, length, capacity);
-                        _brd_node_compile(AS(binop, node)->r, bytecode, length, capacity);
+                        RECURSE_ON(AS(binop, node)->l);
+                        RECURSE_ON(AS(binop, node)->r);
                         ADD_OP(op);
                 }
                 break;
         case BRD_NODE_UNARY:
-                _brd_node_compile(AS(unary, node)->u, bytecode, length, capacity);
+                RECURSE_ON(AS(unary, node)->u);
                 switch (AS(unary, node)->utype) {
                 case BRD_NEGATE: ADD_OP(BRD_VM_NEGATE); break;
                 case BRD_NOT: ADD_OP(BRD_VM_NOT); break;
@@ -374,12 +414,7 @@ mkbinop:
                 break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
-                        _brd_node_compile(
-                                AS(program, node)->stmts[i],
-                                bytecode,
-                                length,
-                                capacity
-                        );
+                        RECURSE_ON(AS(program, node)->stmts[i]);
                         ADD_OP(BRD_VM_POP);
                 }
                 ADD_OP(BRD_VM_RETURN);
@@ -392,6 +427,7 @@ mkbinop:
 #undef ADD_OP
 #undef ADD_NUM
 #undef ADD_STR
+#undef RECURSE_ON
 #undef AS
 
 void *
@@ -408,6 +444,13 @@ brd_node_compile(struct brd_node *node)
 void
 brd_vm_destroy(struct brd_vm *vm)
 {
+        struct brd_heap *heap = vm->heap;
+        while (heap != NULL) {
+                struct brd_heap *n = heap->next;
+                free(heap->string);
+                free(heap);
+                heap = n;
+        }
         brd_value_map_destroy(&vm->globals);
         free(vm->bytecode);
 }
@@ -415,6 +458,7 @@ brd_vm_destroy(struct brd_vm *vm)
 void
 brd_vm_init(struct brd_vm *vm, void *bytecode)
 {
+        vm->heap = NULL;
         brd_value_map_init(&vm->globals);
         vm->bytecode = bytecode;
         vm->pc = 0;
@@ -503,6 +547,30 @@ brd_vm_run(struct brd_vm *vm)
                         brd_value_coerce_num(&value2);
                         value2.as.num /= value1.as.num;
                         brd_stack_push(&vm->stack, &value2);
+                        break;
+                case BRD_VM_CONCAT:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        if (brd_value_coerce_string(&value1)) {
+                                brd_vm_allocate(vm, value1.as.string);
+                        }
+                        if (brd_value_coerce_string(&value2)) {
+                                brd_vm_allocate(vm, value2.as.string);
+                        }
+
+                        {
+                                size_t len1, len2;
+                                char *string;
+                                len1 = strlen(value1.as.string);
+                                len2 = strlen(value2.as.string);
+                                string = malloc(len1 + len2 + 2);
+                                brd_vm_allocate(vm, string);
+                                strcpy(string, value2.as.string);
+                                strcat(string, value1.as.string);
+                                value2.as.string = string;
+                                value2.vtype = BRD_VAL_STRING;
+                                brd_stack_push(&vm->stack, &value2);
+                        }
                         break;
                 case BRD_VM_LT:
                         value1 = *brd_stack_pop(&vm->stack);
