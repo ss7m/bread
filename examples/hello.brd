@@ -1,7 +1,8 @@
-set x = "sam-barr"
+@write("Please enter your name: ")
+set my_name = @readln()
 
 @writeln(
     "Hello, ",
-    x,
-    "!"
+    my_name,
+    "!",
 )

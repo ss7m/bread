@@ -477,9 +477,11 @@ brd_vm_init(struct brd_vm *vm, void *bytecode)
         vm->stack.sp = vm->stack.values;
 }
 
-static void brd_run_builtin(char *builtin, struct brd_value *args, size_t nargs, struct brd_value *ret)
+static int
+brd_run_builtin(char *builtin, struct brd_value *args, size_t nargs, struct brd_value *ret)
 {
-        if (strcmp(builtin, "writeln") == 0) {
+        if (strcmp(builtin, "writeln") == 0 || strcmp(builtin, "write") == 0) {
+                ret->vtype = BRD_VAL_UNIT;
                 for (int i = 0; i < nargs; i++) {
                         int malloced = brd_value_coerce_string(&args[i]);
                         printf("%s", args[i].as.string);
@@ -487,10 +489,54 @@ static void brd_run_builtin(char *builtin, struct brd_value *args, size_t nargs,
                                 free(args[i].as.string);
                         }
                 }
-                printf("\n");
-                ret->vtype = BRD_VAL_UNIT;
+                if (builtin[5] == 'l') {
+                        printf("\n");
+                }
+                return false;
+        } else if (strcmp(builtin, "readln") == 0) {
+                char *input = NULL;
+                size_t n = 0;
+                ret->vtype = BRD_VAL_STRING;
+                if (nargs > 0) {
+                        BARF("readln accepts no arguments");
+                }
+                n = getline(&input, &n, stdin);
+                input[n - 1] = '\0';
+                ret->as.string = input;
+                return true;
+        } else if (strcmp(builtin, "length") == 0) {
+                ret->vtype = BRD_VAL_NUM;
+                if (nargs != 1) {
+                        BARF("length accepts exactly 1 argument");
+                } else if (args[0].vtype == BRD_VAL_STRING) {
+                        ret->as.num = strlen(args[0].as.string);
+                } else {
+                        ret->as.num = 0;
+                }
+                return false;
+        } else if (strcmp(builtin, "typeof") == 0) {
+                ret->vtype = BRD_VAL_STRING;
+                if (nargs != 1) {
+                        BARF("typeof accepts exactly 1 argument");
+                }
+                switch (args[0].vtype) {
+                case BRD_VAL_NUM:
+                        ret->as.string = "number";
+                        break;
+                case BRD_VAL_STRING:
+                        ret->as.string = "string";
+                        break;
+                case BRD_VAL_BOOL:
+                        ret->as.string = "boolean";
+                        break;
+                case BRD_VAL_UNIT:
+                        ret->as.string = "unit";
+                        break;
+                }
+                return false;
         } else {
                 BARF("Unknown builtin: %s", builtin);
+                return false;
         }
 }
 
@@ -679,7 +725,9 @@ brd_vm_run(struct brd_vm *vm)
                         for (int i = 0; i < nargs; i++) {
                                 brd_stack_pop(&vm->stack);
                         }
-                        brd_run_builtin(id, vm->stack.values, nargs, &value1);
+                        if (brd_run_builtin(id, vm->stack.values, nargs, &value1)) {
+                                brd_vm_allocate(vm, value1.as.string);
+                        }
                         brd_stack_push(&vm->stack, &value1);
                         break;
                 case BRD_VM_RETURN:
