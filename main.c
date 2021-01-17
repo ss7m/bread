@@ -21,7 +21,7 @@ main(int argc, char **argv)
                 BARF("Enter exactly 1 argument");
         }
 
-        file = fopen(argv[1], "r");
+        file = fopen(argv[1], "rb");
         if (file == NULL) {
                 BARF("File %s doesn't exist", argv[1]);
         }
@@ -29,7 +29,7 @@ main(int argc, char **argv)
         file_length = ftell(file);
         fseek(file, 0, SEEK_SET);
         code = malloc(file_length + 1);
-        fgets(code, file_length, file);
+        code[fread(code, sizeof(char), file_length, file)] = '\0';
         fclose(file);
 
         brd_token_list_init(&list);

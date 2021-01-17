@@ -1,1 +1,7 @@
-@writeln("Hello, World!")
+set x = "sam-barr"
+
+@writeln(
+    "Hello, ",
+    x,
+    "!"
+)

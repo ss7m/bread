@@ -24,6 +24,7 @@ hash(char *str)
 static void
 brd_value_debug(struct brd_value *value)
 {
+        printf(" ======== ");
         switch (value->vtype) {
         case BRD_VAL_NUM:
                 printf("%Lf\n", value->as.num);
@@ -43,6 +44,7 @@ brd_value_debug(struct brd_value *value)
 static void
 brd_bytecode_debug(enum brd_bytecode op)
 {
+        printf(" -------- ");
         switch (op) {
         case BRD_VM_NUM: printf("BRD_VM_NUM\n"); break;
         case BRD_VM_STR: printf("BRD_VM_STR\n"); break;
