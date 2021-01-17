@@ -153,6 +153,16 @@ brd_parse_string_literal(char **string, char *out)
         (*string)++; /* last char is " */
 }
 
+static void
+brd_parse_identifier(char **string, char *out)
+{
+        char *p = out;
+        while (is_id_char((*string)[0])) {
+                *(p++) = *((*string)++);
+        }
+        *p = '\0';
+}
+
 void
 brd_token_list_tokenize(struct brd_token_list *list, char *string)
 {
@@ -177,11 +187,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                 }
 
                 if (isalpha(string[0]) || string[0] == '_') {
-                        char *p = buffer;
-                        while (is_id_char(string[0])) {
-                                *(p++) = *(string++);
-                        }
-                        *p = '\0';
+                        brd_parse_identifier(&string, buffer);
 
                         if (strcmp(buffer, "true") == 0) {
                                 brd_token_list_add_token(list, BRD_TOK_TRUE);
@@ -269,6 +275,16 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         } else {
                                 BARF("We don't have a dot operator yet!");
                         }
+                        break;
+                case '@':
+                        string++;
+                        brd_parse_identifier(&string, buffer);
+                        brd_token_list_add_token(list, BRD_TOK_BUILTIN);
+                        brd_token_list_add_string(list, buffer);
+                        break;
+                case ',':
+                        brd_token_list_add_token(list, BRD_TOK_COMMA);
+                        string++;
                         break;
                 default:
                         BARF("Tokenizer broke on char <<%c>>\n", *string);

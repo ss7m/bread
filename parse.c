@@ -390,8 +390,54 @@ brd_parse_base(struct brd_token_list *tokens)
                 return brd_node_bool_lit_new(true);
         case BRD_TOK_FALSE:
                 return brd_node_bool_lit_new(false);
+        case BRD_TOK_BUILTIN:
+                return brd_parse_builtin(tokens);
+                break;
         default:
                 *tokens = copy;
                 return NULL;
         }
+}
+
+struct brd_node *
+brd_parse_builtin(struct brd_token_list *tokens)
+{
+        /* the @ token has already been popped */
+        /* I'm going to allow trailing commas */
+        char *builtin = brd_token_list_pop_string(tokens);
+        size_t length = 0, capacity = LIST_SIZE;
+        struct brd_node **args = malloc(sizeof(struct brd_node *) * capacity);
+        struct brd_node *node;
+        int skip_copy = skip_newlines, go = true;
+
+        skip_newlines = true;
+
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_LPAREN) {
+                BARF("A builtin function must be called");
+        }
+
+        while (go) {
+                node = brd_parse_expression(tokens);
+                if (node != NULL) {
+                        if (length == capacity) {
+                                capacity *= GROW;
+                                args = realloc(args, sizeof(struct brd_node *) * capacity);
+                        }
+                        args[length] = node;
+                        length++;
+                }
+
+                switch (brd_token_list_pop_token(tokens)) {
+                case BRD_TOK_COMMA:
+                        continue;
+                case BRD_TOK_RPAREN:
+                        go = false;
+                        break;
+                default:
+                        BARF("you done goofed");
+                }
+        }
+
+        skip_newlines = skip_copy;
+        return (struct brd_node *)brd_node_builtin_new(builtin, args, length);
 }

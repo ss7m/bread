@@ -7,7 +7,7 @@
 int
 main(void)
 {
-        char *test_string = "\"Hello, \" .. 15 + 2 .. \" World!\"";
+        char *test_string = "@writeln(\"Hello\" \n, \", World!\", )";
         struct brd_token_list list, copy;
         struct brd_node_program *program;
         void *bytecode;

@@ -60,3 +60,6 @@ base =
     | true
     | false
     | unit
+    | @builtin ( $arglist )
+    | begin $nl ($expression $nl)* end
+    | begin $expression end

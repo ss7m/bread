@@ -6,11 +6,9 @@
 # In those situations, different tokens can terminate a statement
 # such as else, elif, and end.
 
-set x = 1
-
-while x <= 100 do
+for x = 1, 100, 1 do
     set three = x % 3 = 0
-    set five = x % 5 = 0
+    set five  = x % 5 = 0
 
     if three or five then
         @writeln(

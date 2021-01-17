@@ -81,8 +81,8 @@ enum brd_bytecode {
         /* these two instructions are ALWAYS to be followed by a JMP instruction */
 
         BRD_VM_SET_VAR, /* has arg: string */
-
-        BRD_VM_JMP, /* has arg: ptrdiff_t */
+        BRD_VM_BUILTIN, /* has args: string, size_t */
+        BRD_VM_JMP, /* has arg: size_t */
 
         /* this will do more when we have functions and classes */
         BRD_VM_RETURN,

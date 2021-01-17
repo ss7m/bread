@@ -68,6 +68,7 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_RETURN: printf("BRD_VM_RETURN\n"); break;
         case BRD_VM_POP: printf("BRD_VM_POP\n"); break;
         case BRD_VM_CONCAT: printf("BRD_VM_CONCAT\n"); break;
+        case BRD_VM_BUILTIN: printf("BRD_VM_BUILTIN\n"); break;
         default: printf("oops\n");
         }
 }
@@ -97,10 +98,11 @@ brd_value_coerce_string(struct brd_value *value)
 {
         /* return true if string is malloced */
         int malloced = false;
-        char *string;
+        char *string = "";
         switch (value->vtype) {
         case BRD_VAL_NUM:
-                asprintf(&string, "%Lg", value->as.num);
+                string = malloc(sizeof(char) * 75); /* that's enough, right? */
+                sprintf(string, "%Lg", value->as.num);
                 malloced = true;
                 break;
         case BRD_VAL_STRING:
@@ -291,12 +293,12 @@ brd_vm_allocate(struct brd_vm *vm, char *string)
         *length += sizeof(enum brd_bytecode);\
 } while (0)
 
-#define MK_OFFSET do {\
+#define ADD_SIZET(x) do {\
         if(sizeof(size_t) + *length >= *capacity) {\
                 *capacity *= GROW;\
                 *bytecode = realloc(*bytecode, *capacity);\
         }\
-        *(size_t *)(*bytecode + *length) = 0;\
+        *(size_t *)(*bytecode + *length) = (x);\
         *length += sizeof(size_t);\
 } while (0)
 
@@ -366,7 +368,7 @@ _brd_node_compile(
                         ADD_OP(op);
                         ADD_OP(BRD_VM_JMP);
                         temp = *length;
-                        MK_OFFSET;
+                        ADD_SIZET(0);
                         RECURSE_ON(AS(binop, node)->r);
                         jmp = *length - temp;
                         *(size_t *)(*bytecode + temp) = jmp;
@@ -411,6 +413,14 @@ mkbinop:
                 break;
         case BRD_NODE_UNIT_LIT:
                 ADD_OP(BRD_VM_UNIT);
+                break;
+        case BRD_NODE_BUILTIN:
+                for (int i = 0; i < AS(builtin, node)->num_args; i++) {
+                        RECURSE_ON(AS(builtin, node)->args[i]);
+                }
+                ADD_OP(BRD_VM_BUILTIN);
+                ADD_STR(AS(builtin, node)->builtin);
+                ADD_SIZET(AS(builtin, node)->num_args);
                 break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
@@ -465,6 +475,23 @@ brd_vm_init(struct brd_vm *vm, void *bytecode)
         vm->stack.sp = vm->stack.values;
 }
 
+static void brd_run_builtin(char *builtin, struct brd_value *args, size_t nargs, struct brd_value *ret)
+{
+        if (strcmp(builtin, "writeln") == 0) {
+                for (int i = 0; i < nargs; i++) {
+                        int malloced = brd_value_coerce_string(&args[i]);
+                        printf("%s", args[i].as.string);
+                        if (malloced) {
+                                free(args[i].as.string);
+                        }
+                }
+                printf("\n");
+                ret->vtype = BRD_VAL_UNIT;
+        } else {
+                BARF("Unknown builtin: %s", builtin);
+        }
+}
+
 void
 brd_vm_run(struct brd_vm *vm)
 {
@@ -472,7 +499,7 @@ brd_vm_run(struct brd_vm *vm)
         struct brd_value value1, value2;
         char *id;
         int go = true;
-        ptrdiff_t jmp;
+        size_t jmp, nargs;
 
         while (go) {
                 op = *(enum brd_bytecode *)(vm->bytecode + vm->pc);
@@ -622,13 +649,13 @@ brd_vm_run(struct brd_vm *vm)
                 case BRD_VM_TEST:
                         if (brd_value_truthify(brd_stack_peek(&vm->stack))) {
                                 brd_stack_pop(&vm->stack);
-                                vm->pc += sizeof(enum brd_bytecode) + sizeof(ptrdiff_t);
+                                vm->pc += sizeof(enum brd_bytecode) + sizeof(size_t);
                         }
                         break;
                 case BRD_VM_TESTN:
                         if (!brd_value_truthify(brd_stack_peek(&vm->stack))) {
                                 brd_stack_pop(&vm->stack);
-                                vm->pc += sizeof(enum brd_bytecode) + sizeof(ptrdiff_t);
+                                vm->pc += sizeof(enum brd_bytecode) + sizeof(size_t);
                         }
                         break;
                 case BRD_VM_SET_VAR:
@@ -641,6 +668,17 @@ brd_vm_run(struct brd_vm *vm)
                 case BRD_VM_JMP:
                         jmp = *(size_t *)(vm->bytecode + vm->pc);
                         vm->pc += jmp;
+                        break;
+                case BRD_VM_BUILTIN:
+                        id = (char *)(vm->bytecode + vm->pc);
+                        while (*(char *)(vm->bytecode + vm->pc++));
+                        nargs = *(size_t *)(vm->bytecode + vm->pc);
+                        vm->pc += sizeof(size_t);
+                        for (int i = 0; i < nargs; i++) {
+                                brd_stack_pop(&vm->stack);
+                        }
+                        brd_run_builtin(id, vm->stack.values, nargs, &value1);
+                        brd_stack_push(&vm->stack, &value1);
                         break;
                 case BRD_VM_RETURN:
                         go = false;

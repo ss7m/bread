@@ -37,6 +37,9 @@ enum brd_token {
         BRD_TOK_OR,
         BRD_TOK_NOT,
 
+        BRD_TOK_BUILTIN,
+        BRD_TOK_COMMA,
+
         /* keywords */
         BRD_TOK_SET,
 };

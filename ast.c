@@ -31,6 +31,8 @@ brd_node_type_sizeof(enum brd_node_type t)
                 return sizeof(struct brd_node_bool_lit);
         case BRD_NODE_UNIT_LIT:
                 return sizeof(struct brd_node_unit_lit);
+        case BRD_NODE_BUILTIN:
+                return sizeof(struct brd_node_builtin);
         case BRD_NODE_PROGRAM:
                 return sizeof(struct brd_node_program);
         case BRD_NODE_MAX:
@@ -184,6 +186,30 @@ brd_node_unit_lit_new()
         struct brd_node_unit_lit *n = malloc(sizeof(*n));
         n->_node.ntype = BRD_NODE_UNIT_LIT;
         n->_node.destroy = _brd_node_destroy;
+        return (struct brd_node *)n;
+}
+
+static void
+brd_node_builtin_destroy(struct brd_node *n)
+{
+        struct brd_node_builtin *b = (struct brd_node_builtin *)n;
+        for (int i = 0; i < b->num_args; i++) {
+                brd_node_destroy(b->args[i]);
+        }
+        free(b->args);
+        free(b->builtin);
+        _brd_node_destroy(n);
+}
+
+struct brd_node *
+brd_node_builtin_new(char *builtin, struct brd_node **args, size_t num_args)
+{
+        struct brd_node_builtin *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_BUILTIN;
+        n->_node.destroy = brd_node_builtin_destroy;
+        n->builtin = strdup(builtin);
+        n->args = args;
+        n->num_args = num_args;
         return (struct brd_node *)n;
 }
 
