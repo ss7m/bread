@@ -15,6 +15,7 @@ enum brd_node_type {
         BRD_NODE_BOOL_LIT,
         BRD_NODE_UNIT_LIT,
         BRD_NODE_BUILTIN,
+        BRD_NODE_BODY,
 
         BRD_NODE_PROGRAM, /* the top level program */
         BRD_NODE_MAX,
@@ -108,6 +109,12 @@ struct brd_node_builtin {
         size_t num_args;
 };
 
+struct brd_node_body {
+        struct brd_node _node;
+        struct brd_node **stmts;
+        size_t num_stmts;
+};
+
 size_t brd_node_type_sizeof(enum brd_node_type t);
 #define brd_node_sizeof(n) brd_node_type_sizeof(((struct brd_node *)n)->ntype)
 
@@ -121,6 +128,7 @@ struct brd_node *brd_node_string_lit_new(char *s);
 struct brd_node *brd_node_bool_lit_new(int b);
 struct brd_node *brd_node_unit_lit_new();
 struct brd_node *brd_node_builtin_new();
+struct brd_node *brd_node_body_new();
 
 #define brd_node_destroy(n) (((struct brd_node *)n)->destroy((struct brd_node *)n))
 

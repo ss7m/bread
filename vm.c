@@ -424,6 +424,14 @@ mkbinop:
                 ADD_STR(AS(builtin, node)->builtin);
                 ADD_SIZET(AS(builtin, node)->num_args);
                 break;
+        case BRD_NODE_BODY:
+                for (int i = 0; i < AS(body, node)->num_stmts; i++) {
+                        RECURSE_ON(AS(body, node)->stmts[i]);
+                        if (i < AS(body, node)->num_stmts - 1) {
+                                ADD_OP(BRD_VM_POP);
+                        }
+                }
+                break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
                         RECURSE_ON(AS(program, node)->stmts[i]);
@@ -723,9 +731,9 @@ brd_vm_run(struct brd_vm *vm)
                         nargs = *(size_t *)(vm->bytecode + vm->pc);
                         vm->pc += sizeof(size_t);
                         for (int i = 0; i < nargs; i++) {
-                                brd_stack_pop(&vm->stack);
+                                vm->stack.sp--;
                         }
-                        if (brd_run_builtin(id, vm->stack.values, nargs, &value1)) {
+                        if (brd_run_builtin(id, vm->stack.sp, nargs, &value1)) {
                                 brd_vm_allocate(vm, value1.as.string);
                         }
                         brd_stack_push(&vm->stack, &value1);

@@ -40,6 +40,9 @@ enum brd_token {
         BRD_TOK_BUILTIN,
         BRD_TOK_COMMA,
 
+        BRD_TOK_BEGIN,
+        BRD_TOK_END,
+
         /* keywords */
         BRD_TOK_SET,
 };

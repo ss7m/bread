@@ -374,8 +374,6 @@ brd_parse_base(struct brd_token_list *tokens)
                         return node;
                 } else {
                         BARF("You're missing a right paren there m8");
-                        *tokens = copy;
-                        skip_newlines = skip_copy;
                         return NULL;
                 }
         case BRD_TOK_VAR:
@@ -392,6 +390,18 @@ brd_parse_base(struct brd_token_list *tokens)
                 return brd_node_bool_lit_new(false);
         case BRD_TOK_BUILTIN:
                 return brd_parse_builtin(tokens);
+                break;
+        case BRD_TOK_BEGIN:
+                node = brd_parse_body(tokens);
+                if (node == NULL) {
+                        *tokens = copy;
+                        return NULL;
+                } else if (brd_token_list_pop_token(tokens) == BRD_TOK_END) {
+                        return node;
+                } else {
+                        BARF("begin must be followed by end");
+                        return NULL;
+                }
                 break;
         default:
                 *tokens = copy;
@@ -440,4 +450,79 @@ brd_parse_builtin(struct brd_token_list *tokens)
 
         skip_newlines = skip_copy;
         return (struct brd_node *)brd_node_builtin_new(builtin, args, length);
+}
+
+struct brd_node *
+brd_parse_body(struct brd_token_list *tokens)
+{
+        size_t length = 0, capacity = LIST_SIZE;
+        struct brd_node **stmts;
+        struct brd_node *node;
+        struct brd_token_list copy = *tokens;
+        int skip_copy = skip_newlines;
+
+        skip_newlines = false;
+
+        /* if the next token isn't a newline, then  the body
+         * is an inline single expression */
+        if (brd_token_list_peek(tokens) != BRD_TOK_NEWLINE) {
+                node = brd_parse_expression(tokens);
+                skip_newlines = skip_copy;
+                return node;
+        } else {
+                while (brd_token_list_peek(tokens) == BRD_TOK_NEWLINE) {
+                        brd_token_list_pop_token(tokens);
+                }
+        }
+
+        stmts = malloc(sizeof(struct brd_node *) * capacity);
+        while ((node = brd_parse_body_stmt(tokens)) != NULL) {
+                if (length == capacity){
+                        capacity *= GROW;
+                        stmts = realloc(stmts, sizeof(struct brd_node *) * capacity);
+                }
+                stmts[length] = node;
+                length++;
+        }
+
+        skip_newlines = skip_copy;
+
+        /* body must have at leat 1 statement */
+        if (length >= 1) {
+                return brd_node_body_new(stmts, length);
+        } else {
+                *tokens = copy;
+                return NULL;
+        }
+}
+
+/* skip_newlines should be false when this is called */
+struct brd_node *
+brd_parse_body_stmt(struct brd_token_list *tokens)
+{
+        struct brd_token_list copy = *tokens;
+        struct brd_node *node;
+        int found_term;
+
+        node = brd_parse_expression(tokens);
+        if (node == NULL) {
+                return NULL;
+        }
+
+        found_term = false;
+        for (;;) {
+                switch (brd_token_list_peek(tokens)) {
+                case BRD_TOK_NEWLINE:
+                        brd_token_list_pop_token(tokens);
+                        found_term = true;
+                        break;
+                default:
+                        if (found_term) {
+                                return node;
+                        } else {
+                                *tokens = copy;
+                                return NULL;
+                        }
+                }
+        }
 }

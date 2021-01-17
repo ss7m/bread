@@ -61,5 +61,12 @@ base =
     | false
     | unit
     | @builtin ( $arglist )
-    | begin $nl ($expression $nl)* end
-    | begin $expression end
+    | $ifexpr
+    | begin $body end
+
+ifexpr =
+    | if $expression then $body (elif $body)* (else $body) end
+
+body =
+    | $expression
+    | $nl+ ($expression $nl+)+

@@ -14,5 +14,7 @@ struct brd_node *brd_parse_mulexp(struct brd_token_list *tokens);
 struct brd_node *brd_parse_prefix(struct brd_token_list *tokens);
 struct brd_node *brd_parse_base(struct brd_token_list *tokens);
 struct brd_node *brd_parse_builtin(struct brd_token_list *tokens);
+struct brd_node *brd_parse_body(struct brd_token_list *tokens);
+struct brd_node *brd_parse_body_stmt(struct brd_token_list *tokens);
 
 #endif
