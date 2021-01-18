@@ -730,9 +730,7 @@ brd_vm_run(struct brd_vm *vm)
                         while (*(char *)(vm->bytecode + vm->pc++));
                         nargs = *(size_t *)(vm->bytecode + vm->pc);
                         vm->pc += sizeof(size_t);
-                        for (int i = 0; i < nargs; i++) {
-                                vm->stack.sp--;
-                        }
+                        vm->stack.sp -= nargs;
                         if (brd_run_builtin(id, vm->stack.sp, nargs, &value1)) {
                                 brd_vm_allocate(vm, value1.as.string);
                         }

@@ -16,6 +16,11 @@ brd_parse_program(struct brd_token_list *tokens)
         struct brd_node *node;
 
         skip_newlines = false;
+
+        while(brd_token_list_peek(tokens) == BRD_TOK_NEWLINE) {
+                brd_token_list_pop_token(tokens);
+        }
+
         while ((node = brd_parse_expression_stmt(tokens)) != NULL) {
                 if (length == capacity) {
                         capacity *= GROW;
