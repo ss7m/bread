@@ -118,7 +118,6 @@ brd_parse_lvalue(struct brd_token_list *tokens)
 struct brd_node *
 brd_parse_concatexp(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy;
         struct brd_node *l, *r;
 
         l = brd_parse_orexp(tokens);
@@ -126,27 +125,26 @@ brd_parse_concatexp(struct brd_token_list *tokens)
                 return NULL;
         }
 
-        /* these if (r == NULL) clauses might just be a failure state */
-        copy = *tokens;
-        switch (brd_token_list_pop_token(tokens)) {
-        case BRD_TOK_CONCAT:
-                r = brd_parse_concatexp(tokens);
-                if (r == NULL) {
-                        *tokens = copy;
+        for (;;) {
+                switch (brd_token_list_peek(tokens)) {
+                case BRD_TOK_CONCAT:
+                        brd_token_list_pop_token(tokens);
+                        r = brd_parse_orexp(tokens);
+                        if (r == NULL) {
+                                BARF("Bad concat expression");
+                        } else {
+                                l = brd_node_binop_new(BRD_CONCAT, l, r);
+                        }
+                        break;
+                default:
                         return l;
-                } else {
-                        return brd_node_binop_new(BRD_CONCAT, l, r);
                 }
-        default:
-                *tokens = copy;
-                return l;
         }
 }
 
 struct brd_node *
 brd_parse_orexp(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy;
         struct brd_node *l, *r;
 
         l = brd_parse_andexp(tokens);
@@ -154,19 +152,17 @@ brd_parse_orexp(struct brd_token_list *tokens)
                 return NULL;
         }
 
-        /* these if (r == NULL) clauses might just be a failure state */
-        copy = *tokens;
-        switch (brd_token_list_pop_token(tokens)) {
+        switch (brd_token_list_peek(tokens)) {
         case BRD_TOK_OR:
                 r = brd_parse_orexp(tokens);
                 if (r == NULL) {
-                        *tokens = copy;
-                        return l;
+                        BARF("Bad or expression");
+                        return NULL;
                 } else {
+                        brd_token_list_pop_token(tokens);
                         return brd_node_binop_new(BRD_OR, l, r);
                 }
         default:
-                *tokens = copy;
                 return l;
         }
 }
@@ -174,7 +170,6 @@ brd_parse_orexp(struct brd_token_list *tokens)
 struct brd_node *
 brd_parse_andexp(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy;
         struct brd_node *l, *r;
 
         l = brd_parse_compexp(tokens);
@@ -182,19 +177,17 @@ brd_parse_andexp(struct brd_token_list *tokens)
                 return NULL;
         }
 
-        /* these if (r == NULL) clauses might just be a failure state */
-        copy = *tokens;
-        switch (brd_token_list_pop_token(tokens)) {
+        switch (brd_token_list_peek(tokens)) {
         case BRD_TOK_AND:
                 r = brd_parse_andexp(tokens);
                 if (r == NULL) {
-                        *tokens = copy;
-                        return l;
+                        BARF("Bad and expression");
+                        return NULL;
                 } else {
+                        brd_token_list_pop_token(tokens);
                         return brd_node_binop_new(BRD_AND, l, r);
                 }
         default:
-                *tokens = copy;
                 return l;
         }
 }
@@ -202,66 +195,51 @@ brd_parse_andexp(struct brd_token_list *tokens)
 struct brd_node *
 brd_parse_compexp(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy;
         struct brd_node *l, *r;
+        enum brd_binop binop;
 
         l = brd_parse_addexp(tokens);
         if (l == NULL) {
                 return NULL;
         }
 
-        copy = *tokens;
-        switch (brd_token_list_pop_token(tokens)) {
+        switch (brd_token_list_peek(tokens)) {
         case BRD_TOK_LT:
-                r = brd_parse_addexp(tokens);
-                if (r == NULL) {
-                        *tokens = copy;
-                        return l;
-                } else {
-                        return brd_node_binop_new(BRD_LT, l, r);
-                }
+                brd_token_list_pop_token(tokens);
+                binop = BRD_LT;
+                break;
         case BRD_TOK_LEQ:
-                r = brd_parse_addexp(tokens);
-                if (r == NULL) {
-                        *tokens = copy;
-                        return l;
-                } else {
-                        return brd_node_binop_new(BRD_LEQ, l, r);
-                }
+                brd_token_list_pop_token(tokens);
+                binop = BRD_LEQ;
+                break;
         case BRD_TOK_EQ:
-                r = brd_parse_addexp(tokens);
-                if (r == NULL) {
-                        *tokens = copy;
-                        return l;
-                } else {
-                        return brd_node_binop_new(BRD_EQ, l, r);
-                }
+                brd_token_list_pop_token(tokens);
+                binop = BRD_EQ;
+                break;
         case BRD_TOK_GT:
-                r = brd_parse_addexp(tokens);
-                if (r == NULL) {
-                        *tokens = copy;
-                        return l;
-                } else {
-                        return brd_node_binop_new(BRD_GT, l, r);
-                }
+                brd_token_list_pop_token(tokens);
+                binop = BRD_GT;
+                break;
         case BRD_TOK_GEQ:
-                r = brd_parse_addexp(tokens);
-                if (r == NULL) {
-                        *tokens = copy;
-                        return l;
-                } else {
-                        return brd_node_binop_new(BRD_GEQ, l, r);
-                }
+                brd_token_list_pop_token(tokens);
+                binop = BRD_GEQ;
+                break;
         default:
-                *tokens = copy;
                 return l;
+        }
+        
+        r = brd_parse_addexp(tokens);
+        if (r == NULL) {
+                BARF("Bad comparison expression");
+                return NULL;
+        } else {
+                return brd_node_binop_new(binop, l, r);
         }
 }
 
 struct brd_node *
 brd_parse_addexp(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy;
         struct brd_node *l, *r;
 
         l = brd_parse_mulexp(tokens);
@@ -269,35 +247,33 @@ brd_parse_addexp(struct brd_token_list *tokens)
                 return NULL;
         }
 
-        /* these if (r == NULL) clauses might just be a failure state */
-        copy = *tokens;
-        switch (brd_token_list_pop_token(tokens)) {
-        case BRD_TOK_PLUS:
-                r = brd_parse_addexp(tokens);
-                if (r == NULL) {
-                        *tokens = copy;
+        for (;;) {
+                enum brd_binop binop;
+                switch (brd_token_list_peek(tokens)) {
+                case BRD_TOK_PLUS:
+                        binop = BRD_PLUS;
+                        brd_token_list_pop_token(tokens);
+                        break;
+                case BRD_TOK_MINUS:
+                        binop = BRD_MINUS;
+                        brd_token_list_pop_token(tokens);
+                        break;
+                default:
                         return l;
-                } else {
-                        return brd_node_binop_new(BRD_PLUS, l, r);
                 }
-        case BRD_TOK_MINUS:
-                r = brd_parse_addexp(tokens);
+
+                r = brd_parse_mulexp(tokens);
                 if (r == NULL) {
-                        *tokens = copy;
-                        return l;
+                        BARF("Bad addition expression");
                 } else {
-                        return brd_node_binop_new(BRD_MINUS, l, r);
+                        l = brd_node_binop_new(binop, l, r);
                 }
-        default:
-                *tokens = copy;
-                return l;
         }
 }
 
 struct brd_node *
 brd_parse_mulexp(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy;
         struct brd_node *l, *r;
 
         l = brd_parse_prefix(tokens);
@@ -305,28 +281,27 @@ brd_parse_mulexp(struct brd_token_list *tokens)
                 return NULL;
         }
 
-        /* these if (r == NULL) clauses might just be a failure state */
-        copy = *tokens;
-        switch (brd_token_list_pop_token(tokens)) {
-        case BRD_TOK_MUL:
-                r = brd_parse_mulexp(tokens);
-                if (r == NULL) {
-                        *tokens = copy;
+        for (;;) {
+                enum brd_binop binop;
+                switch (brd_token_list_peek(tokens)) {
+                case BRD_TOK_MUL:
+                        binop = BRD_MUL;
+                        brd_token_list_pop_token(tokens);
+                        break;
+                case BRD_TOK_DIV:
+                        binop = BRD_DIV;
+                        brd_token_list_pop_token(tokens);
+                        break;
+                default:
                         return l;
-                } else {
-                        return brd_node_binop_new(BRD_MUL, l, r);
                 }
-        case BRD_TOK_DIV:
-                r = brd_parse_mulexp(tokens);
+
+                r = brd_parse_prefix(tokens);
                 if (r == NULL) {
-                        *tokens = copy;
-                        return l;
+                        BARF("Bad multiplication expression");
                 } else {
-                        return brd_node_binop_new(BRD_DIV, l, r);
+                        l = brd_node_binop_new(binop, l, r);
                 }
-        default:
-                *tokens = copy;
-                return l;
         }
 }
 
