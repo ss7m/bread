@@ -1,8 +1,6 @@
-# implementation:
-# put 'self' in the closure environment for all of these functions
-
 set RunningSum = define Object subclass
-    set new = function()
+    # this is a special function, which will be called by RunningSum.new()
+    set init = function()
         set self.sum = 0
         set self.sum_sq = 0
         set self.n = 0
@@ -11,7 +9,7 @@ set RunningSum = define Object subclass
     set update = function(num)
         set self.sum = self.sum + num
         set self.sum_sq = self.sum_sq + num^2
-        set n = n + 1
+        set self.n = self.n + 1
     end
 
     set mean = function()
@@ -25,6 +23,14 @@ end
 
 set x = RunningSum.new()
 x.update(50)
-x.update(123.1234)
+x.update(100.5)
 @writeln(x.mean())
 @writeln(x.stdev())
+
+set RunningSumDebug = define RunningSum subclass
+    set update = function(num)
+        super.update(num)
+        @writeln(self.mean())
+        @writeln(self.stdev())
+    end
+end
