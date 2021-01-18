@@ -290,6 +290,11 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         brd_token_list_add_token(list, BRD_TOK_COMMA);
                         string++;
                         break;
+                case '#':
+                        while (string[0] != '\0' && string[0] != '\n') {
+                                string++;
+                        }
+                        break;
                 default:
                         BARF("Tokenizer broke on char <<%c>>\n", *string);
                 }

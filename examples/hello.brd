@@ -1,3 +1,4 @@
+# this is a comment
 @write("Please enter your name: ")
 set my_name = @readln()
 

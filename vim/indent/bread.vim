@@ -31,7 +31,7 @@ function! GetBreadIndent()
     endif
 
     if midx != -1
-        if prevline !~ '\<end\>'
+        if synIDattr(synID(prevlnum, midx + 1, 1), "name") != "breadComment" && prevline !~ '\<end\>'
             let ind = ind + shiftwidth()
         endif
     endif
@@ -42,7 +42,7 @@ function! GetBreadIndent()
         let midx = match(getline(v:lnum), ')\s*$')
     endif
 
-    if midx != -1
+    if midx != -1 && synIDattr(synID(v:lnum, midx + 1, 1), "name") != "breadComment"
         let ind = ind - shiftwidth()
     endif
 
