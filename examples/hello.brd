@@ -7,3 +7,5 @@ set my_name = @readln()
     my_name,
     "!",
 )
+
+@writeln (50)
