@@ -43,6 +43,11 @@ enum brd_token {
         BRD_TOK_BEGIN,
         BRD_TOK_END,
 
+        BRD_TOK_IF,
+        BRD_TOK_ELIF,
+        BRD_TOK_ELSE,
+        BRD_TOK_THEN,
+
         /* keywords */
         BRD_TOK_SET,
 };

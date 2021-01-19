@@ -37,6 +37,8 @@ brd_node_type_sizeof(enum brd_node_type t)
                 return sizeof(struct brd_node_program);
         case BRD_NODE_BODY:
                 return sizeof(struct brd_node_body);
+        case BRD_NODE_IFEXPR:
+                return sizeof(struct brd_node_ifexpr);
         case BRD_NODE_MAX:
                 BARF("Invalid node of type BRD_NODE_MAX");
         }
@@ -234,6 +236,37 @@ brd_node_body_new(struct brd_node **stmts, size_t num_stmts)
         n->_node.destroy = brd_node_body_destroy;
         n->stmts = stmts;
         n->num_stmts = num_stmts;
+        return (struct brd_node *)n;
+}
+
+static void
+brd_node_ifexpr_destroy(struct brd_node *n)
+{
+        struct brd_node_ifexpr *b = (struct brd_node_ifexpr *)n;
+        brd_node_destroy(b->cond);
+        brd_node_destroy(b->body);
+        for (int i = 0; i < b->num_elifs; i++) {
+                brd_node_destroy(b->elifs[i].cond);
+                brd_node_destroy(b->elifs[i].body);
+        }
+        free(b->elifs);
+        if (b->els != NULL) {
+                brd_node_destroy(b->els);
+        }
+        _brd_node_destroy(n);
+}
+
+struct brd_node *
+brd_node_ifexpr_new(struct brd_node *cond, struct brd_node *body, struct brd_node_elif *elifs, size_t num_elifs, struct brd_node *els)
+{
+        struct brd_node_ifexpr *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_IFEXPR;
+        n->_node.destroy = brd_node_ifexpr_destroy;
+        n->cond = cond;
+        n->body = body;
+        n->elifs = elifs;
+        n->num_elifs = num_elifs;
+        n->els = els;
         return (struct brd_node *)n;
 }
 

@@ -76,9 +76,10 @@ enum brd_bytecode {
 
         /* boolean */
         BRD_VM_NOT,
-        BRD_VM_TEST, /* if peek() then pop(); pc++ */
-        BRD_VM_TESTN,/* if not peek() then pop(); pc++*/
-        /* these two instructions are ALWAYS to be followed by a JMP instruction */
+        BRD_VM_TEST,  /* if peek()     then pop(); pc++ */
+        BRD_VM_TESTN, /* if not peek() then pop(); pc++*/
+        BRD_VM_TESTP, /* if pop()      then pc++ */
+        /* these three instructions are ALWAYS to be followed by a JMP instruction */
 
         BRD_VM_SET_VAR, /* has arg: string */
         BRD_VM_BUILTIN, /* has args: string, size_t */

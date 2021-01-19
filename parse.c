@@ -374,13 +374,21 @@ brd_parse_base(struct brd_token_list *tokens)
         case BRD_TOK_BEGIN:
                 node = brd_parse_body(tokens);
                 if (node == NULL) {
-                        *tokens = copy;
+                        BARF("bad begin/end expression");
                         return NULL;
                 } else if (brd_token_list_pop_token(tokens) == BRD_TOK_END) {
                         return node;
                 } else {
                         BARF("begin must be followed by end");
                         return NULL;
+                }
+                break;
+        case BRD_TOK_IF:
+                node = brd_parse_ifexpr(tokens);
+                if (node == NULL) {
+                        BARF("bad if expression");
+                } else {
+                        return node;
                 }
                 break;
         default:
@@ -505,4 +513,85 @@ brd_parse_body_stmt(struct brd_token_list *tokens)
                         }
                 }
         }
+}
+
+/* the if token has already been consumed */
+struct brd_node *brd_parse_ifexpr(struct brd_token_list *tokens)
+{
+        size_t length = 0, capacity = LIST_SIZE;
+        struct brd_node *cond, *body, *els;
+        struct brd_node_elif *elifs;
+        int skip_copy = skip_newlines;
+
+        skip_newlines = true;
+        cond = brd_parse_expression(tokens);
+        if (cond == NULL) {
+                BARF("error parsing if condition");
+        } else if (brd_token_list_pop_token(tokens) != BRD_TOK_THEN) {
+                BARF("You're missing a then");
+        }
+        
+        body = brd_parse_body(tokens);
+        if (body == NULL) {
+                BARF("error parsing if body");
+        }
+        elifs = malloc(sizeof(struct brd_node_elif) * capacity);
+        for (;;) {
+                struct brd_node_elif e = brd_parse_elif(tokens);
+                if (e.cond == NULL) {
+                        break;
+                } else if (length >= capacity) {
+                        capacity *= GROW;
+                        elifs = realloc(elifs, sizeof(struct brd_node_elif) * capacity);
+                }
+                elifs[length] = e;
+                length++;
+        }
+
+        if (brd_token_list_peek(tokens) == BRD_TOK_ELSE) {
+                brd_token_list_pop_token(tokens);
+                els = brd_parse_body(tokens);
+                if (els == NULL) {
+                        BARF("can't parse else body");
+                }
+        } else {
+                els = NULL;
+        }
+
+        if (brd_token_list_pop_token(tokens) == BRD_TOK_END) {
+                skip_newlines = skip_copy;
+                return brd_node_ifexpr_new(cond, body, elifs, length, els);
+        } else {
+                BARF("there is no end");
+                return NULL;
+        }
+}
+
+/* 
+ * yeah I'm returning a struct, sue me
+ * the struct is only two points so, like, it's fine ig
+ */
+struct brd_node_elif brd_parse_elif(struct brd_token_list *tokens)
+{
+        struct brd_node_elif elif;
+
+        if (brd_token_list_peek(tokens) == BRD_TOK_ELIF) {
+                brd_token_list_pop_token(tokens);
+        } else {
+                return (struct brd_node_elif){ NULL, NULL };
+        }
+
+        elif.cond = brd_parse_expression(tokens);
+        if (elif.cond == NULL) {
+                BARF("oops");
+        } else if (brd_token_list_pop_token(tokens) != BRD_TOK_THEN) {
+                BARF("You're missing a 'then'");
+        }
+
+        elif.body = brd_parse_body(tokens);
+        if (elif.body == NULL) {
+                BARF("oops");
+        }
+
+        return elif;
 }

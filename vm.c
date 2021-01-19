@@ -65,6 +65,7 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_NOT: printf("BRD_VM_NOT\n"); break;
         case BRD_VM_TEST: printf("BRD_VM_TEST\n"); break;
         case BRD_VM_TESTN: printf("BRD_VM_TESTN\n"); break;
+        case BRD_VM_TESTP: printf("BRD_VM_TESTP\n"); break;
         case BRD_VM_SET_VAR: printf("BRD_VM_SET_VAR\n"); break;
         case BRD_VM_JMP: printf("BRD_VM_JMP\n"); break;
         case BRD_VM_RETURN: printf("BRD_VM_RETURN\n"); break;
@@ -352,7 +353,7 @@ _brd_node_compile(
         size_t *capacity)
 {
         enum brd_bytecode op;
-        size_t temp, jmp;
+        size_t temp, jmp, *ifexpr_temps;
 
         switch (node->ntype) {
         case BRD_NODE_ASSIGN: 
@@ -431,6 +432,47 @@ mkbinop:
                                 ADD_OP(BRD_VM_POP);
                         }
                 }
+                break;
+        case BRD_NODE_IFEXPR:
+                ifexpr_temps = malloc(sizeof(size_t)*(1+AS(ifexpr, node)->num_elifs));
+                RECURSE_ON(AS(ifexpr, node)->cond);
+                ADD_OP(BRD_VM_TESTP);
+                ADD_OP(BRD_VM_JMP);
+                temp = *length;
+                ADD_SIZET(0);
+                RECURSE_ON(AS(ifexpr, node)->body);
+                ADD_OP(BRD_VM_JMP);
+                ifexpr_temps[0] = *length;
+                ADD_SIZET(0);
+                jmp = *length - temp;
+                *(size_t *)(*bytecode + temp) = jmp;
+
+                for (int i = 0; i < AS(ifexpr, node)->num_elifs; i++) {
+                        RECURSE_ON(AS(ifexpr, node)->elifs[i].cond);
+                        ADD_OP(BRD_VM_TESTP);
+                        ADD_OP(BRD_VM_JMP);
+                        temp = *length;
+                        ADD_SIZET(0);
+                        RECURSE_ON(AS(ifexpr, node)->elifs[i].body);
+                        ADD_OP(BRD_VM_JMP);
+                        ifexpr_temps[i+1] = *length;
+                        ADD_SIZET(0);
+                        jmp = *length - temp;
+                        *(size_t *)(*bytecode + temp) = jmp;
+                }
+
+                if (AS(ifexpr, node)->els != NULL) {
+                        RECURSE_ON(AS(ifexpr, node)->els);
+                } else {
+                        ADD_OP(BRD_VM_UNIT);
+                }
+
+                for (int i = 0; i < AS(ifexpr, node)->num_elifs + 1; i++) {
+                        jmp = *length - ifexpr_temps[i];
+                        *(size_t *)(*bytecode + ifexpr_temps[i]) = jmp;
+                }
+
+                free(ifexpr_temps);
                 break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
@@ -711,6 +753,11 @@ brd_vm_run(struct brd_vm *vm)
                 case BRD_VM_TESTN:
                         if (!brd_value_truthify(brd_stack_peek(&vm->stack))) {
                                 brd_stack_pop(&vm->stack);
+                                vm->pc += sizeof(enum brd_bytecode) + sizeof(size_t);
+                        }
+                        break;
+                case BRD_VM_TESTP:
+                        if (brd_value_truthify(brd_stack_pop(&vm->stack))) {
                                 vm->pc += sizeof(enum brd_bytecode) + sizeof(size_t);
                         }
                         break;

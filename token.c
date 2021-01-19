@@ -207,6 +207,14 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_BEGIN);
                         } else if (strcmp(buffer, "end") == 0) {
                                 brd_token_list_add_token(list, BRD_TOK_END);
+                        } else if (strcmp(buffer, "if") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_IF);
+                        } else if (strcmp(buffer, "elif") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_ELIF);
+                        } else if (strcmp(buffer, "else") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_ELSE);
+                        } else if (strcmp(buffer, "then") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_THEN);
                         } else {
                                 brd_token_list_add_token(list, BRD_TOK_VAR);
                                 brd_token_list_add_string(list, buffer);

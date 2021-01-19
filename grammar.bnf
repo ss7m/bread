@@ -63,7 +63,7 @@ base =
     | begin $body end
 
 ifexpr =
-    | if $expression then $body (elif $body)* (else $body) end
+    | if $expression then $body (elif $body)* (else $body)? end
 
 body =
     | $expression
