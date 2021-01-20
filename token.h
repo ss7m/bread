@@ -23,6 +23,7 @@ enum brd_token {
         BRD_TOK_DIV,
         BRD_TOK_IDIV,
         BRD_TOK_MOD,
+        BRD_TOK_POW,
 
         BRD_TOK_CONCAT,
 

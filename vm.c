@@ -384,6 +384,7 @@ _brd_node_compile(
                 case BRD_DIV: op = BRD_VM_DIV; goto mkbinop;
                 case BRD_IDIV: op = BRD_VM_IDIV; goto mkbinop;
                 case BRD_MOD: op = BRD_VM_MOD; goto mkbinop;
+                case BRD_POW: op = BRD_VM_POW; goto mkbinop;
                 case BRD_CONCAT: op = BRD_VM_CONCAT; goto mkbinop;
                 case BRD_LT: op = BRD_VM_LT; goto mkbinop;
                 case BRD_LEQ: op = BRD_VM_LEQ; goto mkbinop;
@@ -694,6 +695,17 @@ brd_vm_run(struct brd_vm *vm)
                         brd_value_coerce_num(&value2);
                         value2.as.num = (long long int) value2.as.num
                                 % (long long int) value1.as.num;
+                        brd_stack_push(&vm->stack, &value2);
+                        break;
+                case BRD_VM_POW:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        brd_value_coerce_num(&value1);
+                        brd_value_coerce_num(&value2);
+                        value2.as.num = powl(
+                                value2.as.num,
+                                value1.as.num
+                        );
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_CONCAT:

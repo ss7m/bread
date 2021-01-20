@@ -279,6 +279,10 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         brd_token_list_add_token(list, BRD_TOK_MOD);
                         string++;
                         break;
+                case '^':
+                        brd_token_list_add_token(list, BRD_TOK_POW);
+                        string++;
+                        break;
                 case '<':
                         if (string[1] == '=') {
                                 brd_token_list_add_token(list, BRD_TOK_LEQ);

@@ -49,6 +49,7 @@ enum brd_binop {
         BRD_DIV,
         BRD_IDIV,
         BRD_MOD,
+        BRD_POW,
 
         /* comp */
         BRD_LT,

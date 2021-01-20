@@ -42,7 +42,11 @@ addexp =
 mulop = * | /
 
 mulexp =
-    | $mulexp $mulop $prefix
+    | $mulexp $mulop $powexp
+    | $powexp
+
+powexp =
+    | $prefix ^ $powexp
     | $prefix
 
 prefix =
@@ -59,11 +63,8 @@ base =
     | false
     | unit
     | @builtin ( $arglist )
-    | $ifexpr
-    | begin $body end
-
-ifexpr =
     | if $expression then $body (elif $body)* (else $body)? end
+    | begin $body end
 
 body =
     | $expression

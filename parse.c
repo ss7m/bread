@@ -154,12 +154,12 @@ brd_parse_orexp(struct brd_token_list *tokens)
 
         switch (brd_token_list_peek(tokens)) {
         case BRD_TOK_OR:
+                brd_token_list_pop_token(tokens);
                 r = brd_parse_orexp(tokens);
                 if (r == NULL) {
                         BARF("Bad or expression");
                         return NULL;
                 } else {
-                        brd_token_list_pop_token(tokens);
                         return brd_node_binop_new(BRD_OR, l, r);
                 }
         default:
@@ -179,12 +179,12 @@ brd_parse_andexp(struct brd_token_list *tokens)
 
         switch (brd_token_list_peek(tokens)) {
         case BRD_TOK_AND:
+                brd_token_list_pop_token(tokens);
                 r = brd_parse_andexp(tokens);
                 if (r == NULL) {
                         BARF("Bad and expression");
                         return NULL;
                 } else {
-                        brd_token_list_pop_token(tokens);
                         return brd_node_binop_new(BRD_AND, l, r);
                 }
         default:
@@ -276,7 +276,7 @@ brd_parse_mulexp(struct brd_token_list *tokens)
 {
         struct brd_node *l, *r;
 
-        l = brd_parse_prefix(tokens);
+        l = brd_parse_powexp(tokens);
         if (l == NULL) {
                 return NULL;
         }
@@ -304,12 +304,36 @@ brd_parse_mulexp(struct brd_token_list *tokens)
                         return l;
                 }
 
-                r = brd_parse_prefix(tokens);
+                r = brd_parse_powexp(tokens);
                 if (r == NULL) {
                         BARF("Bad multiplication expression");
                 } else {
                         l = brd_node_binop_new(binop, l, r);
                 }
+        }
+}
+
+struct brd_node *
+brd_parse_powexp(struct brd_token_list *tokens)
+{
+        struct brd_node *l, *r;
+
+        l = brd_parse_prefix(tokens);
+        if (l == NULL) {
+                return NULL;
+        }
+
+        if (brd_token_list_peek(tokens) == BRD_TOK_POW) {
+                brd_token_list_pop_token(tokens);
+                r = brd_parse_powexp(tokens);
+                if (r == NULL) {
+                        BARF("Bad pow expression");
+                        return NULL;
+                } else {
+                        return brd_node_binop_new(BRD_POW, l, r);
+                }
+        } else {
+                return l;
         }
 }
 
