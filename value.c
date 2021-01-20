@@ -166,7 +166,7 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
 void
 brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, struct brd_value *out)
 {
-        printf("Placeholder Function Call");
+        printf("Placeholder Function Call\n");
         out->vtype = BRD_VAL_UNIT;
         (void)f;(void)args;(void)num_args;(void)out;
 }
