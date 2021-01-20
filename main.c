@@ -1,5 +1,6 @@
 #include "common.h"
 #include "ast.h"
+#include "value.h"
 #include "vm.h"
 #include "token.h"
 #include "parse.h"

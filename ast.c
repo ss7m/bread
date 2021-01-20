@@ -11,40 +11,6 @@ _brd_node_destroy(struct brd_node *n)
         free(n);
 }
 
-size_t
-brd_node_type_sizeof(enum brd_node_type t)
-{
-        switch(t) {
-        case BRD_NODE_ASSIGN:
-                return sizeof(struct brd_node_assign);
-        case BRD_NODE_BINOP:
-                return sizeof(struct brd_node_binop);
-        case BRD_NODE_UNARY:
-                return sizeof(struct brd_node_unary);
-        case BRD_NODE_VAR:
-                return sizeof(struct brd_node_var);
-        case BRD_NODE_NUM_LIT:
-                return sizeof(struct brd_node_num_lit);
-        case BRD_NODE_STRING_LIT:
-                return sizeof(struct brd_node_string_lit);
-        case BRD_NODE_BOOL_LIT:
-                return sizeof(struct brd_node_bool_lit);
-        case BRD_NODE_UNIT_LIT:
-                return sizeof(struct brd_node_unit_lit);
-        case BRD_NODE_BUILTIN:
-                return sizeof(struct brd_node_builtin);
-        case BRD_NODE_PROGRAM:
-                return sizeof(struct brd_node_program);
-        case BRD_NODE_BODY:
-                return sizeof(struct brd_node_body);
-        case BRD_NODE_IFEXPR:
-                return sizeof(struct brd_node_ifexpr);
-        case BRD_NODE_MAX:
-                BARF("Invalid node of type BRD_NODE_MAX");
-        }
-        return -1;
-}
-
 static void
 brd_node_program_destroy(struct brd_node *n)
 {
@@ -194,26 +160,59 @@ brd_node_unit_lit_new()
 }
 
 static void
+brd_node_arglist_destroy(struct brd_node_arglist *args)
+{
+        for (int i = 0; i < args->num_args; i++) {
+                brd_node_destroy(args->args[i]);
+        }
+        free(args->args);
+        free(args);
+}
+
+struct brd_node_arglist *
+brd_node_arglist_new(struct brd_node **args, size_t num_args)
+{
+        struct brd_node_arglist *n = malloc(sizeof(*n));
+        n->args = args;
+        n->num_args = num_args;
+        return n;
+}
+
+static void
+brd_node_funcall_destroy(struct brd_node *n)
+{
+        struct brd_node_funcall *f = (struct brd_node_funcall *)n;
+        brd_node_destroy(f->fn);
+        brd_node_arglist_destroy(f->args);
+        _brd_node_destroy(n);
+}
+
+struct brd_node *
+brd_node_funcall_new(struct brd_node *fn, struct brd_node_arglist *args)
+{
+        struct brd_node_funcall *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_FUNCALL;
+        n->_node.destroy = brd_node_funcall_destroy;
+        n->fn = fn;
+        n->args = args;
+        return (struct brd_node *)n;
+}
+
+static void
 brd_node_builtin_destroy(struct brd_node *n)
 {
         struct brd_node_builtin *b = (struct brd_node_builtin *)n;
-        for (int i = 0; i < b->num_args; i++) {
-                brd_node_destroy(b->args[i]);
-        }
-        free(b->args);
         free(b->builtin);
         _brd_node_destroy(n);
 }
 
 struct brd_node *
-brd_node_builtin_new(char *builtin, struct brd_node **args, size_t num_args)
+brd_node_builtin_new(char *builtin)
 {
         struct brd_node_builtin *n = malloc(sizeof(*n));
         n->_node.ntype = BRD_NODE_BUILTIN;
         n->_node.destroy = brd_node_builtin_destroy;
         n->builtin = strdup(builtin);
-        n->args = args;
-        n->num_args = num_args;
         return (struct brd_node *)n;
 }
 

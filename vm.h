@@ -11,27 +11,6 @@
 /* That should be enough, right? */
 #define STACK_SIZE 256
 
-enum brd_value_type {
-        BRD_VAL_NUM,
-        BRD_VAL_STRING,
-        BRD_VAL_BOOL,
-        BRD_VAL_UNIT,
-};
-
-struct brd_value {
-        enum brd_value_type vtype;
-        union {
-                long double num;
-                char *string;
-                int boolean;
-        } as;
-};
-
-void brd_value_coerce_num(struct brd_value *value);
-int brd_value_coerce_string(struct brd_value *value);
-int brd_value_truthify(struct brd_value *value);
-int brd_value_compare(struct brd_value *a, struct brd_value *b);
-
 struct brd_value_map_list {
         char *key;
         struct brd_value_map_list *next;
@@ -85,7 +64,8 @@ enum brd_bytecode {
         /* these three instructions are ALWAYS to be followed by a JMP instruction */
 
         BRD_VM_SET_VAR, /* has arg: string */
-        BRD_VM_BUILTIN, /* has args: string, size_t */
+        BRD_VM_BUILTIN, /* has arg: size_t */
+        BRD_VM_CALL,
         BRD_VM_JMP, /* has arg: size_t */
 
         /* this will do more when we have functions and classes */

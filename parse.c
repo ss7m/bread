@@ -362,7 +362,39 @@ brd_parse_prefix(struct brd_token_list *tokens)
                 }
         default:
                 *tokens = copy;
-                return brd_parse_base(tokens);
+                return brd_parse_postfix(tokens);
+        }
+}
+
+struct brd_node *
+brd_parse_postfix(struct brd_token_list *tokens)
+{
+        struct brd_node *node;
+        struct brd_node_arglist *args;
+        int skip_copy = skip_newlines;
+
+        node = brd_parse_base(tokens);
+        if (node == NULL) {
+                return NULL;
+        }
+
+        for (;;) {
+                switch (brd_token_list_peek(tokens)) {
+                case BRD_TOK_LPAREN:
+                        brd_token_list_pop_token(tokens);
+                        skip_newlines = true;
+                        args = brd_parse_arglist(tokens);
+                        if (args == NULL) {
+                                BARF("bad argument list");
+                        } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RPAREN) {
+                                BARF("you're missing a right paren");
+                        }
+                        skip_newlines = skip_copy;
+                        node = brd_node_funcall_new(node, args);
+                        break;
+                default:
+                        return node;
+                }
         }
 }
 
@@ -401,8 +433,7 @@ brd_parse_base(struct brd_token_list *tokens)
         case BRD_TOK_FALSE:
                 return brd_node_bool_lit_new(false);
         case BRD_TOK_BUILTIN:
-                return brd_parse_builtin(tokens);
-                break;
+                return brd_node_builtin_new(brd_token_list_pop_string(tokens));
         case BRD_TOK_BEGIN:
                 node = brd_parse_body(tokens);
                 if (node == NULL) {
@@ -429,24 +460,16 @@ brd_parse_base(struct brd_token_list *tokens)
         }
 }
 
-struct brd_node *
-brd_parse_builtin(struct brd_token_list *tokens)
+struct brd_node_arglist *
+brd_parse_arglist(struct brd_token_list *tokens)
 {
-        /* the @ token has already been popped */
+        /* skip newlines handled by caller */
         /* I'm going to allow trailing commas */
-        char *builtin = brd_token_list_pop_string(tokens);
         size_t length = 0, capacity = LIST_SIZE;
         struct brd_node **args = malloc(sizeof(struct brd_node *) * capacity);
         struct brd_node *node;
-        int skip_copy = skip_newlines, go = true;
+        for (;;) {
 
-        skip_newlines = true;
-
-        if (brd_token_list_pop_token(tokens) != BRD_TOK_LPAREN) {
-                BARF("A builtin function must be called");
-        }
-
-        while (go) {
                 node = brd_parse_expression(tokens);
                 if (node != NULL) {
                         if (length == capacity) {
@@ -455,21 +478,18 @@ brd_parse_builtin(struct brd_token_list *tokens)
                         }
                         args[length] = node;
                         length++;
+                } else {
+                        break;
                 }
 
-                switch (brd_token_list_pop_token(tokens)) {
-                case BRD_TOK_COMMA:
-                        continue;
-                case BRD_TOK_RPAREN:
-                        go = false;
+                if (brd_token_list_peek(tokens) == BRD_TOK_COMMA) {
+                        brd_token_list_pop_token(tokens);
+                } else {
                         break;
-                default:
-                        BARF("you done goofed");
                 }
         }
 
-        skip_newlines = skip_copy;
-        return (struct brd_node *)brd_node_builtin_new(builtin, args, length);
+        return brd_node_arglist_new(args, length);
 }
 
 struct brd_node *

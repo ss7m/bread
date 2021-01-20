@@ -6,9 +6,9 @@ CFLAGS=-Wall -Wextra -std=c99 -fshort-enums -lm \
 	   -Wdeclaration-after-statement -Wno-sign-compare \
 	   $(foreach p,$(LIBS),$(shell pkg-config --cflags --libs $(p)))
 
-SRCS=main.c ast.c vm.c token.c parse.c
+SRCS=main.c ast.c vm.c token.c parse.c value.c
 OBJS=$(SRCS:.c=.o)
-HDRS=ast.h common.h vm.h token.h parse.h
+HDRS=ast.h common.h vm.h token.h parse.h value.h
 EXE=bread
 
 #

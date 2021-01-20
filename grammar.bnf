@@ -52,7 +52,16 @@ powexp =
 prefix =
     | not $prefix
     | - $prefix
+    | $postfix
+
+postfix =
+    | $postfix ( $arglist )
     | $base
+
+arglist =
+    | <empty>
+    | $expression , $arglist
+    | $expression ,?
 
 base =
     | ( $expression )
@@ -62,7 +71,7 @@ base =
     | true
     | false
     | unit
-    | @builtin ( $arglist )
+    | @builtin
     | if $expression then $body (elif $body)* (else $body)? end
     | begin $body end
 

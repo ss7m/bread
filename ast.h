@@ -14,6 +14,7 @@ enum brd_node_type {
         BRD_NODE_STRING_LIT,
         BRD_NODE_BOOL_LIT,
         BRD_NODE_UNIT_LIT,
+        BRD_NODE_FUNCALL,
         BRD_NODE_BUILTIN,
         BRD_NODE_BODY,
         BRD_NODE_IFEXPR,
@@ -106,11 +107,20 @@ struct brd_node_unit_lit {
         struct brd_node _node;
 };
 
+struct brd_node_arglist {
+        size_t num_args;
+        struct brd_node **args;
+};
+
+struct brd_node_funcall {
+        struct brd_node _node;
+        struct brd_node *fn;
+        struct brd_node_arglist *args;
+};
+
 struct brd_node_builtin {
         struct brd_node _node;
         char *builtin;
-        struct brd_node **args;
-        size_t num_args;
 };
 
 struct brd_node_body {
@@ -134,9 +144,6 @@ struct brd_node_ifexpr {
         // els can be null, in which case unit is the value of the expression
 };
 
-size_t brd_node_type_sizeof(enum brd_node_type t);
-#define brd_node_sizeof(n) brd_node_type_sizeof(((struct brd_node *)n)->ntype)
-
 struct brd_node *brd_node_program_new(struct brd_node **stmts, size_t num_stmts);
 struct brd_node *brd_node_assign_new(struct brd_node *l, struct brd_node *r);
 struct brd_node *brd_node_binop_new(enum brd_binop btype, struct brd_node *l, struct brd_node *r);
@@ -146,7 +153,9 @@ struct brd_node *brd_node_num_lit_new(long double v);
 struct brd_node *brd_node_string_lit_new(char *s);
 struct brd_node *brd_node_bool_lit_new(int b);
 struct brd_node *brd_node_unit_lit_new();
-struct brd_node *brd_node_builtin_new();
+struct brd_node_arglist *brd_node_arglist_new(struct brd_node **args, size_t num_args);
+struct brd_node *brd_node_funcall_new(struct brd_node *fn, struct brd_node_arglist *args);
+struct brd_node *brd_node_builtin_new(char *builtin);
 struct brd_node *brd_node_body_new();
 struct brd_node *brd_node_ifexpr_new(struct brd_node *cond, struct brd_node *body, struct brd_node_elif *elifs, size_t num_elifs, struct brd_node *els);
 

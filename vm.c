@@ -1,10 +1,9 @@
 #include "common.h"
 #include "ast.h"
+#include "value.h"
 #include "vm.h"
 
 #include <math.h>
-
-#define ABS(x) (((x) > 0) ? (x) : (-x))
 
 #define LIST_SIZE 32
 #define GROW 1.5
@@ -23,26 +22,6 @@ hash(char *str)
 }
 
 #ifdef DEBUG
-static void
-brd_value_debug(struct brd_value *value)
-{
-        printf(" ======== ");
-        switch (value->vtype) {
-        case BRD_VAL_NUM:
-                printf("%Lf\n", value->as.num);
-                break;
-        case BRD_VAL_STRING:
-                printf("%s\n", value->as.string);
-                break;
-        case BRD_VAL_BOOL:
-                printf("%s\n", value->as.boolean ? "true" : "false");
-                break;
-        case BRD_VAL_UNIT:
-                printf("unit\n");
-                break;
-        }
-}
-
 static void
 brd_bytecode_debug(enum brd_bytecode op)
 {
@@ -73,126 +52,12 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_RETURN: printf("BRD_VM_RETURN\n"); break;
         case BRD_VM_POP: printf("BRD_VM_POP\n"); break;
         case BRD_VM_CONCAT: printf("BRD_VM_CONCAT\n"); break;
+        case BRD_VM_CALL: printf("BRD_VM_CALL\n"); break;
         case BRD_VM_BUILTIN: printf("BRD_VM_BUILTIN\n"); break;
         default: printf("oops\n");
         }
 }
 #endif
-
-void
-brd_value_coerce_num(struct brd_value *value)
-{
-        switch (value->vtype) {
-        case BRD_VAL_NUM:
-                break;
-        case BRD_VAL_STRING:
-                value->as.num = strtold(value->as.string, NULL);
-                break;
-        case BRD_VAL_BOOL:
-                value->as.num = value->as.boolean ? 1 : 0;
-                break;
-        case BRD_VAL_UNIT:
-                value->as.num = 0;
-        }
-
-        value->vtype = BRD_VAL_NUM;
-}
-
-int
-brd_value_coerce_string(struct brd_value *value)
-{
-        /* return true if string is malloced */
-        int malloced = false;
-        char *string = "";
-        switch (value->vtype) {
-        case BRD_VAL_NUM:
-                string = malloc(sizeof(char) * 75); /* that's enough, right? */
-                sprintf(string, "%Lg", value->as.num);
-                malloced = true;
-                break;
-        case BRD_VAL_STRING:
-                string = value->as.string;
-                break;
-        case BRD_VAL_BOOL:
-                string = value->as.boolean ? "true" : "false";
-                break;
-        case BRD_VAL_UNIT:
-                string = "unit";
-                break;
-        }
-        value->vtype = BRD_VAL_STRING;
-        value->as.string = string;
-        return malloced;
-}
-
-int
-brd_value_truthify(struct brd_value *value)
-{
-        switch (value->vtype) {
-        case BRD_VAL_NUM:
-                return value->as.num != 0;
-        case BRD_VAL_STRING:
-                return value->as.string[0] != '\0';
-        case BRD_VAL_BOOL:
-                return value->as.boolean;
-        case BRD_VAL_UNIT:
-                return false;
-        }
-        BARF("what?");
-        return false;
-}
-
-int
-brd_value_compare(struct brd_value *a, struct brd_value *b)
-{
-        switch (a->vtype) {
-        case BRD_VAL_NUM:
-                brd_value_coerce_num(b);
-                return (int) (a->as.num - b->as.num);
-        case BRD_VAL_STRING:
-                switch (b->vtype) {
-                case BRD_VAL_NUM:
-                        brd_value_coerce_num(a);
-                        return (int) (a->as.num - b->as.num);
-                case BRD_VAL_STRING:
-                        return strcmp(a->as.string, b->as.string);
-                case BRD_VAL_BOOL:
-                        /* This is obviously a very good idea */
-                        return strcmp(a->as.string, b->as.boolean ? "true" : "false");
-                case BRD_VAL_UNIT:
-                        return a->as.string[0] != '\0';
-                }
-                break;
-        case BRD_VAL_BOOL:
-                switch (b->vtype) {
-                case BRD_VAL_NUM:
-                        brd_value_coerce_num(a);
-                        return (int) (a->as.num - b->as.num);
-                case BRD_VAL_STRING:
-                        /* Again, this is the obvious thing to do there */
-                        return strcmp(a->as.boolean ? "true" : "false", b->as.string);
-                case BRD_VAL_BOOL:
-                        return a->as.boolean - b->as.boolean;
-                case BRD_VAL_UNIT:
-                        return a->as.boolean;
-                }
-                break;
-        case BRD_VAL_UNIT:
-                switch (b->vtype) {
-                case BRD_VAL_NUM:
-                        return -ABS(b->as.num);
-                case BRD_VAL_STRING:
-                        return -(b->as.string[0] != '\0');
-                case BRD_VAL_BOOL:
-                        return -b->as.boolean;
-                case BRD_VAL_UNIT:
-                        return 0;
-                }
-                break;
-        }
-        BARF("what?");
-        return -1;
-}
 
 void
 brd_value_map_init(struct brd_value_map *map)
@@ -422,13 +287,17 @@ mkbinop:
         case BRD_NODE_UNIT_LIT:
                 ADD_OP(BRD_VM_UNIT);
                 break;
-        case BRD_NODE_BUILTIN:
-                for (int i = 0; i < AS(builtin, node)->num_args; i++) {
-                        RECURSE_ON(AS(builtin, node)->args[i]);
+        case BRD_NODE_FUNCALL:
+                for (int i = 0; i < AS(funcall, node)->args->num_args; i++) {
+                        RECURSE_ON(AS(funcall, node)->args->args[i]);
                 }
+                RECURSE_ON(AS(funcall, node)->fn);
+                ADD_OP(BRD_VM_CALL);
+                ADD_SIZET(AS(funcall, node)->args->num_args);
+                break;
+        case BRD_NODE_BUILTIN:
                 ADD_OP(BRD_VM_BUILTIN);
-                ADD_STR(AS(builtin, node)->builtin);
-                ADD_SIZET(AS(builtin, node)->num_args);
+                ADD_SIZET(brd_lookup_builtin(AS(builtin, node)->builtin));
                 break;
         case BRD_NODE_BODY:
                 for (int i = 0; i < AS(body, node)->num_stmts; i++) {
@@ -532,99 +401,6 @@ brd_vm_init(struct brd_vm *vm, void *bytecode)
         vm->stack.sp = vm->stack.values;
 }
 
-static int
-brd_run_builtin(char *builtin, struct brd_value *args, size_t nargs, struct brd_value *ret)
-{
-        if (strcmp(builtin, "writeln") == 0 || strcmp(builtin, "write") == 0) {
-                ret->vtype = BRD_VAL_UNIT;
-                for (int i = 0; i < nargs; i++) {
-                        int malloced = brd_value_coerce_string(&args[i]);
-                        printf("%s", args[i].as.string);
-                        if (malloced) {
-                                free(args[i].as.string);
-                        }
-                }
-                if (builtin[5] == 'l') {
-                        printf("\n");
-                }
-                return false;
-        } else if (strcmp(builtin, "readln") == 0) {
-                char *input = NULL;
-                size_t n = 0;
-                ret->vtype = BRD_VAL_STRING;
-                if (nargs > 0) {
-                        BARF("readln accepts no arguments");
-                }
-                n = getline(&input, &n, stdin);
-                input[n - 1] = '\0';
-                ret->as.string = input;
-                return true;
-        } else if (strcmp(builtin, "length") == 0) {
-                ret->vtype = BRD_VAL_NUM;
-                if (nargs != 1) {
-                        BARF("length accepts exactly 1 argument");
-                } else if (args[0].vtype == BRD_VAL_STRING) {
-                        ret->as.num = strlen(args[0].as.string);
-                } else {
-                        ret->as.num = 0;
-                }
-                return false;
-        } else if (strcmp(builtin, "typeof") == 0) {
-                ret->vtype = BRD_VAL_STRING;
-                if (nargs != 1) {
-                        BARF("typeof accepts exactly 1 argument");
-                }
-                switch (args[0].vtype) {
-                case BRD_VAL_NUM:
-                        ret->as.string = "number";
-                        break;
-                case BRD_VAL_STRING:
-                        ret->as.string = "string";
-                        break;
-                case BRD_VAL_BOOL:
-                        ret->as.string = "boolean";
-                        break;
-                case BRD_VAL_UNIT:
-                        ret->as.string = "unit";
-                        break;
-                }
-                return false;
-        } else if (strcmp(builtin, "system") == 0) {
-                int size;
-                char *cmd;
-                int *malloced;
-
-                ret->vtype = BRD_VAL_UNIT;
-                if (nargs == 0) {
-                        BARF("system needs at least 1 argument");
-                }
-
-                malloced = malloc(sizeof(int) * nargs);
-                size = 0;
-                for (int i = 0; i < nargs; i++) {
-                        malloced[i] = brd_value_coerce_string(&args[i]);
-                        size += strlen(args[i].as.string);
-                }
-
-                cmd = malloc(sizeof(char) * (size + 1));
-                cmd[0] = '\0';
-                for(int i = 0; i < nargs; i++) {
-                        strcat(cmd, args[i].as.string);
-                        if (malloced[i]) {
-                                free(args[i].as.string);
-                        }
-                }
-                system(cmd);
-
-                free(cmd);
-                free(malloced);
-                return false;
-        } else {
-                BARF("Unknown builtin: %s", builtin);
-                return false;
-        }
-}
-
 void
 brd_vm_run(struct brd_vm *vm)
 {
@@ -632,7 +408,7 @@ brd_vm_run(struct brd_vm *vm)
         struct brd_value value1, value2;
         char *id;
         int go = true;
-        size_t jmp, nargs;
+        size_t jmp, num_args;
 
         while (go) {
                 op = *(enum brd_bytecode *)(vm->bytecode + vm->pc);
@@ -838,15 +614,18 @@ brd_vm_run(struct brd_vm *vm)
                         vm->pc += jmp;
                         break;
                 case BRD_VM_BUILTIN:
-                        id = (char *)(vm->bytecode + vm->pc);
-                        while (*(char *)(vm->bytecode + vm->pc++));
-                        nargs = *(size_t *)(vm->bytecode + vm->pc);
+                        value1.vtype = BRD_VAL_BUILTIN;
+                        value1.as.builtin = *(size_t *)(vm->bytecode + vm->pc);
                         vm->pc += sizeof(size_t);
-                        vm->stack.sp -= nargs;
-                        if (brd_run_builtin(id, vm->stack.sp, nargs, &value1)) {
-                                brd_vm_allocate(vm, value1.as.string);
-                        }
                         brd_stack_push(&vm->stack, &value1);
+                        break;
+                case BRD_VM_CALL:
+                        num_args = *(size_t *)(vm->bytecode + vm->pc);
+                        vm->pc += sizeof(size_t);
+                        value1 = *brd_stack_pop(&vm->stack);
+                        vm->stack.sp -= num_args;
+                        brd_value_call(&value1, vm->stack.sp, num_args, &value2);
+                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_RETURN:
                         go = false;
