@@ -1,0 +1,5 @@
+# initialize a list of length 100 of all zeros
+set x = for i=0,100 do 0 end
+
+# 2d array of all zeros
+set y = for i=0,100 do for j = 0,100 do 0 end end

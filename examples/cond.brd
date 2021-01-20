@@ -1,0 +1,28 @@
+set x = 1
+
+@writeln(
+    " ==== ",
+    if x = 1 then
+        @writeln(1)
+        x + 1
+    elif x = 2 then
+        @writeln(2)
+        @writeln("two statements!")
+        x + 2
+    elif x = 3 then
+        @writeln(3)
+        x + 3
+    elif x = 4 then
+        @writeln(4)
+        x + 4
+    elif x = 5 then
+        @writeln(5)
+        x + 5
+    else
+        @writeln("nope")
+        x * 10
+    end
+)
+
+set y = 3
+@writeln( " ==== ", if y = 2 then 43 + @writeln("it's true!") end + 100)
