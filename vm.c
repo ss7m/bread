@@ -8,13 +8,7 @@
 #define LIST_SIZE 32
 #define GROW 1.5
 
-struct {
-        struct brd_stack stack;
-        struct brd_heap *heap;
-        void *bytecode;
-        size_t pc;
-        struct brd_value_map globals;
-} vm;
+struct brd_vm vm;
 
 /* http://www.cse.yorku.ca/~oz/hash.html djb2 hash algorithm */
 static unsigned long

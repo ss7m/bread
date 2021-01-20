@@ -83,6 +83,14 @@ struct brd_heap {
         char *string;
 };
 
+extern struct brd_vm {
+        struct brd_stack stack;
+        struct brd_heap *heap;
+        void *bytecode;
+        size_t pc;
+        struct brd_value_map globals;
+} vm;
+
 void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
 struct brd_value *brd_stack_pop(struct brd_stack *stack);
 struct brd_value *brd_stack_peek(struct brd_stack *stack);
