@@ -292,6 +292,14 @@ brd_parse_mulexp(struct brd_token_list *tokens)
                         binop = BRD_DIV;
                         brd_token_list_pop_token(tokens);
                         break;
+                case BRD_TOK_IDIV:
+                        binop = BRD_IDIV;
+                        brd_token_list_pop_token(tokens);
+                        break;
+                case BRD_TOK_MOD:
+                        binop = BRD_MOD;
+                        brd_token_list_pop_token(tokens);
+                        break;
                 default:
                         return l;
                 }

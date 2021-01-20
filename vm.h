@@ -63,6 +63,8 @@ enum brd_bytecode {
         BRD_VM_MINUS,
         BRD_VM_MUL,
         BRD_VM_DIV,
+        BRD_VM_IDIV,
+        BRD_VM_MOD,
         BRD_VM_NEGATE,
 
         /* comp */

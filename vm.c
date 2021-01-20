@@ -2,6 +2,8 @@
 #include "ast.h"
 #include "vm.h"
 
+#include <math.h>
+
 #define ABS(x) (((x) > 0) ? (x) : (-x))
 
 #define LIST_SIZE 32
@@ -380,6 +382,8 @@ _brd_node_compile(
                 case BRD_MINUS: op = BRD_VM_MINUS; goto mkbinop;
                 case BRD_MUL: op = BRD_VM_MUL; goto mkbinop;
                 case BRD_DIV: op = BRD_VM_DIV; goto mkbinop;
+                case BRD_IDIV: op = BRD_VM_IDIV; goto mkbinop;
+                case BRD_MOD: op = BRD_VM_MOD; goto mkbinop;
                 case BRD_CONCAT: op = BRD_VM_CONCAT; goto mkbinop;
                 case BRD_LT: op = BRD_VM_LT; goto mkbinop;
                 case BRD_LEQ: op = BRD_VM_LEQ; goto mkbinop;
@@ -671,6 +675,25 @@ brd_vm_run(struct brd_vm *vm)
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
                         value2.as.num /= value1.as.num;
+                        brd_stack_push(&vm->stack, &value2);
+                        break;
+                case BRD_VM_IDIV:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        brd_value_coerce_num(&value1);
+                        brd_value_coerce_num(&value2);
+                        value2.as.num = floorl(
+                                value2.as.num / value1.as.num
+                        );
+                        brd_stack_push(&vm->stack, &value2);
+                        break;
+                case BRD_VM_MOD:
+                        value1 = *brd_stack_pop(&vm->stack);
+                        value2 = *brd_stack_pop(&vm->stack);
+                        brd_value_coerce_num(&value1);
+                        brd_value_coerce_num(&value2);
+                        value2.as.num = (long long int) value2.as.num
+                                % (long long int) value1.as.num;
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_CONCAT:

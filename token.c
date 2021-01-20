@@ -267,7 +267,16 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         string++;
                         break;
                 case '/':
-                        brd_token_list_add_token(list, BRD_TOK_DIV);
+                        if (string[1] == '/') {
+                                brd_token_list_add_token(list, BRD_TOK_IDIV);
+                                string += 2;
+                        } else {
+                                brd_token_list_add_token(list, BRD_TOK_DIV);
+                                string++;
+                        }
+                        break;
+                case '%':
+                        brd_token_list_add_token(list, BRD_TOK_MOD);
                         string++;
                         break;
                 case '<':
