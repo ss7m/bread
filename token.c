@@ -227,6 +227,12 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_ELSE);
                         } else if (strcmp(buffer, "then") == 0) {
                                 brd_token_list_add_token(list, BRD_TOK_THEN);
+                        } else if (strcmp(buffer, "for") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_FOR);
+                        } else if (strcmp(buffer, "while") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_WHILE);
+                        } else if (strcmp(buffer, "do") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_DO);
                         } else {
                                 brd_token_list_add_token(list, BRD_TOK_VAR);
                                 brd_token_list_add_string(list, buffer);

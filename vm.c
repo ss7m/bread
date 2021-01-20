@@ -589,6 +589,36 @@ brd_run_builtin(char *builtin, struct brd_value *args, size_t nargs, struct brd_
                         break;
                 }
                 return false;
+        } else if (strcmp(builtin, "system") == 0) {
+                int size;
+                char *cmd;
+                int *malloced;
+
+                ret->vtype = BRD_VAL_UNIT;
+                if (nargs == 0) {
+                        BARF("system needs at least 1 argument");
+                }
+
+                malloced = malloc(sizeof(int) * nargs);
+                size = 0;
+                for (int i = 0; i < nargs; i++) {
+                        malloced[i] = brd_value_coerce_string(&args[i]);
+                        size += strlen(args[i].as.string);
+                }
+
+                cmd = malloc(sizeof(char) * (size + 1));
+                cmd[0] = '\0';
+                for(int i = 0; i < nargs; i++) {
+                        strcat(cmd, args[i].as.string);
+                        if (malloced[i]) {
+                                free(args[i].as.string);
+                        }
+                }
+                system(cmd);
+
+                free(cmd);
+                free(malloced);
+                return false;
         } else {
                 BARF("Unknown builtin: %s", builtin);
                 return false;

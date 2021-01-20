@@ -17,7 +17,7 @@ EXE=bread
 RELDIR=release
 RELEXE=$(RELDIR)/$(EXE)
 RELOBJS=$(addprefix $(RELDIR)/, $(OBJS))
-RELCFLAGS=-Os -s -flto -march=native -mtune=native
+RELCFLAGS=-O3 -s -flto -march=native -mtune=native
 
 #
 # Debug variables
