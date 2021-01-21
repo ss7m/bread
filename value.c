@@ -351,8 +351,42 @@ _builtin_typeof(struct brd_value *args, size_t num_args, struct brd_value *out)
 static void
 _builtin_system(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
-        BARF("finish this");
-        (void)args;(void)num_args;(void)out;
+        size_t len;
+        char *cmd;
+        int *malloced = malloc(sizeof(int) * num_args);
+
+        for(int i = 0; i < num_args; i++) {
+                malloced[i] = brd_value_coerce_string(&args[i]);
+        }
+
+        len = 1;
+        for (int i = 0; i < num_args; i++) {
+                len += strlen(
+                        args[i].vtype == BRD_VAL_STRING ? args[i].as.string
+                        : args[i].as.heap->as.string
+                );
+        }
+        cmd = malloc(sizeof(char) * len);
+        cmd[0] = '\0';
+        for (int i = 0; i < num_args; i++) {
+                strcat(
+                        cmd,
+                        args[i].vtype == BRD_VAL_STRING ? args[i].as.string
+                        : args[i].as.heap->as.string
+                );
+        }
+
+        out->vtype = BRD_VAL_NUM;
+        out->as.num = system(cmd);
+
+        for (int i = 0; i < num_args; i++) {
+                if (malloced[i]) {
+                        free(args[i].as.heap->as.string);
+                        free(args[i].as.heap);
+                }
+        }
+        free(malloced);
+        free(cmd);
 }
 
 enum brd_builtin brd_lookup_builtin(char *builtin)
