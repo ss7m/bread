@@ -29,35 +29,38 @@ brd_bytecode_debug(enum brd_bytecode op)
 {
         printf(" -------- ");
         switch (op) {
-        case BRD_VM_NUM: printf("BRD_VM_NUM\n"); break;
-        case BRD_VM_STR: printf("BRD_VM_STR\n"); break;
-        case BRD_VM_GET_VAR: printf("BRD_VM_GET_VAR\n"); break;
-        case BRD_VM_TRUE: printf("BRD_VM_TRUE\n"); break;
-        case BRD_VM_FALSE: printf("BRD_VM_FALSE\n"); break;
-        case BRD_VM_UNIT: printf("BRD_VM_UNIT\n"); break;
-        case BRD_VM_PLUS: printf("BRD_VM_PLUS\n"); break;
-        case BRD_VM_MINUS: printf("BRD_VM_MINUS\n"); break;
-        case BRD_VM_MUL: printf("BRD_VM_MUL\n"); break;
-        case BRD_VM_DIV: printf("BRD_VM_DIV\n"); break;
-        case BRD_VM_NEGATE: printf("BRD_VM_NEGATE\n"); break;
-        case BRD_VM_LT: printf("BRD_VM_LT\n"); break;
-        case BRD_VM_LEQ: printf("BRD_VM_LEQ\n"); break;
-        case BRD_VM_GT: printf("BRD_VM_GT\n"); break;
-        case BRD_VM_GEQ: printf("BRD_VM_GEQ\n"); break;
-        case BRD_VM_EQ: printf("BRD_VM_EQ\n"); break;
-        case BRD_VM_NOT: printf("BRD_VM_NOT\n"); break;
-        case BRD_VM_TEST: printf("BRD_VM_TEST\n"); break;
-        case BRD_VM_TESTN: printf("BRD_VM_TESTN\n"); break;
-        case BRD_VM_TESTP: printf("BRD_VM_TESTP\n"); break;
-        case BRD_VM_SET_VAR: printf("BRD_VM_SET_VAR\n"); break;
-        case BRD_VM_JMP: printf("BRD_VM_JMP\n"); break;
-        case BRD_VM_RETURN: printf("BRD_VM_RETURN\n"); break;
-        case BRD_VM_POP: printf("BRD_VM_POP\n"); break;
-        case BRD_VM_CONCAT: printf("BRD_VM_CONCAT\n"); break;
-        case BRD_VM_CALL: printf("BRD_VM_CALL\n"); break;
-        case BRD_VM_BUILTIN: printf("BRD_VM_BUILTIN\n"); break;
-        default: printf("oops\n");
+        case BRD_VM_NUM: printf("BRD_VM_NUM\n"); return;
+        case BRD_VM_STR: printf("BRD_VM_STR\n"); return;
+        case BRD_VM_GET_VAR: printf("BRD_VM_GET_VAR\n"); return;
+        case BRD_VM_TRUE: printf("BRD_VM_TRUE\n"); return;
+        case BRD_VM_FALSE: printf("BRD_VM_FALSE\n"); return;
+        case BRD_VM_UNIT: printf("BRD_VM_UNIT\n"); return;
+        case BRD_VM_PLUS: printf("BRD_VM_PLUS\n"); return;
+        case BRD_VM_MINUS: printf("BRD_VM_MINUS\n"); return;
+        case BRD_VM_MUL: printf("BRD_VM_MUL\n"); return;
+        case BRD_VM_DIV: printf("BRD_VM_DIV\n"); return;
+        case BRD_VM_IDIV: printf("BRD_VM_IDIV\n"); return;
+        case BRD_VM_MOD: printf("BRD_VM_MOD\n"); return;
+        case BRD_VM_POW: printf("BRD_VM_POW\n"); return;
+        case BRD_VM_NEGATE: printf("BRD_VM_NEGATE\n"); return;
+        case BRD_VM_LT: printf("BRD_VM_LT\n"); return;
+        case BRD_VM_LEQ: printf("BRD_VM_LEQ\n"); return;
+        case BRD_VM_GT: printf("BRD_VM_GT\n"); return;
+        case BRD_VM_GEQ: printf("BRD_VM_GEQ\n"); return;
+        case BRD_VM_EQ: printf("BRD_VM_EQ\n"); return;
+        case BRD_VM_NOT: printf("BRD_VM_NOT\n"); return;
+        case BRD_VM_TEST: printf("BRD_VM_TEST\n"); return;
+        case BRD_VM_TESTN: printf("BRD_VM_TESTN\n"); return;
+        case BRD_VM_TESTP: printf("BRD_VM_TESTP\n"); return;
+        case BRD_VM_SET_VAR: printf("BRD_VM_SET_VAR\n"); return;
+        case BRD_VM_JMP: printf("BRD_VM_JMP\n"); return;
+        case BRD_VM_RETURN: printf("BRD_VM_RETURN\n"); return;
+        case BRD_VM_POP: printf("BRD_VM_POP\n"); return;
+        case BRD_VM_CONCAT: printf("BRD_VM_CONCAT\n"); return;
+        case BRD_VM_CALL: printf("BRD_VM_CALL\n"); return;
+        case BRD_VM_BUILTIN: printf("BRD_VM_BUILTIN\n"); return;
         }
+        printf("oops\n");
 }
 #endif
 
