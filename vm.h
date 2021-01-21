@@ -78,14 +78,9 @@ struct brd_stack {
         struct brd_value *sp;
 };
 
-struct brd_heap {
-        struct brd_heap *next;
-        char *string;
-};
-
 extern struct brd_vm {
         struct brd_stack stack;
-        struct brd_heap *heap;
+        struct brd_heap_entry *heap;
         void *bytecode;
         size_t pc;
         struct brd_value_map globals;
@@ -95,12 +90,12 @@ void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
 struct brd_value *brd_stack_pop(struct brd_stack *stack);
 struct brd_value *brd_stack_peek(struct brd_stack *stack);
 
-void brd_vm_allocate(char *string);
-
 void *brd_node_compile(struct brd_node *node);
 
 void brd_vm_destroy();
 void brd_vm_init(void *bytecode);
-void brd_vm_allocate(char *s);
+void brd_vm_allocate(struct brd_heap_entry *entry);
 void brd_vm_run();
+
+void brd_vm_gc();
 #endif

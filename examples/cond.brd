@@ -1,5 +1,7 @@
 set x = 1
 
+x .. x .. x .. x .. x .. x
+
 @writeln(
     " ==== ",
     if x = 1 then
@@ -26,3 +28,7 @@ set x = 1
 
 set y = 3
 @writeln( " ==== ", if y = 2 then 43 + @writeln("it's true!") end + 100)
+
+set x = "x = " .. x
+
+@writeln(x)

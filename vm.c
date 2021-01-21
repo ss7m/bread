@@ -66,6 +66,7 @@ brd_value_map_init(struct brd_value_map *map)
 {
         for (int i = 0; i < BUCKET_SIZE; i++) {
                 map->bucket[i].key = "";
+                map->bucket[i].val.vtype = BRD_VAL_UNIT;
                 map->bucket[i].next = NULL;
         }
 }
@@ -148,12 +149,10 @@ brd_stack_peek(struct brd_stack *stack)
 }
 
 void
-brd_vm_allocate(char *string)
+brd_vm_allocate(struct brd_heap_entry *entry)
 {
-        struct brd_heap *new = malloc(sizeof(*new));
-        new->next = vm.heap;
-        new->string = string;
-        vm.heap = new;
+        entry->next = vm.heap->next;
+        vm.heap->next = entry;
 }
 
 #define ADD_OP(x) do {\
@@ -382,10 +381,14 @@ brd_node_compile(struct brd_node *node)
 void
 brd_vm_destroy()
 {
-        struct brd_heap *heap = vm.heap;
+        struct brd_heap_entry *heap = vm.heap;
         while (heap != NULL) {
-                struct brd_heap *n = heap->next;
-                free(heap->string);
+                struct brd_heap_entry *n = heap->next;
+                switch(heap->htype) {
+                case BRD_HEAP_STRING:
+                        free(heap->as.string);
+                        break;
+                }
                 free(heap);
                 heap = n;
         }
@@ -396,7 +399,10 @@ brd_vm_destroy()
 void
 brd_vm_init(void *bytecode)
 {
-        vm.heap = NULL;
+        vm.heap = malloc(sizeof(*vm.heap));
+        vm.heap->next = NULL;
+        vm.heap->htype = BRD_HEAP_STRING;
+        vm.heap->as.string = malloc(1);
         brd_value_map_init(&vm.globals);
         vm.bytecode = bytecode;
         vm.pc = 0;
@@ -519,26 +525,9 @@ brd_vm_run()
                 case BRD_VM_CONCAT:
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_pop(&vm.stack);
-                        if (brd_value_coerce_string(&value1)) {
-                                brd_vm_allocate(value1.as.string);
-                        }
-                        if (brd_value_coerce_string(&value2)) {
-                                brd_vm_allocate(value2.as.string);
-                        }
-
-                        {
-                                size_t len1, len2;
-                                char *string;
-                                len1 = strlen(value1.as.string);
-                                len2 = strlen(value2.as.string);
-                                string = malloc(len1 + len2 + 2);
-                                brd_vm_allocate(string);
-                                strcpy(string, value2.as.string);
-                                strcat(string, value1.as.string);
-                                value2.as.string = string;
-                                value2.vtype = BRD_VAL_STRING;
-                                brd_stack_push(&vm.stack, &value2);
-                        }
+                        brd_value_concat(&value2, &value1);
+                        brd_vm_allocate(value2.as.heap);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_LT:
                         value1 = *brd_stack_pop(&vm.stack);
@@ -639,7 +628,56 @@ brd_vm_run()
 #else
                         brd_stack_pop(&vm.stack);
 #endif
+                        brd_vm_gc();
                         break;
                 }
+        }
+}
+
+void
+brd_vm_gc()
+{
+        struct brd_heap_entry *heap, *prev;
+
+        heap = vm.heap->next;
+        while (heap != NULL) {
+                heap->marked = false;
+                heap = heap->next;
+        }
+
+        /* mark values in the stack */
+        for (struct brd_value *p = vm.stack.values; p < vm.stack.sp; p++) {
+                if (p->vtype == BRD_VAL_HEAP) {
+                        p->as.heap->marked = true;
+                }
+        }
+
+        /* mark values held by variables */
+        for (int i = 0; i < BUCKET_SIZE; i++) {
+                struct brd_value_map_list *p = &vm.globals.bucket[i];
+                while (p != NULL) {
+                        if (p->val.vtype == BRD_VAL_HEAP) {
+                                p->val.as.heap->marked = true;
+                        }
+                        p = p->next;
+                }
+        }
+
+        prev = vm.heap;
+        heap = prev->next;
+        while (heap != NULL) {
+                struct brd_heap_entry *next = heap->next;
+                if (heap->marked) {
+                        heap = next;
+                        continue;
+                }
+                prev->next = next;
+                switch(heap->htype) {
+                case BRD_HEAP_STRING:
+                        free(heap->as.string);
+                        break;
+                }
+                free(heap);
+                heap = next;
         }
 }
