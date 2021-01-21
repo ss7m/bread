@@ -291,28 +291,33 @@ brd_value_concat(struct brd_value *a, struct brd_value *b)
 static void
 _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
-        int *malloced = malloc(sizeof(int) * num_args);
         out->vtype = BRD_VAL_UNIT;
-
-        for(int i = 0; i < num_args; i++) {
-                malloced[i] = brd_value_coerce_string(&args[i]);
-        }
-
         for (int i = 0; i < num_args; i++) {
-                printf(
-                        "%s",
-                        args[i].vtype == BRD_VAL_STRING ? args[i].as.string
-                        : args[i].as.heap->as.string
-                );
-        }
+                struct brd_value value = args[i];
 
-        for (int i = 0; i < num_args; i++) {
-                if (malloced[i]) {
-                        free(args[i].as.heap->as.string);
-                        free(args[i].as.heap);
+                switch (value.vtype) {
+                case BRD_VAL_NUM:
+                        printf("%Lg", value.as.num);
+                        break;
+                case BRD_VAL_STRING:
+                        printf("%s", value.as.string);
+                        break;
+                case BRD_VAL_BOOL:
+                        printf("%s", value.as.boolean ? "true" : "false");
+                        break;
+                case BRD_VAL_UNIT:
+                        printf("unit");
+                        break;
+                case BRD_VAL_BUILTIN:
+                        printf("%s", builtin_name[value.as.builtin]);
+                        break;
+                case BRD_VAL_HEAP:
+                        switch (value.as.heap->htype) {
+                                case BRD_HEAP_STRING:
+                                        printf("%s", value.as.heap->as.string);
+                        }
                 }
         }
-        free(malloced);
 }
 
 static void
