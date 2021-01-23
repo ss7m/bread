@@ -71,6 +71,10 @@ enum brd_bytecode {
         /* this will do more when we have functions and classes */
         BRD_VM_RETURN,
         BRD_VM_POP,
+
+        BRD_VM_LIST, /* initializes an empty list */
+        /* this is poorly named, it's a list operation */
+        BRD_VM_PUSH, /* x = pop(), peek().push(x) */
 };
 
 struct brd_stack {

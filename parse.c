@@ -402,6 +402,7 @@ struct brd_node *
 brd_parse_base(struct brd_token_list *tokens)
 {
         struct brd_token_list copy = *tokens;
+        struct brd_node_arglist *items;
         struct brd_node *node;
         int skip_copy = skip_newlines;
 
@@ -420,6 +421,16 @@ brd_parse_base(struct brd_token_list *tokens)
                         BARF("You're missing a right paren there m8");
                         return NULL;
                 }
+        case BRD_TOK_LBRACKET:
+                skip_newlines = true;
+                items = brd_parse_arglist(tokens);
+                if (items == NULL) {
+                        BARF("bad argument list");
+                } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RBRACKET) {
+                        BARF("you're missing a right bracket");
+                }
+                skip_newlines = skip_copy;
+                return brd_node_list_lit_new(items);
         case BRD_TOK_VAR:
                 return brd_node_var_new(brd_token_list_pop_string(tokens));
         case BRD_TOK_NUM:

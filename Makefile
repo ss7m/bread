@@ -60,8 +60,8 @@ $(RELDIR)/%.o: %.c $(HDRS)
 
 .PHONY: clean
 clean:
-	rm $(RELEXE) $(RELOBJS)
-	rm $(DBGEXE) $(DBGOBJS)
+	-rm $(RELEXE) $(RELOBJS)
+	-rm $(DBGEXE) $(DBGOBJS)
 
 .PHONY: remake
 remake: clean all

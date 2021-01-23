@@ -59,6 +59,8 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_CONCAT: printf("BRD_VM_CONCAT\n"); return;
         case BRD_VM_CALL: printf("BRD_VM_CALL\n"); return;
         case BRD_VM_BUILTIN: printf("BRD_VM_BUILTIN\n"); return;
+        case BRD_VM_LIST: printf("BRD_VM_LIST\n"); return;
+        case BRD_VM_PUSH: printf("BRD_VM_PUSH\n"); return;
         }
         printf("oops\n");
 }
@@ -291,6 +293,13 @@ mkbinop:
         case BRD_NODE_UNIT_LIT:
                 ADD_OP(BRD_VM_UNIT);
                 break;
+        case BRD_NODE_LIST_LIT:
+                ADD_OP(BRD_VM_LIST);
+                for (int i = 0; i < AS(list_lit, node)->items->num_args; i++) {
+                        RECURSE_ON(AS(list_lit, node)->items->args[i]);
+                        ADD_OP(BRD_VM_PUSH);
+                }
+                break;
         case BRD_NODE_FUNCALL:
                 for (int i = 0; i < AS(funcall, node)->args->num_args; i++) {
                         RECURSE_ON(AS(funcall, node)->args->args[i]);
@@ -384,12 +393,17 @@ brd_node_compile(struct brd_node *node)
 void
 brd_vm_destroy()
 {
+        /* note to self: for container types, don't free the members! */
         struct brd_heap_entry *heap = vm.heap;
         while (heap != NULL) {
                 struct brd_heap_entry *n = heap->next;
                 switch(heap->htype) {
                 case BRD_HEAP_STRING:
                         free(heap->as.string);
+                        break;
+                case BRD_HEAP_LIST:
+                        free(heap->as.list->items);
+                        free(heap->as.list);
                         break;
                 }
                 free(heap);
@@ -621,6 +635,25 @@ brd_vm_run()
                         brd_value_call(&value1, vm.stack.sp, num_args, &value2);
                         brd_stack_push(&vm.stack, &value2);
                         break;
+                case BRD_VM_LIST:
+                        value1.vtype = BRD_VAL_HEAP;
+                        value1.as.heap = malloc(sizeof(*value1.as.heap));
+                        value1.as.heap->htype = BRD_HEAP_LIST;
+                        value1.as.heap->as.list = malloc(
+                                sizeof(struct brd_value_list)
+                        );
+                        brd_value_list_init(value1.as.heap->as.list);
+                        brd_vm_allocate(value1.as.heap);
+                        brd_stack_push(&vm.stack, &value1);
+                        break;
+                case BRD_VM_PUSH:
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_peek(&vm.stack);
+                        brd_value_list_push(
+                                value2.as.heap->as.list,
+                                &value1
+                        );
+                        break;
                 case BRD_VM_RETURN:
                         go = false;
                         break;
@@ -660,7 +693,7 @@ brd_vm_gc()
                 struct brd_value_map_list *p = &vm.globals.bucket[i];
                 while (p != NULL) {
                         if (p->val.vtype == BRD_VAL_HEAP) {
-                                p->val.as.heap->marked = true;
+                                brd_heap_mark(p->val.as.heap);
                         }
                         p = p->next;
                 }
@@ -671,14 +704,18 @@ brd_vm_gc()
         while (heap != NULL) {
                 struct brd_heap_entry *next = heap->next;
                 if (heap->marked) {
+                        prev = heap;
                         heap = next;
-                        continue;
                 }
+
                 prev->next = next;
                 switch(heap->htype) {
                 case BRD_HEAP_STRING:
                         free(heap->as.string);
                         break;
+                case BRD_HEAP_LIST:
+                        free(heap->as.list->items);
+                        free(heap->as.list);
                 }
                 free(heap);
                 heap = next;

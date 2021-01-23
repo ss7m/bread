@@ -3,6 +3,46 @@
 
 #include <math.h>
 
+void brd_value_list_init(struct brd_value_list *list)
+{
+        list->capacity = 4;
+        list->length = 0;
+        list->items = malloc(sizeof(struct brd_value) * list->capacity);
+}
+
+void brd_value_list_push(struct brd_value_list *list, struct brd_value *value)
+{
+        if (list->capacity == list->length) {
+                list->capacity *= 1.5;
+                list->items = realloc(
+                        list->items,
+                        sizeof(struct brd_value) * list->capacity
+                );
+        }
+
+        list->items[list->length++] = *value;
+}
+
+void brd_heap_mark(struct brd_heap_entry *entry)
+{
+        if (entry->marked) {
+                return;
+        }
+
+        entry->marked = true;
+        switch (entry->htype) {
+        case BRD_HEAP_STRING:
+                break;
+        case BRD_HEAP_LIST:
+                for (int i = 0; i < entry->as.list->length; i++) {
+                        if (entry->as.list->items[i].vtype == BRD_VAL_HEAP) {
+                                brd_heap_mark(entry->as.list->items[i].as.heap);
+                        }
+                }
+                break;
+        }
+}
+
 #ifdef DEBUG
 void
 brd_value_debug(struct brd_value *value)
@@ -22,12 +62,25 @@ brd_value_debug(struct brd_value *value)
                 printf("unit\n");
                 break;
         case BRD_VAL_BUILTIN:
-                printf("<< builtin: %s >>", builtin_name[value->as.builtin]);
+                printf("<< builtin: %s >>\n", builtin_name[value->as.builtin]);
                 break;
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
                         printf("%s\n", value->as.heap->as.string);
+                        break;
+                case BRD_HEAP_LIST:
+                        printf("[ ");
+                        for (int i = 0; i < value->as.heap->as.list->length; i++) {
+                                brd_value_debug(
+                                        &value->as.heap->as.list->items[i]
+                                );
+                                if (i < value->as.heap->as.list->length - 1) {
+                                        printf(", ");
+                                }
+                        }
+                        printf(" ]\n");
+                        break;
                 }
         }
 }
@@ -67,6 +120,10 @@ brd_value_coerce_num(struct brd_value *value)
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
                         value->as.num = strtold(value->as.heap->as.string, NULL);
+                        break;
+                case BRD_HEAP_LIST:
+                        BARF("can't coerce a list to a number");
+                        break;
                 }
         }
         value->vtype = BRD_VAL_NUM;
@@ -104,6 +161,9 @@ brd_value_coerce_string(struct brd_value *value)
                 switch (value->as.heap->htype) {
                         case BRD_HEAP_STRING:
                                 return false;
+                        case BRD_HEAP_LIST:
+                                BARF("write this");
+                                return true;
                 }
         }
         BARF("what?");
@@ -128,6 +188,8 @@ brd_value_truthify(struct brd_value *value)
                 switch(value->as.heap->htype) {
                 case BRD_HEAP_STRING:
                         return value->as.heap->as.string[0] != '\0';
+                case BRD_HEAP_LIST:
+                        return value->as.heap->as.list->length > 0;
                 }
         }
         BARF("what?");
@@ -160,6 +222,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         switch (b->as.heap->htype) {
                         case BRD_HEAP_STRING:
                                 return strcmp(a->as.string, b->as.heap->as.string);
+                        case BRD_HEAP_LIST:
+                                BARF("can't compare a list and a string");
+                                return -1;
                         }
                 }
                 break;
@@ -185,6 +250,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                         a->as.boolean ? "true" : "false",
                                         b->as.heap->as.string
                                 );
+                        case BRD_HEAP_LIST:
+                                BARF("can't compare a list and a boolean");
+                                return -1;
                         }
                 }
                 break;
@@ -205,6 +273,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         switch (b->as.heap->htype) {
                         case BRD_HEAP_STRING:
                                 return -(b->as.heap->as.string[0] != '\0');
+                        case BRD_HEAP_LIST:
+                                BARF("can't compare a list and unit");
+                                return -1;
                         }
                 }
                 break;
@@ -232,9 +303,21 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                 switch (b->as.heap->htype) {
                                 case BRD_HEAP_STRING:
                                         return strcmp(a->as.heap->as.string, b->as.heap->as.string);
+                                case BRD_HEAP_LIST:
+                                        BARF("can't compare a list and a string");
+                                        return -1;
                                 }
                         }
                         break;
+                case BRD_HEAP_LIST:
+                        if (b->vtype == BRD_VAL_HEAP
+                                        && b->as.heap->htype == BRD_HEAP_LIST) {
+                                BARF("write this code");
+                                return -1;
+                        } else {
+                                BARF("can only compare lists with lists");
+                                return -1;
+                        }
                 }
         }
         BARF("what?");
@@ -291,7 +374,10 @@ brd_value_concat(struct brd_value *a, struct brd_value *b)
 static void
 _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
-        out->vtype = BRD_VAL_UNIT;
+        if (out != NULL) {
+                out->vtype = BRD_VAL_UNIT;
+        }
+
         for (int i = 0; i < num_args; i++) {
                 struct brd_value value = args[i];
 
@@ -313,8 +399,23 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                         break;
                 case BRD_VAL_HEAP:
                         switch (value.as.heap->htype) {
-                                case BRD_HEAP_STRING:
-                                        printf("%s", value.as.heap->as.string);
+                        case BRD_HEAP_STRING:
+                                printf("%s", value.as.heap->as.string);
+                                break;
+                        case BRD_HEAP_LIST:
+                                printf("[ ");
+                                for (int i = 0; i < value.as.heap->as.list->length; i++) {
+                                        _builtin_write(
+                                                &value.as.heap->as.list->items[i],
+                                                1,
+                                                NULL
+                                        );
+                                        if (i < value.as.heap->as.list->length - 1) {
+                                                printf(", ");
+                                        }
+                                }
+                                printf(" ]");
+                                break;
                         }
                 }
         }

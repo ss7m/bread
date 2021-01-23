@@ -1,9 +1,20 @@
 #ifndef BRD_VALUE_H
 #define BRD_VALUE_H
 
+struct brd_value;
+
 enum brd_heap_type {
         BRD_HEAP_STRING,
+        BRD_HEAP_LIST,
 };
+
+struct brd_value_list {
+        size_t length, capacity;
+        struct brd_value *items;
+};
+
+void brd_value_list_init(struct brd_value_list *list);
+void brd_value_list_push(struct brd_value_list *list, struct brd_value *value);
 
 struct brd_heap_entry {
         struct brd_heap_entry *next;
@@ -14,8 +25,11 @@ struct brd_heap_entry {
 
         union {
                 char *string;
+                struct brd_value_list *list;
         } as;
 };
+
+void brd_heap_mark(struct brd_heap_entry *entry);
 
 enum brd_value_type {
         BRD_VAL_NUM,

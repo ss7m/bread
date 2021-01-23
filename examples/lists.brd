@@ -1,5 +1,14 @@
 # initialize a list of length 100 of all zeros
-set x = for i=0,100 do 0 end
+#set x = for i=0,100 do 0 end
 
 # 2d array of all zeros
-set y = for i=0,100 do for j = 0,100 do 0 end end
+#set y = for i=0,100 do for j = 0,100 do 0 end end
+
+set y = [ "ab".."ab", "ab".."ab", "ab".."ab" ]
+set x = [ y, y, "Hello, " .. "World!" ]
+set y = 1
+4
+@writeln(x)
+
+set x = []
+@writeln( x or "this list empty. YEET" )

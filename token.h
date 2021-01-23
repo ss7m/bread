@@ -13,6 +13,8 @@ enum brd_token {
         /* grammatical stuff */
         BRD_TOK_LPAREN,
         BRD_TOK_RPAREN,
+        BRD_TOK_LBRACKET, /* [ ] */
+        BRD_TOK_RBRACKET,
         BRD_TOK_NEWLINE,
         BRD_TOK_EOF,
 

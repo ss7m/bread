@@ -179,6 +179,22 @@ brd_node_arglist_new(struct brd_node **args, size_t num_args)
 }
 
 static void
+brd_node_list_lit_destroy(struct brd_node *n)
+{
+        brd_node_arglist_destroy(((struct brd_node_list_lit *)n)->items);
+        _brd_node_destroy(n);
+}
+
+struct brd_node *brd_node_list_lit_new(struct brd_node_arglist *items)
+{
+        struct brd_node_list_lit *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_LIST_LIT;
+        n->_node.destroy = brd_node_list_lit_destroy;
+        n->items = items;
+        return (struct brd_node *)n;
+}
+
+static void
 brd_node_funcall_destroy(struct brd_node *n)
 {
         struct brd_node_funcall *f = (struct brd_node_funcall *)n;

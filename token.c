@@ -256,6 +256,14 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         brd_token_list_add_token(list, BRD_TOK_RPAREN);
                         string++;
                         break;
+                case '[':
+                        brd_token_list_add_token(list, BRD_TOK_LBRACKET);
+                        string++;
+                        break;
+                case ']':
+                        brd_token_list_add_token(list, BRD_TOK_RBRACKET);
+                        string++;
+                        break;
                 case '\n':
                         brd_token_list_add_token(list, BRD_TOK_NEWLINE);
                         string++;
