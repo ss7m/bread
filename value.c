@@ -23,6 +23,26 @@ void brd_value_list_push(struct brd_value_list *list, struct brd_value *value)
         list->items[list->length++] = *value;
 }
 
+struct brd_value *
+brd_value_list_get(struct brd_value_list *list, size_t idx)
+{
+        if (idx >= list->length) {
+                BARF("index out of boudns error");
+        } else {
+                return &list->items[idx];
+        }
+}
+
+void
+brd_value_list_set(struct brd_value_list *list, size_t idx, struct brd_value *value)
+{
+        if (idx >= list->length) {
+                BARF("index out of bounds error");
+        } else {
+                list->items[idx] = *value;
+        }
+}
+
 void brd_heap_mark(struct brd_heap_entry *entry)
 {
         if (entry->marked) {

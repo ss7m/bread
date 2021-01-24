@@ -105,13 +105,32 @@ brd_parse_expression(struct brd_token_list *tokens)
 struct brd_node *
 brd_parse_lvalue(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy = *tokens;
-        switch (brd_token_list_pop_token(tokens)) {
-        case BRD_TOK_VAR:
-                return brd_node_var_new(brd_token_list_pop_string(tokens));
-        default:
-                *tokens = copy;
-                return NULL;
+        struct brd_node *node, *idx;
+        int skip_copy = skip_newlines;
+
+        if (brd_token_list_pop_token(tokens) == BRD_TOK_VAR) {
+                node = brd_node_var_new(brd_token_list_pop_string(tokens));
+        } else {
+                BARF("error parsing lvalue");
+        }
+
+        for (;;) {
+                switch (brd_token_list_peek(tokens)) {
+                case BRD_TOK_LBRACKET:
+                        brd_token_list_pop_token(tokens);
+                        skip_newlines = true;
+                        idx = brd_parse_expression(tokens);
+                        if (idx == NULL) {
+                                BARF("bad index");
+                        } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RBRACKET) {
+                                BARF("you're missing a right bracket");
+                        }
+                        skip_newlines = skip_copy;
+                        node = brd_node_index_new(node, idx);
+                        break;
+                default:
+                        return node;
+                }
         }
 }
 
@@ -369,7 +388,7 @@ brd_parse_prefix(struct brd_token_list *tokens)
 struct brd_node *
 brd_parse_postfix(struct brd_token_list *tokens)
 {
-        struct brd_node *node;
+        struct brd_node *node, *idx;
         struct brd_node_arglist *args;
         int skip_copy = skip_newlines;
 
@@ -391,6 +410,18 @@ brd_parse_postfix(struct brd_token_list *tokens)
                         }
                         skip_newlines = skip_copy;
                         node = brd_node_funcall_new(node, args);
+                        break;
+                case BRD_TOK_LBRACKET:
+                        brd_token_list_pop_token(tokens);
+                        skip_newlines = true;
+                        idx = brd_parse_expression(tokens);
+                        if (idx == NULL) {
+                                BARF("bad index");
+                        } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RBRACKET) {
+                                BARF("you're missing a right bracket");
+                        }
+                        skip_newlines = skip_copy;
+                        node = brd_node_index_new(node, idx);
                         break;
                 default:
                         return node;

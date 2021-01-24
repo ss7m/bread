@@ -47,7 +47,6 @@ struct brd_node *
 brd_node_assign_new(struct brd_node *l, struct brd_node *r)
 {
         struct brd_node_assign *n = malloc(sizeof(*n));
-        assert(brd_node_is_lvalue(l));
         n->_node.ntype = BRD_NODE_ASSIGN;
         n->_node.destroy = brd_node_assign_destroy;
         n->l = l;
@@ -285,15 +284,22 @@ brd_node_ifexpr_new(struct brd_node *cond, struct brd_node *body, struct brd_nod
         return (struct brd_node *)n;
 }
 
-/*
- * Utility functions
- */
+static void
+brd_node_index_destroy(struct brd_node *n)
+{
+        struct brd_node_index *i = (struct brd_node_index *)n;
+        brd_node_destroy(i->list);
+        brd_node_destroy(i->idx);
+        _brd_node_destroy(n);
+}
 
-int brd_node_is_lvalue(struct brd_node *n) {
-        switch (n->ntype) {
-        case BRD_NODE_VAR:
-                return true;
-        default:
-                return false;
-        }
+struct brd_node *
+brd_node_index_new(struct brd_node *list, struct brd_node *idx)
+{
+        struct brd_node_index *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_INDEX;
+        n->_node.destroy = brd_node_index_destroy;
+        n->list = list;
+        n->idx = idx;
+        return (struct brd_node *)n;
 }

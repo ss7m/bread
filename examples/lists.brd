@@ -6,10 +6,12 @@
 
 set y = [ "ab".."ab", "ab".."ab", "ab".."ab" ]
 set x = [ y, y, "Hello, " .. "World!" ]
+@writeln(x, "\n")
 set y = 1
 4
+@writeln(x[0])
+set x[0][1] = "wow!"
 @writeln(x)
 
 set x = []
-set x = false
 @writeln( x or "this list empty. YEET" )

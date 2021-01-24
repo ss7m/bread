@@ -61,6 +61,8 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_BUILTIN: printf("BRD_VM_BUILTIN\n"); return;
         case BRD_VM_LIST: printf("BRD_VM_LIST\n"); return;
         case BRD_VM_PUSH: printf("BRD_VM_PUSH\n"); return;
+        case BRD_VM_GET_IDX: printf("BRD_VM_GET_IDX\n"); return;
+        case BRD_VM_SET_IDX: printf("BRD_VM_SET_IDX\n"); return;
         }
         printf("oops\n");
 }
@@ -201,6 +203,13 @@ brd_vm_allocate(struct brd_heap_entry *entry)
 
 #define AS(type, x) ((struct brd_node_ ## type *)(x))
 
+static void _brd_node_compile(
+        struct brd_node *node,
+        void **bytecode,
+        size_t *length,
+        size_t *capacity
+);
+
 static void
 brd_node_compile_lvalue(
         struct brd_node *node,
@@ -212,6 +221,11 @@ brd_node_compile_lvalue(
         case BRD_NODE_VAR:
                 ADD_OP(BRD_VM_SET_VAR);
                 ADD_STR(AS(var, node)->id);
+                break;
+        case BRD_NODE_INDEX:
+                RECURSE_ON(AS(index, node)->list);
+                RECURSE_ON(AS(index, node)->idx);
+                ADD_OP(BRD_VM_SET_IDX);
                 break;
         default:
                 BARF("This shouldn't happen.");
@@ -319,6 +333,11 @@ mkbinop:
                                 ADD_OP(BRD_VM_POP);
                         }
                 }
+                break;
+        case BRD_NODE_INDEX:
+                RECURSE_ON(AS(index, node)->list);
+                RECURSE_ON(AS(index, node)->idx);
+                ADD_OP(BRD_VM_GET_IDX);
                 break;
         case BRD_NODE_IFEXPR:
                 ifexpr_temps = malloc(sizeof(size_t)*(1+AS(ifexpr, node)->num_elifs));
@@ -430,7 +449,7 @@ void
 brd_vm_run()
 {
         enum brd_bytecode op;
-        struct brd_value value1, value2;
+        struct brd_value value1, value2, value3;
         char *id;
         int go = true;
         size_t jmp, num_args;
@@ -645,6 +664,38 @@ brd_vm_run()
                         brd_value_list_init(value1.as.heap->as.list);
                         brd_vm_allocate(value1.as.heap);
                         brd_stack_push(&vm.stack, &value1);
+                        break;
+                case BRD_VM_GET_IDX:
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
+                        if (value2.vtype != BRD_VAL_HEAP
+                                        || value2.as.heap->htype != BRD_HEAP_LIST) {
+                                BARF("attempted to index a non-list");
+                        } else if (value1.vtype != BRD_VAL_NUM) {
+                                BARF("attempted to index with a non-number");
+                        }
+                        value2 = *brd_value_list_get(
+                                value2.as.heap->as.list,
+                                (size_t) floorl(value1.as.num)
+                        );
+                        brd_stack_push(&vm.stack, &value2);
+                        break;
+                case BRD_VM_SET_IDX:
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
+                        if (value2.vtype != BRD_VAL_HEAP
+                                        || value2.as.heap->htype != BRD_HEAP_LIST) {
+                                BARF("attempted to index a non-list");
+                        } else if (value1.vtype != BRD_VAL_NUM) {
+                                BARF("attempted to index with a non-number");
+                        }
+                        value3 = *brd_stack_pop(&vm.stack);
+                        brd_value_list_set(
+                                value2.as.heap->as.list,
+                                (size_t) floorl(value1.as.num),
+                                &value3
+                        );
+                        brd_stack_push(&vm.stack, &value3);
                         break;
                 case BRD_VM_PUSH:
                         value1 = *brd_stack_pop(&vm.stack);

@@ -1,3 +1,6 @@
+I haven't documented all the places where whitespace sensitivity
+gets "turned off", i.e where arbitrary newlines are allowed
+
 num    = whatever strtold accepts
 string = /"([^\\](\\[nt"]))*"/
 id     = /[a-zA-Z_][a-zA-Z0-9_]*/
@@ -13,7 +16,9 @@ expression =
     | set $lvalue = $expression
     | $concatexp
 
-lvalue = $var
+lvalue =
+    | $var
+    | $lvalue [ $expression ]
 
 concatexp =
     | $concatexp .. $orexp
@@ -56,6 +61,7 @@ prefix =
 
 postfix =
     | $postfix ( $arglist )
+    | $postfix [ $expression ]
     | $base
 
 arglist =
