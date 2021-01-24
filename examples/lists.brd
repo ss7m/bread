@@ -11,4 +11,5 @@ set y = 1
 @writeln(x)
 
 set x = []
+set x = false
 @writeln( x or "this list empty. YEET" )

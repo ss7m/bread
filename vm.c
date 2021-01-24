@@ -706,6 +706,7 @@ brd_vm_gc()
                 if (heap->marked) {
                         prev = heap;
                         heap = next;
+                        continue;
                 }
 
                 prev->next = next;
