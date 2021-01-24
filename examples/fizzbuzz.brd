@@ -1,13 +1,16 @@
-for x = 1, 100, 1 do
-    set three = x % 3 = 0
-    set five  = x % 5 = 0
+set x = 1
 
+while x < 10000 do
+  set three = x % 3 = 0
+  set five  = x % 5 = 0
+
+  @writeln (
     if three or five then
-        @writeln(
-            if three then "fizz" else "" end,
-            if five  then "buzz" else "" end
-        )
+      three and "fizz" or "" .. five and "buzz" or ""
     else
-        @writeln(x)
+      x
     end
+  )
+
+  set x = x + 1
 end

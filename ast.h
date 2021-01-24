@@ -20,6 +20,7 @@ enum brd_node_type {
         BRD_NODE_BODY,
         BRD_NODE_IFEXPR,
         BRD_NODE_INDEX,
+        BRD_NODE_WHILE,
 
         BRD_NODE_PROGRAM, /* the top level program */
         BRD_NODE_MAX,
@@ -158,6 +159,12 @@ struct brd_node_index {
         struct brd_node *idx;
 };
 
+struct brd_node_while {
+        struct brd_node _node;
+        struct brd_node *cond;
+        struct brd_node *body;
+};
+
 struct brd_node *brd_node_program_new(struct brd_node **stmts, size_t num_stmts);
 struct brd_node *brd_node_assign_new(struct brd_node *l, struct brd_node *r);
 struct brd_node *brd_node_binop_new(enum brd_binop btype, struct brd_node *l, struct brd_node *r);
@@ -174,6 +181,7 @@ struct brd_node *brd_node_builtin_new(char *builtin);
 struct brd_node *brd_node_body_new();
 struct brd_node *brd_node_ifexpr_new(struct brd_node *cond, struct brd_node *body, struct brd_node_elif *elifs, size_t num_elifs, struct brd_node *els);
 struct brd_node *brd_node_index_new(struct brd_node *list, struct brd_node *idx);
+struct brd_node *brd_node_while_new(struct brd_node *cond, struct brd_node *body);
 
 #define brd_node_destroy(n) (((struct brd_node *)n)->destroy((struct brd_node *)n))
 

@@ -303,3 +303,22 @@ brd_node_index_new(struct brd_node *list, struct brd_node *idx)
         n->idx = idx;
         return (struct brd_node *)n;
 }
+
+static void
+brd_node_while_destroy(struct brd_node *n)
+{
+        struct brd_node_while *w = (struct brd_node_while *)n;
+        brd_node_destroy(w->cond);
+        brd_node_destroy(w->body);
+        _brd_node_destroy(n);
+}
+
+struct brd_node *brd_node_while_new(struct brd_node *cond, struct brd_node *body)
+{
+        struct brd_node_while *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_WHILE;
+        n->_node.destroy = brd_node_while_destroy;
+        n->cond = cond;
+        n->body = body;
+        return (struct brd_node *)n;
+}

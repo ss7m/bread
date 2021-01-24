@@ -54,6 +54,7 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_TESTP: printf("BRD_VM_TESTP\n"); return;
         case BRD_VM_SET_VAR: printf("BRD_VM_SET_VAR\n"); return;
         case BRD_VM_JMP: printf("BRD_VM_JMP\n"); return;
+        case BRD_VM_JMPB: printf("BRD_VM_JMPB\n"); return;
         case BRD_VM_RETURN: printf("BRD_VM_RETURN\n"); return;
         case BRD_VM_POP: printf("BRD_VM_POP\n"); return;
         case BRD_VM_CONCAT: printf("BRD_VM_CONCAT\n"); return;
@@ -240,7 +241,7 @@ _brd_node_compile(
         size_t *capacity)
 {
         enum brd_bytecode op;
-        size_t temp, jmp, *ifexpr_temps;
+        size_t temp, temp2, jmp, *ifexpr_temps;
 
         switch (node->ntype) {
         case BRD_NODE_ASSIGN: 
@@ -379,6 +380,22 @@ mkbinop:
                 }
 
                 free(ifexpr_temps);
+                break;
+        case BRD_NODE_WHILE:
+                ADD_OP(BRD_VM_LIST);
+                temp = *length;
+                RECURSE_ON(AS(while, node)->cond);
+                ADD_OP(BRD_VM_TESTP);
+                ADD_OP(BRD_VM_JMP);
+                temp2 = *length;
+                ADD_SIZET(0);
+                RECURSE_ON(AS(while, node)->body);
+                ADD_OP(BRD_VM_PUSH);
+                ADD_OP(BRD_VM_JMPB);
+                jmp = *length - temp;
+                ADD_SIZET(jmp);
+                jmp = *length - temp2;
+                *(size_t *)(*bytecode + temp2) = jmp;
                 break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
@@ -639,6 +656,10 @@ brd_vm_run()
                 case BRD_VM_JMP:
                         jmp = *(size_t *)(vm.bytecode + vm.pc);
                         vm.pc += jmp;
+                        break;
+                case BRD_VM_JMPB:
+                        jmp = *(size_t *)(vm.bytecode + vm.pc);
+                        vm.pc -= jmp;
                         break;
                 case BRD_VM_BUILTIN:
                         value1.vtype = BRD_VAL_BUILTIN;

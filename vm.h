@@ -67,6 +67,7 @@ enum brd_bytecode {
         BRD_VM_BUILTIN, /* has arg: size_t */
         BRD_VM_CALL,
         BRD_VM_JMP, /* has arg: size_t */
+        BRD_VM_JMPB, /* has arg: size_t */
 
         /* this will do more when we have functions and classes */
         BRD_VM_RETURN,
