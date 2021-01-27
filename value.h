@@ -1,6 +1,12 @@
 #ifndef BRD_VALUE_H
 #define BRD_VALUE_H
 
+/* 
+ * If I were smarter I'd make the bucket grow
+ * But for the mean time that feels like a premature optimization
+ */
+#define BUCKET_SIZE 32
+
 struct brd_value;
 
 enum brd_heap_type {
@@ -52,6 +58,21 @@ struct brd_value {
         } as;
         enum brd_value_type vtype;
 };
+
+struct brd_value_map_list {
+        char *key;
+        struct brd_value_map_list *next;
+        struct brd_value val;
+};
+
+struct brd_value_map {
+        struct brd_value_map_list bucket[BUCKET_SIZE];
+};
+
+void brd_value_map_init(struct brd_value_map *map);
+void brd_value_map_destroy(struct brd_value_map *map);
+void brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val);
+struct brd_value *brd_value_map_get(struct brd_value_map *map, char *key);
 
 #ifdef DEBUG
 void brd_value_debug(struct brd_value *value);

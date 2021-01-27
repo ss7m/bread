@@ -1,30 +1,9 @@
 #ifndef BRD_VM_H
 #define BRD_VM_H
 
-/* 
- * If I were smarter I'd make the bucket grow
- * But for the mean time that feels like a premature optimization
- */
-#define BUCKET_SIZE 32
-
 /* stack is limited to 256 values */
 /* That should be enough, right? */
 #define STACK_SIZE 256
-
-struct brd_value_map_list {
-        char *key;
-        struct brd_value_map_list *next;
-        struct brd_value val;
-};
-
-struct brd_value_map {
-        struct brd_value_map_list bucket[BUCKET_SIZE];
-};
-
-void brd_value_map_init(struct brd_value_map *map);
-void brd_value_map_destroy(struct brd_value_map *map);
-void brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val);
-struct brd_value *brd_value_map_get(struct brd_value_map *map, char *key);
 
 /* VM bytecode */
 /* Stack based virtual machine */
