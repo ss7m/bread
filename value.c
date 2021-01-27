@@ -3,14 +3,16 @@
 
 #include <math.h>
 
-void brd_value_list_init(struct brd_value_list *list)
+void
+brd_value_list_init(struct brd_value_list *list)
 {
         list->capacity = 4;
         list->length = 0;
         list->items = malloc(sizeof(struct brd_value) * list->capacity);
 }
 
-void brd_value_list_push(struct brd_value_list *list, struct brd_value *value)
+void
+brd_value_list_push(struct brd_value_list *list, struct brd_value *value)
 {
         if (list->capacity == list->length) {
                 list->capacity *= 1.5;
@@ -43,7 +45,8 @@ brd_value_list_set(struct brd_value_list *list, size_t idx, struct brd_value *va
         }
 }
 
-void brd_heap_mark(struct brd_heap_entry *entry)
+void
+brd_heap_mark(struct brd_heap_entry *entry)
 {
         if (entry->marked) {
                 return;
@@ -344,13 +347,14 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
         return -1;
 }
 
-void
+int
 brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, struct brd_value *out)
 {
         if (f->vtype == BRD_VAL_BUILTIN) {
-                builtin_function[f->as.builtin](args, num_args, out);
+                return builtin_function[f->as.builtin](args, num_args, out);
         } else {
                 BARF("attempted to call a non-callable");
+                return -1;
         }
 }
 
@@ -391,7 +395,7 @@ brd_value_concat(struct brd_value *a, struct brd_value *b)
         a->as.heap = new;
 }
 
-static void
+static int
 _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
         if (out != NULL) {
@@ -439,37 +443,108 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                         }
                 }
         }
+
+        return false;
 }
 
-static void
+static int
 _builtin_writeln(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
         _builtin_write(args, num_args, out);
         printf("\n");
+        return false;
 }
 
-static void
+static int
 _builtin_readln(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
-        BARF("finish this");
-        (void)args;(void)num_args;(void)out;
+        size_t n = 0;
+
+        (void)args;
+        if (num_args > 0) {
+                BARF("readln accepts no arguments");
+        }
+
+        out->vtype = BRD_VAL_HEAP;
+        out->as.heap = malloc(sizeof(struct brd_heap_entry));
+        out->as.heap->htype = BRD_HEAP_STRING;
+        out->as.heap->as.string = NULL;
+
+        n = getline(&out->as.heap->as.string, &n, stdin);
+        out->as.heap->as.string[n-1] = '\0';
+        return true;
 }
 
-static void
+static int
 _builtin_length(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
-        BARF("finish this");
-        (void)args;(void)num_args;(void)out;
+        if (num_args != 1) {
+                BARF("length accepts exactly 1 argument");
+        }
+
+        out->vtype = BRD_VAL_NUM;
+
+        switch(args[0].vtype) {
+        case BRD_VAL_STRING:
+                out->as.num = strlen(args[0].as.string);
+                break;
+        case BRD_VAL_HEAP:
+                switch (args[0].as.heap->htype) {
+                case BRD_HEAP_STRING:
+                        out->as.num = strlen(args[0].as.heap->as.string);
+                        break;
+                case BRD_HEAP_LIST:
+                        out->as.num = args[0].as.heap->as.list->length;
+                        break;
+                }
+                break;
+        default:
+                BARF("called length on a non-length-haver");
+        }
+
+        return false;
 }
 
-static void
+static int
 _builtin_typeof(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
-        BARF("finish this");
-        (void)args;(void)num_args;(void)out;
+
+        if (num_args != 1) {
+                BARF("typeof accepts exactly 1 argument");
+        }
+
+        out->vtype = BRD_VAL_STRING;
+        switch (args[0].vtype) {
+        case BRD_VAL_NUM:
+                out->as.string = "number";
+                break;
+        case BRD_VAL_STRING:
+                out->as.string = "string";
+                break;
+        case BRD_VAL_BOOL:
+                out->as.string = "boolean";
+                break;
+        case BRD_VAL_UNIT:
+                out->as.string = "unit";
+                break;
+        case BRD_VAL_BUILTIN:
+                out->as.string = "builtin";
+                break;
+        case BRD_VAL_HEAP:
+                switch (args[0].as.heap->htype) {
+                case BRD_HEAP_STRING:
+                        out->as.string = "string";
+                        break;
+                case BRD_HEAP_LIST:
+                        out->as.string = "list";
+                        break;
+                }
+        }
+
+        return false;
 }
 
-static void
+static int
 _builtin_system(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
         size_t len;
@@ -508,6 +583,7 @@ _builtin_system(struct brd_value *args, size_t num_args, struct brd_value *out)
         }
         free(malloced);
         free(cmd);
+        return false;
 }
 
 enum brd_builtin brd_lookup_builtin(char *builtin)

@@ -669,7 +669,9 @@ brd_vm_run(struct brd_vm *vm)
                         vm->pc += sizeof(size_t);
                         value1 = *brd_stack_pop(&vm->stack);
                         vm->stack.sp -= num_args;
-                        brd_value_call(&value1, vm->stack.sp, num_args, &value2);
+                        if (brd_value_call(&value1, vm->stack.sp, num_args, &value2)) {
+                                brd_vm_allocate(vm, value2.as.heap);
+                        }
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_LIST:

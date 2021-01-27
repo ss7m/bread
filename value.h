@@ -62,7 +62,7 @@ void brd_value_coerce_num(struct brd_value *value);
 int brd_value_coerce_string(struct brd_value *value);
 int brd_value_truthify(struct brd_value *value);
 int brd_value_compare(struct brd_value *a, struct brd_value *b);
-void brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, struct brd_value *out);
+int brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, struct brd_value *out);
 void brd_value_concat(struct brd_value *a, struct brd_value *b);
 
 enum brd_builtin {
@@ -75,7 +75,7 @@ enum brd_builtin {
         BRD_NUM_BUILTIN,
 };
 
-typedef void (*builtin_fn_dec)(
+typedef int (*builtin_fn_dec)(
         struct brd_value *args,
         size_t num_args,
         struct brd_value *out
