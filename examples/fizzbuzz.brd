@@ -1,12 +1,16 @@
 set x = 1
 
-while x < 10000 do
+while x <= 45 do
   set three = x % 3 = 0
   set five  = x % 5 = 0
 
   @writeln (
-    if three or five then
-      three and "fizz" or "" .. five and "buzz" or ""
+    if three and five then
+      "fizzbuzz"
+    elif three then
+      "fizz"
+    elif five then
+      "buzz"
     else
       x
     end
