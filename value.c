@@ -148,6 +148,18 @@ brd_value_map_get(struct brd_value_map *map, char *key)
         return NULL;
 }
 
+void
+brd_value_map_copy(struct brd_value_map *dest, struct brd_value_map *src)
+{
+        for (int i = 0; i < BUCKET_SIZE; i++) {
+                struct brd_value_map_list *entry = src->bucket[i].next;
+                while (entry != NULL) {
+                        brd_value_map_set(dest, entry->key, &entry->val);
+                        entry = entry->next;
+                }
+        }
+}
+
 #ifdef DEBUG
 void
 brd_value_debug(struct brd_value *value)

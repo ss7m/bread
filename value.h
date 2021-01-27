@@ -73,6 +73,7 @@ void brd_value_map_init(struct brd_value_map *map);
 void brd_value_map_destroy(struct brd_value_map *map);
 void brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val);
 struct brd_value *brd_value_map_get(struct brd_value_map *map, char *key);
+void brd_value_map_copy(struct brd_value_map *dest, struct brd_value_map *src);
 
 #ifdef DEBUG
 void brd_value_debug(struct brd_value *value);
