@@ -76,6 +76,9 @@ brd_heap_mark(struct brd_heap_entry *entry)
                         }
                 }
                 break;
+        case BRD_HEAP_CLOSURE:
+                brd_value_map_mark(&entry->as.closure->env);
+                break;
         }
 }
 
@@ -160,6 +163,36 @@ brd_value_map_copy(struct brd_value_map *dest, struct brd_value_map *src)
         }
 }
 
+void
+brd_value_map_mark(struct brd_value_map *map)
+{
+        for (int i = 0; i < BUCKET_SIZE; i++) {
+                struct brd_value_map_list *p = &map->bucket[i];
+                while (p != NULL) {
+                        if (p->val.vtype == BRD_VAL_HEAP) {
+                                brd_heap_mark(p->val.as.heap);
+                        }
+                        p = p->next;
+                }
+        }
+}
+
+void
+brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, void *bytecode)
+{
+        brd_value_map_init(&closure->env);
+        closure->args = args;
+        closure->num_args = num_args;
+        closure->bytecode = bytecode;
+}
+
+void
+brd_value_closure_destroy(struct brd_value_closure *closure)
+{
+        brd_value_map_destroy(&closure->env);
+        free(closure->args);
+}
+
 #ifdef DEBUG
 void
 brd_value_debug(struct brd_value *value)
@@ -197,6 +230,9 @@ brd_value_debug(struct brd_value *value)
                                 }
                         }
                         printf(" ]\n");
+                        break;
+                case BRD_HEAP_CLOSURE:
+                        printf("closure\n");
                         break;
                 }
         }
@@ -241,6 +277,8 @@ brd_value_coerce_num(struct brd_value *value)
                 case BRD_HEAP_LIST:
                         BARF("can't coerce a list to a number");
                         break;
+                case BRD_HEAP_CLOSURE:
+                        BARF("can't coerce a closure to a number");
                 }
         }
         value->vtype = BRD_VAL_NUM;
@@ -276,11 +314,14 @@ brd_value_coerce_string(struct brd_value *value)
                 return false;
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
-                        case BRD_HEAP_STRING:
-                                return false;
-                        case BRD_HEAP_LIST:
-                                BARF("write this");
-                                return true;
+                case BRD_HEAP_STRING:
+                        return false;
+                case BRD_HEAP_LIST:
+                        BARF("write this");
+                        return true;
+                case BRD_HEAP_CLOSURE:
+                        BARF("can't convert a closure to a string");
+                        return -1;
                 }
         }
         BARF("what?");
@@ -307,6 +348,8 @@ brd_value_truthify(struct brd_value *value)
                         return value->as.heap->as.string[0] != '\0';
                 case BRD_HEAP_LIST:
                         return value->as.heap->as.list->length > 0;
+                case BRD_HEAP_CLOSURE:
+                        return true;
                 }
         }
         BARF("what?");
@@ -342,6 +385,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         case BRD_HEAP_LIST:
                                 BARF("can't compare a list and a string");
                                 return -1;
+                        case BRD_HEAP_CLOSURE:
+                                BARF("can't compare a closure and a string");
+                                return -1;
                         }
                 }
                 break;
@@ -370,6 +416,8 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         case BRD_HEAP_LIST:
                                 BARF("can't compare a list and a boolean");
                                 return -1;
+                        case BRD_HEAP_CLOSURE:
+                                BARF("can't compare a closure and a boolean");
                         }
                 }
                 break;
@@ -392,6 +440,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                 return -(b->as.heap->as.string[0] != '\0');
                         case BRD_HEAP_LIST:
                                 BARF("can't compare a list and unit");
+                                return -1;
+                        case BRD_HEAP_CLOSURE:
+                                BARF("can't compare a closure and a unit");
                                 return -1;
                         }
                 }
@@ -423,6 +474,8 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                 case BRD_HEAP_LIST:
                                         BARF("can't compare a list and a string");
                                         return -1;
+                                case BRD_HEAP_CLOSURE:
+                                        BARF("can't compare a closure and a string");
                                 }
                         }
                         break;
@@ -435,21 +488,13 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                 BARF("can only compare lists with lists");
                                 return -1;
                         }
+                case BRD_HEAP_CLOSURE:
+                        BARF("can't compare closures");
+                        return -1;
                 }
         }
         BARF("what?");
         return -1;
-}
-
-int
-brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, struct brd_value *out)
-{
-        if (f->vtype == BRD_VAL_BUILTIN) {
-                return builtin_function[f->as.builtin](args, num_args, out);
-        } else {
-                BARF("attempted to call a non-callable");
-                return -1;
-        }
 }
 
 void
@@ -534,6 +579,8 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                                 }
                                 printf(" ]");
                                 break;
+                        case BRD_HEAP_CLOSURE:
+                                printf("closure");
                         }
                 }
         }
@@ -590,6 +637,9 @@ _builtin_length(struct brd_value *args, size_t num_args, struct brd_value *out)
                 case BRD_HEAP_LIST:
                         out->as.num = args[0].as.heap->as.list->length;
                         break;
+                default:
+                        BARF("called length on a non-length-haver");
+                        break;
                 }
                 break;
         default:
@@ -631,6 +681,9 @@ _builtin_typeof(struct brd_value *args, size_t num_args, struct brd_value *out)
                         break;
                 case BRD_HEAP_LIST:
                         out->as.string = "list";
+                        break;
+                case BRD_HEAP_CLOSURE:
+                        out->as.string = "closure";
                         break;
                 }
         }

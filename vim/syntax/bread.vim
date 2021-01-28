@@ -7,7 +7,7 @@ let b:current_syntax = "bread"
 syntax match breadComment "#.*$"
 highlight link breadComment Comment
 
-syntax keyword breadKeyword and or not set begin
+syntax keyword breadKeyword and or not set begin func
 syntax keyword breadKeyword if then else elif end
 syntax keyword breadKeyword while break continue for do
 highlight link breadKeyword Keyword

@@ -44,6 +44,7 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_POP: printf("BRD_VM_POP\n"); return;
         case BRD_VM_CONCAT: printf("BRD_VM_CONCAT\n"); return;
         case BRD_VM_CALL: printf("BRD_VM_CALL\n"); return;
+        case BRD_VM_CLOSURE: printf("BRD_VM_CLOSURE\n"); return;
         case BRD_VM_BUILTIN: printf("BRD_VM_BUILTIN\n"); return;
         case BRD_VM_LIST: printf("BRD_VM_LIST\n"); return;
         case BRD_VM_PUSH: printf("BRD_VM_PUSH\n"); return;
@@ -57,6 +58,9 @@ brd_bytecode_debug(enum brd_bytecode op)
 void
 brd_stack_push(struct brd_stack *stack, struct brd_value *value)
 {
+        if (stack->sp - stack->values >= STACK_SIZE) {
+                BARF("stack overflow error");
+        }
         *(stack->sp++) = *value;
 }
 
@@ -239,6 +243,20 @@ mkbinop:
                 ADD_OP(BRD_VM_CALL);
                 ADD_SIZET(AS(funcall, node)->args->num_args);
                 break;
+        case BRD_NODE_CLOSURE:
+                ADD_OP(BRD_VM_CLOSURE);
+                ADD_SIZET(AS(closure, node)->num_args);
+                for (int i = 0; i < AS(closure, node)->num_args; i++) {
+                        ADD_STR(AS(closure, node)->args[i]);
+                }
+                ADD_OP(BRD_VM_JMP);
+                temp = *length;
+                ADD_SIZET(0);
+                RECURSE_ON(AS(closure, node)->body);
+                ADD_OP(BRD_VM_RETURN);
+                jmp = *length - temp;
+                *(size_t *)(*bytecode + temp) = jmp;
+                break;
         case BRD_NODE_BUILTIN:
                 ADD_OP(BRD_VM_BUILTIN);
                 ADD_SIZET(brd_lookup_builtin(AS(builtin, node)->builtin));
@@ -357,6 +375,10 @@ brd_vm_destroy(struct brd_vm *vm)
                         free(heap->as.list->items);
                         free(heap->as.list);
                         break;
+                case BRD_HEAP_CLOSURE:
+                        brd_value_closure_destroy(heap->as.closure);
+                        free(heap->as.closure);
+                        break;
                 }
                 free(heap);
                 heap = n;
@@ -378,12 +400,72 @@ brd_vm_init(struct brd_vm *vm, void *bytecode)
         vm->stack.sp = vm->stack.values;
 }
 
+static int
+brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, struct brd_value *out)
+{
+        if (f->vtype == BRD_VAL_BUILTIN) {
+                return builtin_function[f->as.builtin](args, num_args, out);
+        } else if (f->vtype == BRD_VAL_HEAP &&
+                        f->as.heap->htype == BRD_HEAP_CLOSURE) {
+                /* this is suuuuper hacky */
+                int on_heap, new;
+                struct brd_value_closure *closure = f->as.heap->as.closure;
+                struct brd_vm *vm = malloc(sizeof(*vm));
+                brd_vm_init(vm, closure->bytecode);
+                brd_value_map_copy(&vm->globals, &closure->env);
+                if (num_args != closure->num_args) {
+                        BARF("wrong number of arguments");
+                }
+
+                for (int i = 0; i < num_args; i++) {
+                        brd_value_map_set(&vm->globals, closure->args[i], &args[i]);
+                }
+                brd_vm_run(vm, out);
+
+                /* cleanup */
+                on_heap = out->vtype == BRD_VAL_HEAP;
+                new = false;
+                while (vm->heap != NULL) {
+                        struct brd_heap_entry *n = vm->heap->next;
+                        if (on_heap && vm->heap == out->as.heap) {
+                                new = true;
+                                vm->heap = n;
+                                continue;
+                        }
+
+                        switch(vm->heap->htype) {
+                        case BRD_HEAP_STRING:
+                                free(vm->heap->as.string);
+                                break;
+                        case BRD_HEAP_LIST:
+                                free(vm->heap->as.list->items);
+                                free(vm->heap->as.list);
+                                break;
+                        case BRD_HEAP_CLOSURE:
+                                brd_value_closure_destroy(vm->heap->as.closure);
+                                free(vm->heap->as.closure);
+                                break;
+                        }
+                        free(vm->heap);
+                        vm->heap = n;
+                }
+                brd_value_map_destroy(&vm->globals);
+                free(vm);
+
+                return new;
+        } else {
+                BARF("attempted to call a non-callable");
+                return -1;
+        }
+}
+
 void
-brd_vm_run(struct brd_vm *vm)
+brd_vm_run(struct brd_vm *vm, struct brd_value *out)
 {
         enum brd_bytecode op;
         struct brd_value value1, value2, value3;
         char *id;
+        char **args;
         size_t jmp, num_args;
 
         for (;;) {
@@ -592,6 +674,33 @@ brd_vm_run(struct brd_vm *vm)
                         }
                         brd_stack_push(&vm->stack, &value2);
                         break;
+                case BRD_VM_CLOSURE:
+                        value1.vtype = BRD_VAL_HEAP;
+                        value1.as.heap = malloc(sizeof(struct brd_heap_entry));
+                        brd_vm_allocate(vm, value1.as.heap);
+                        value1.as.heap->htype = BRD_HEAP_CLOSURE;
+                        value1.as.heap->as.closure =
+                                malloc(sizeof(struct brd_value_closure));
+                        num_args = *(size_t *)(vm->bytecode + vm->pc);
+                        vm->pc += sizeof(size_t);
+                        args = malloc(sizeof(char *) * num_args);
+                        for (int i = 0; i < num_args; i++) {
+                                args[i] = (char *)(vm->bytecode + vm->pc);
+                                while (*(char *)(vm->bytecode + vm->pc++));
+                        }
+                        brd_value_closure_init(
+                                value1.as.heap->as.closure,
+                                args,
+                                num_args,
+                                vm->bytecode + vm->pc
+                                + sizeof(enum brd_bytecode) + sizeof(size_t)
+                        );
+                        brd_value_map_copy(
+                                &value1.as.heap->as.closure->env,
+                                &vm->globals
+                        );
+                        brd_stack_push(&vm->stack, &value1);
+                        break;
                 case BRD_VM_LIST:
                         value1.vtype = BRD_VAL_HEAP;
                         value1.as.heap = malloc(sizeof(*value1.as.heap));
@@ -658,6 +767,9 @@ brd_vm_run(struct brd_vm *vm)
         }
 
 exit_loop:
+        if (out != NULL) {
+                *out = *brd_stack_pop(&vm->stack);
+        }
         return;
 }
 
@@ -680,15 +792,7 @@ brd_vm_gc(struct brd_vm *vm)
         }
 
         /* mark values held by variables */
-        for (int i = 0; i < BUCKET_SIZE; i++) {
-                struct brd_value_map_list *p = &vm->globals.bucket[i];
-                while (p != NULL) {
-                        if (p->val.vtype == BRD_VAL_HEAP) {
-                                brd_heap_mark(p->val.as.heap);
-                        }
-                        p = p->next;
-                }
-        }
+        brd_value_map_mark(&vm->globals);
 
         prev = vm->heap;
         heap = prev->next;
@@ -708,6 +812,11 @@ brd_vm_gc(struct brd_vm *vm)
                 case BRD_HEAP_LIST:
                         free(heap->as.list->items);
                         free(heap->as.list);
+                        break;
+                case BRD_HEAP_CLOSURE:
+                        brd_value_closure_destroy(heap->as.closure);
+                        free(heap->as.closure);
+                        break;
                 }
                 free(heap);
                 heap = next;

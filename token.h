@@ -53,6 +53,8 @@ enum brd_token {
         BRD_TOK_ELSE,
         BRD_TOK_THEN,
 
+        BRD_TOK_FUNC,
+
         BRD_TOK_FOR,
         BRD_TOK_WHILE,
         BRD_TOK_DO,

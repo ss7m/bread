@@ -503,9 +503,67 @@ brd_parse_base(struct brd_token_list *tokens)
                         return node;
                 }
                 break;
+        case BRD_TOK_FUNC:
+                node = brd_parse_func(tokens);
+                if (node == NULL) {
+                        BARF("bad function def");
+                } else {
+                        return node;
+                }
+                break;
         default:
                 *tokens = copy;
                 return NULL;
+        }
+}
+
+struct brd_node *
+brd_parse_func(struct brd_token_list *tokens)
+{
+        struct brd_node *body;
+        size_t length = 0, capacity = 4;
+        char **args = malloc(sizeof(char *) * capacity);
+        char *str;
+        int skip_copy = skip_newlines;
+
+        skip_newlines = true;
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_LPAREN) {
+                BARF("need an lparen here");
+                return NULL;
+        }
+
+        for (;;) {
+                if (brd_token_list_peek(tokens) == BRD_TOK_VAR) {
+                        brd_token_list_pop_token(tokens);
+                        str = brd_token_list_pop_string(tokens);
+                } else {
+                        break;
+                }
+
+                if (length == capacity) {
+                        capacity *= GROW;
+                        args =realloc(args, sizeof(char *) * capacity);
+                }
+                args[length++] = strdup(str);
+
+                if (brd_token_list_peek(tokens) == BRD_TOK_COMMA) {
+                        brd_token_list_pop_token(tokens);
+                } else {
+                        break;
+                }
+        }
+
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_RPAREN) {
+                BARF("need an rparen here");
+                return NULL;
+        }
+
+        body = brd_parse_body(tokens);
+        if (brd_token_list_pop_token(tokens) == BRD_TOK_END) {
+                skip_newlines = skip_copy;
+                return brd_node_closure_new(args, length, body);
+        } else {
+                BARF("there is no end");
         }
 }
 

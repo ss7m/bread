@@ -214,6 +214,30 @@ brd_node_funcall_new(struct brd_node *fn, struct brd_node_arglist *args)
 }
 
 static void
+brd_node_closure_destroy(struct brd_node *n)
+{
+        struct brd_node_closure *c = (struct brd_node_closure *)n;
+        for (int i = 0; i < c->num_args; i++) {
+                free(c->args[i]);
+        }
+        free(c->args);
+        brd_node_destroy(c->body);
+        _brd_node_destroy(n);
+}
+
+struct brd_node *
+brd_node_closure_new(char **args, size_t num_args, struct brd_node *body)
+{
+        struct brd_node_closure *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_CLOSURE;
+        n->_node.destroy = brd_node_closure_destroy;
+        n->args = args;
+        n->num_args = num_args;
+        n->body = body;
+        return (struct brd_node *)n;
+}
+
+static void
 brd_node_builtin_destroy(struct brd_node *n)
 {
         struct brd_node_builtin *b = (struct brd_node_builtin *)n;

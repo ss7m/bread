@@ -8,10 +8,12 @@
 #define BUCKET_SIZE 32
 
 struct brd_value;
+struct brd_value_closure;
 
 enum brd_heap_type {
         BRD_HEAP_STRING,
         BRD_HEAP_LIST,
+        BRD_HEAP_CLOSURE,
 };
 
 struct brd_value_list {
@@ -34,6 +36,7 @@ struct brd_heap_entry {
         union {
                 char *string;
                 struct brd_value_list *list;
+                struct brd_value_closure *closure;
         } as;
 };
 
@@ -74,6 +77,17 @@ void brd_value_map_destroy(struct brd_value_map *map);
 void brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val);
 struct brd_value *brd_value_map_get(struct brd_value_map *map, char *key);
 void brd_value_map_copy(struct brd_value_map *dest, struct brd_value_map *src);
+void brd_value_map_mark(struct brd_value_map *map);
+
+struct brd_value_closure {
+        struct brd_value_map env;
+        char **args;
+        size_t num_args;
+        void *bytecode;
+};
+
+void brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, void *bytecode);
+void brd_value_closure_destroy(struct brd_value_closure *closure);
 
 #ifdef DEBUG
 void brd_value_debug(struct brd_value *value);
@@ -84,7 +98,6 @@ void brd_value_coerce_num(struct brd_value *value);
 int brd_value_coerce_string(struct brd_value *value);
 int brd_value_truthify(struct brd_value *value);
 int brd_value_compare(struct brd_value *a, struct brd_value *b);
-int brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, struct brd_value *out);
 void brd_value_concat(struct brd_value *a, struct brd_value *b);
 
 enum brd_builtin {

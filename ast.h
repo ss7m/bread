@@ -16,6 +16,7 @@ enum brd_node_type {
         BRD_NODE_UNIT_LIT,
         BRD_NODE_LIST_LIT,
         BRD_NODE_FUNCALL,
+        BRD_NODE_CLOSURE,
         BRD_NODE_BUILTIN,
         BRD_NODE_BODY,
         BRD_NODE_IFEXPR,
@@ -127,6 +128,13 @@ struct brd_node_funcall {
         struct brd_node_arglist *args;
 };
 
+struct brd_node_closure {
+        struct brd_node _node;
+        char **args;
+        size_t num_args;
+        struct brd_node *body;
+};
+
 struct brd_node_builtin {
         struct brd_node _node;
         char *builtin;
@@ -177,6 +185,7 @@ struct brd_node *brd_node_unit_lit_new();
 struct brd_node_arglist *brd_node_arglist_new(struct brd_node **args, size_t num_args);
 struct brd_node *brd_node_list_lit_new(struct brd_node_arglist *items);
 struct brd_node *brd_node_funcall_new(struct brd_node *fn, struct brd_node_arglist *args);
+struct brd_node *brd_node_closure_new(char **args, size_t num_args, struct brd_node *body);
 struct brd_node *brd_node_builtin_new(char *builtin);
 struct brd_node *brd_node_body_new();
 struct brd_node *brd_node_ifexpr_new(struct brd_node *cond, struct brd_node *body, struct brd_node_elif *elifs, size_t num_elifs, struct brd_node *els);

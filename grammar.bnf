@@ -79,6 +79,8 @@ base =
     | unit
     | @builtin
     | if $expression then $body (elif $body)* (else $body)? end
+    | while $expression do $body end
+    | func ( $fnArgList ) $body end
     | begin $body end
 
 body =

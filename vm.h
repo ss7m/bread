@@ -1,9 +1,9 @@
 #ifndef BRD_VM_H
 #define BRD_VM_H
 
-/* stack is limited to 256 values */
-/* That should be enough, right? */
-#define STACK_SIZE 256
+/* stack is limited to 32 values */
+/* this is less dumb than you think; function calls create their own stack */
+#define STACK_SIZE 32
 
 /* VM bytecode */
 /* Stack based virtual machine */
@@ -44,7 +44,8 @@ enum brd_bytecode {
 
         BRD_VM_SET_VAR, /* has arg: string */
         BRD_VM_BUILTIN, /* has arg: size_t */
-        BRD_VM_CALL,
+        BRD_VM_CALL, /* has arg: size_t */
+        BRD_VM_CLOSURE, /* has args size_t, strings, bytecode, followed by a JMP */
         BRD_VM_JMP, /* has arg: size_t */
         BRD_VM_JMPB, /* has arg: size_t */
 
@@ -82,7 +83,7 @@ void *brd_node_compile(struct brd_node *node);
 void brd_vm_destroy(struct brd_vm *vm);
 void brd_vm_init(struct brd_vm *vm, void *bytecode);
 void brd_vm_allocate(struct brd_vm *vm, struct brd_heap_entry *entry);
-void brd_vm_run(struct brd_vm *vm);
+void brd_vm_run(struct brd_vm *vm, struct brd_value *out);
 
 void brd_vm_gc(struct brd_vm *vm);
 #endif

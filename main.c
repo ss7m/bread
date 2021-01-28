@@ -14,7 +14,7 @@ main(int argc, char **argv)
 
         struct brd_token_list list, copy;
         struct brd_node_program *program;
-        struct brd_vm vm;
+        struct brd_vm *vm;
         void *bytecode;
 
 
@@ -43,8 +43,10 @@ main(int argc, char **argv)
 
         bytecode = brd_node_compile((struct brd_node *)program);
         brd_node_destroy(program);
-
-        brd_vm_init(&vm, bytecode);
-        brd_vm_run(&vm);
-        brd_vm_destroy(&vm);
+        
+        vm = malloc(sizeof(*vm));
+        brd_vm_init(vm, bytecode);
+        brd_vm_run(vm, NULL);
+        brd_vm_destroy(vm);
+        free(vm);
 }
