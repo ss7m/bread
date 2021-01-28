@@ -18,9 +18,12 @@ highlight link breadBoolean Boolean
 syntax match breadGlobal "\v\@[_a-zA-Z0-9]+"
 highlight link breadGlobal Operator
 
-syntax match breadNumber "\d\+\(e[-+]\=\d\+\)\="
-syntax match breadNumber "\d\+\.\d*\(e[-+]\=\d\+\)\="
-syntax match breadNumber "\d\+e[-+]\=\d\+\>"
+" integer number
+syn match breadNumber "\<\d\+\>"
+" floating point number, with dot, optional exponent
+syn match breadNumber  "\<\d\+\.\d*\%([eE][-+]\=\d\+\)\=\>"
+" floating point number, without dot, with exponent
+syn match breadNumber  "\<\d\+[eE][-+]\=\d\+\>"
 highlight link breadNumber Number
 
 syntax region breadString start=/\v"/ skip=/\v\\./ end=/\v"/

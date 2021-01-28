@@ -422,7 +422,11 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, str
                 }
                 brd_vm_run(vm, out);
 
-                /* cleanup */
+                /* cleanup
+                 * if the return value is on the heap, we need to not free it
+                 * and we need to allocate the return value on the callee's vm
+                 * only if the value is on the heap (i.e not in the closure's env)
+                 */
                 on_heap = out->vtype == BRD_VAL_HEAP;
                 new = false;
                 while (vm->heap != NULL) {
