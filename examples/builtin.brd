@@ -1,0 +1,29 @@
+@write("write\n")
+@writeln("writeln")
+@write("enter some text: ")
+set response = @readln()
+
+@writeln()
+
+@writeln("your response was: ", response)
+@writeln("your response is ", @length(response), " characters long")
+@writeln("the word \"cow\" is ", @length("cow"), " characters long")
+@writeln("the list [1, 2, 3, 4, 5] is ", @length([1, 2, 3, 4, 5]), " entries long")
+
+@writeln()
+
+@writeln("typeof test 1: ", @typeof(17.2))
+@writeln("typeof test 2: ", @typeof(true))
+@writeln("typeof test 3: ", @typeof("hi"))
+@writeln("typeof test 4: ", @typeof([8, "", "" .. "", unit]))
+@writeln("typeof test 5: ", @typeof("h" .. "i"))
+@writeln("typeof test 6: ", @typeof(unit))
+
+@writeln()
+
+@writeln("sleeping...")
+if @system("sleep ", 2) = 0 then
+  @writeln("sleep succesful")
+else
+  @writeln("sleep failed")
+end

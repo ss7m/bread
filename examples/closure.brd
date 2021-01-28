@@ -1,0 +1,55 @@
+set list = [1, 2, 3, 4]
+
+set foo = func(a, b)
+  @writeln(list)
+  set list = "" .. ""
+  a + b
+end
+
+set res = foo(1, 2)
+@writeln("function returned: ", res)
+
+set list[1] = "wow!"
+
+foo(3, 4)
+
+set list = unit
+
+foo(7, 8)
+
+set add = func(a)
+  func(b)
+    a + b
+  end
+end
+
+set add_5 = add(5)
+
+@writeln(add_5(20.2))
+
+@writeln(add(14)(6))
+
+set string = "Hello, " .. "World!"
+set foo = func() string end
+set string = unit
+@writeln(foo())
+
+# use self for recursive functions
+set a = func(m, n)
+  if m = 0 then
+    n + 1
+  elif n = 0 then
+    self(m - 1, 1)
+  else
+    self(m - 1, self(m, n - 1))
+  end
+end
+
+@writeln(a(3, 4))
+
+set foo = func()
+  @writeln("hi")
+  self
+end
+
+foo()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()
