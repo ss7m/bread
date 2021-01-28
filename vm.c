@@ -413,6 +413,8 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, str
                 struct brd_vm *vm = malloc(sizeof(*vm));
                 brd_vm_init(vm, closure->bytecode);
                 brd_value_map_copy(&vm->globals, &closure->env);
+                brd_value_map_set(&vm->globals, "self", f); /* for recursive funcs */
+
                 if (num_args != closure->num_args) {
                         BARF("wrong number of arguments");
                 }
