@@ -96,6 +96,7 @@ void brd_value_debug(struct brd_value *value);
 int brd_value_is_string(struct brd_value *value);
 void brd_value_coerce_num(struct brd_value *value);
 int brd_value_coerce_string(struct brd_value *value);
+int brd_value_index(struct brd_value *value, size_t idx);
 int brd_value_truthify(struct brd_value *value);
 int brd_value_compare(struct brd_value *a, struct brd_value *b);
 void brd_value_concat(struct brd_value *a, struct brd_value *b);

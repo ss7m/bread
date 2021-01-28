@@ -329,6 +329,47 @@ brd_value_coerce_string(struct brd_value *value)
 }
 
 int
+brd_value_index(struct brd_value *value, size_t idx)
+{
+        const char *string;
+        char *c;
+
+        switch (value->vtype) {
+        case BRD_VAL_STRING:
+                string = value->as.string;
+                goto index_string;
+        case BRD_VAL_HEAP:
+                switch (value->as.heap->htype) {
+                case BRD_HEAP_STRING:
+                        string = value->as.heap->as.string;
+                        goto index_string;
+                case BRD_HEAP_LIST:
+                        *value = *brd_value_list_get(value->as.heap->as.list, idx);
+                        return false;
+                default:
+                        BARF("attempted to index a non-indexable");
+                        return -1;
+                }
+        default:
+                BARF("attempted to index a non-indexable");
+                return -1;
+        }
+
+index_string:
+        if (idx >= strlen(string) ) {
+                BARF("index out of bounds error");
+        }
+        c = malloc(sizeof(char) * 2);
+        c[0] = string[idx];
+        c[1] = '\0';
+        value->vtype = BRD_VAL_HEAP;
+        value->as.heap = malloc(sizeof(struct brd_heap_entry));
+        value->as.heap->htype = BRD_HEAP_STRING;
+        value->as.heap->as.string = c;
+        return true;
+}
+
+int
 brd_value_truthify(struct brd_value *value)
 {
         switch (value->vtype) {

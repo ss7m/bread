@@ -721,16 +721,12 @@ brd_vm_run(struct brd_vm *vm, struct brd_value *out)
                 case BRD_VM_GET_IDX:
                         value1 = *brd_stack_pop(&vm->stack);
                         value2 = *brd_stack_pop(&vm->stack);
-                        if (value2.vtype != BRD_VAL_HEAP
-                                        || value2.as.heap->htype != BRD_HEAP_LIST) {
-                                BARF("attempted to index a non-list");
-                        } else if (value1.vtype != BRD_VAL_NUM) {
+                        if (value1.vtype != BRD_VAL_NUM) {
                                 BARF("attempted to index with a non-number");
                         }
-                        value2 = *brd_value_list_get(
-                                value2.as.heap->as.list,
-                                (size_t) floorl(value1.as.num)
-                        );
+                        if (brd_value_index(&value2, floorl(value1.as.num))) {
+                                brd_vm_allocate(vm, value2.as.heap);
+                        }
                         brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_SET_IDX:

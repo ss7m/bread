@@ -22,3 +22,5 @@ set x = while i < 10 do
   0
 end
 @writeln(x)
+
+@writeln("indexing a string: ", "hello"[1])
