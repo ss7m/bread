@@ -82,10 +82,14 @@ brd_heap_mark(struct brd_heap_entry *entry)
         }
 }
 
-void
-brd_value_map_init(struct brd_value_map *map)
+static void
+brd_value_map_init_with_bucket_size(struct brd_value_map *map, size_t bucket_size)
 {
-        for (int i = 0; i < BUCKET_SIZE; i++) {
+        map->bucket_size = bucket_size;
+        map->num_items = 0;
+        map->bucket = malloc(sizeof(*map->bucket) * map->bucket_size);
+
+        for (int i = 0; i < map->bucket_size; i++) {
                 map->bucket[i].key = "";
                 map->bucket[i].val.vtype = BRD_VAL_UNIT;
                 map->bucket[i].next = NULL;
@@ -93,11 +97,17 @@ brd_value_map_init(struct brd_value_map *map)
 }
 
 void
+brd_value_map_init(struct brd_value_map *map)
+{
+        brd_value_map_init_with_bucket_size(map, 8);
+}
+
+void
 brd_value_map_destroy(struct brd_value_map *map)
 {
         /* At this point in time I'm not going to free the strings */
 
-        for (int i = 0; i < BUCKET_SIZE; i++) {
+        for (int i = 0; i < map->bucket_size; i++) {
                 struct brd_value_map_list *list = map->bucket[i].next;
                 
                 while (list != NULL) {
@@ -106,12 +116,13 @@ brd_value_map_destroy(struct brd_value_map *map)
                         list = next;
                 }
         }
+        free(map->bucket);
 }
 
 void
 brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val)
 {
-        unsigned long h = hash(key) % BUCKET_SIZE;
+        unsigned long h = hash(key) % map->bucket_size;
         struct brd_value_map_list *list = &map->bucket[h];
 
         /*
@@ -130,16 +141,33 @@ brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val)
         }
 
         /* key not in list */
+        map->num_items++;
         list->next = malloc(sizeof(struct brd_value_map_list));
         list->next->key = key;
         list->next->val = *val;
         list->next->next = NULL;
+
+        if (map->num_items / map->bucket_size > 0.75) {
+                struct brd_value_map new;
+
+                brd_value_map_init_with_bucket_size(&new, map->bucket_size * 2);
+                for (int i = 0; i < map->bucket_size; i++) {
+                        struct brd_value_map_list *entry = map->bucket[i].next;
+                        while (entry != NULL) {
+                                brd_value_map_set(&new, entry->key, &entry->val);
+                                entry = entry->next;
+                        }
+                }
+
+                brd_value_map_destroy(map);
+                *map = new;
+        }
 }
 
 struct brd_value *
 brd_value_map_get(struct brd_value_map *map, char *key)
 {
-        unsigned long h = hash(key) % BUCKET_SIZE;
+        unsigned long h = hash(key) % map->bucket_size;
         struct brd_value_map_list *list = &map->bucket[h];
 
         do {
@@ -154,7 +182,8 @@ brd_value_map_get(struct brd_value_map *map, char *key)
 void
 brd_value_map_copy(struct brd_value_map *dest, struct brd_value_map *src)
 {
-        for (int i = 0; i < BUCKET_SIZE; i++) {
+        brd_value_map_init_with_bucket_size(dest, src->bucket_size);
+        for (int i = 0; i < src->bucket_size; i++) {
                 struct brd_value_map_list *entry = src->bucket[i].next;
                 while (entry != NULL) {
                         brd_value_map_set(dest, entry->key, &entry->val);
@@ -166,7 +195,7 @@ brd_value_map_copy(struct brd_value_map *dest, struct brd_value_map *src)
 void
 brd_value_map_mark(struct brd_value_map *map)
 {
-        for (int i = 0; i < BUCKET_SIZE; i++) {
+        for (int i = 0; i < map->bucket_size; i++) {
                 struct brd_value_map_list *p = &map->bucket[i];
                 while (p != NULL) {
                         if (p->val.vtype == BRD_VAL_HEAP) {
@@ -178,12 +207,21 @@ brd_value_map_mark(struct brd_value_map *map)
 }
 
 void
-brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, void *bytecode)
+brd_value_closure_init(struct brd_value_closure *closure, struct brd_value_map *env, char **args, size_t num_args, void *bytecode)
 {
-        brd_value_map_init(&closure->env);
+        struct brd_value unit;
+
+        brd_value_map_copy(&closure->env, env);
         closure->args = args;
         closure->num_args = num_args;
         closure->bytecode = bytecode;
+
+        /* put self/args in the map so it won't grow when we copy it later */
+        unit.vtype = BRD_VAL_UNIT;
+        brd_value_map_set(&closure->env, "self", &unit);
+        for (int i = 0; i < num_args; i++) {
+                brd_value_map_set(&closure->env, args[i], &unit);
+        }
 }
 
 void

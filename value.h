@@ -1,12 +1,6 @@
 #ifndef BRD_VALUE_H
 #define BRD_VALUE_H
 
-/* 
- * If I were smarter I'd make the bucket grow
- * But for the mean time that feels like a premature optimization
- */
-#define BUCKET_SIZE 32
-
 struct brd_value;
 struct brd_value_closure;
 
@@ -69,7 +63,8 @@ struct brd_value_map_list {
 };
 
 struct brd_value_map {
-        struct brd_value_map_list bucket[BUCKET_SIZE];
+        size_t num_items, bucket_size;
+        struct brd_value_map_list *bucket;
 };
 
 void brd_value_map_init(struct brd_value_map *map);
@@ -86,7 +81,7 @@ struct brd_value_closure {
         void *bytecode;
 };
 
-void brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, void *bytecode);
+void brd_value_closure_init(struct brd_value_closure *closure, struct brd_value_map *env, char **args, size_t num_args, void *bytecode);
 void brd_value_closure_destroy(struct brd_value_closure *closure);
 
 #ifdef DEBUG

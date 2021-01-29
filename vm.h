@@ -81,7 +81,7 @@ struct brd_value *brd_stack_peek(struct brd_stack *stack);
 void *brd_node_compile(struct brd_node *node);
 
 void brd_vm_destroy(struct brd_vm *vm);
-void brd_vm_init(struct brd_vm *vm, void *bytecode);
+void brd_vm_init(struct brd_vm *vm, void *bytecode, struct brd_value_map *init_map);
 void brd_vm_allocate(struct brd_vm *vm, struct brd_heap_entry *entry);
 void brd_vm_run(struct brd_vm *vm, struct brd_value *out);
 

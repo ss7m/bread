@@ -388,13 +388,17 @@ brd_vm_destroy(struct brd_vm *vm)
 }
 
 void
-brd_vm_init(struct brd_vm *vm, void *bytecode)
+brd_vm_init(struct brd_vm *vm, void *bytecode, struct brd_value_map *init_map)
 {
         vm->heap = malloc(sizeof(*vm->heap));
         vm->heap->next = NULL;
         vm->heap->htype = BRD_HEAP_STRING;
         vm->heap->as.string = malloc(1);
-        brd_value_map_init(&vm->globals);
+        if (init_map == NULL) {
+                brd_value_map_init(&vm->globals);
+        } else {
+                brd_value_map_copy(&vm->globals, init_map);
+        }
         vm->bytecode = bytecode;
         vm->pc = 0;
         vm->stack.sp = vm->stack.values;
@@ -411,8 +415,7 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, str
                 int on_heap, new;
                 struct brd_value_closure *closure = f->as.heap->as.closure;
                 struct brd_vm *vm = malloc(sizeof(*vm));
-                brd_vm_init(vm, closure->bytecode);
-                brd_value_map_copy(&vm->globals, &closure->env);
+                brd_vm_init(vm, closure->bytecode, &closure->env);
                 brd_value_map_set(&vm->globals, "self", f); /* for recursive funcs */
 
                 if (num_args != closure->num_args) {
@@ -696,14 +699,11 @@ brd_vm_run(struct brd_vm *vm, struct brd_value *out)
                         }
                         brd_value_closure_init(
                                 value1.as.heap->as.closure,
+                                &vm->globals,
                                 args,
                                 num_args,
                                 vm->bytecode + vm->pc
                                 + sizeof(enum brd_bytecode) + sizeof(size_t)
-                        );
-                        brd_value_map_copy(
-                                &value1.as.heap->as.closure->env,
-                                &vm->globals
                         );
                         brd_stack_push(&vm->stack, &value1);
                         break;

@@ -45,7 +45,7 @@ main(int argc, char **argv)
         brd_node_destroy(program);
         
         vm = malloc(sizeof(*vm));
-        brd_vm_init(vm, bytecode);
+        brd_vm_init(vm, bytecode, NULL);
         brd_vm_run(vm, NULL);
         brd_vm_destroy(vm);
         free(vm);
