@@ -18,8 +18,8 @@ highlight link breadBoolean Boolean
 syntax keyword breadSpecial unit self
 highlight link breadSpecial Special
 
-syntax match breadGlobal "\v\@[_a-zA-Z0-9]+"
-highlight link breadGlobal Operator
+syntax match breadBuiltin "\v\@[_a-zA-Z0-9]+"
+highlight link breadBuiltin Identifier
 
 " integer number
 syn match breadNumber "\<\d\+\>"

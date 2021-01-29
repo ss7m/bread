@@ -46,10 +46,3 @@ set a = func(m, n)
 end
 
 @writeln(a(3, 4))
-
-set foo = func()
-  @writeln("hi")
-  self
-end
-
-foo()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()
