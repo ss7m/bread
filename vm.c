@@ -316,7 +316,9 @@ mkbinop:
                 free(ifexpr_temps);
                 break;
         case BRD_NODE_WHILE:
-                ADD_OP(BRD_VM_LIST);
+                if (!AS(while, node)->no_list) {
+                        ADD_OP(BRD_VM_LIST);
+                }
                 temp = *length;
                 RECURSE_ON(AS(while, node)->cond);
                 ADD_OP(BRD_VM_TESTP);
@@ -324,12 +326,19 @@ mkbinop:
                 temp2 = *length;
                 ADD_SIZET(0);
                 RECURSE_ON(AS(while, node)->body);
-                ADD_OP(BRD_VM_PUSH);
+                if (!AS(while, node)->no_list) {
+                        ADD_OP(BRD_VM_PUSH);
+                } else {
+                        ADD_OP(BRD_VM_POP);
+                }
                 ADD_OP(BRD_VM_JMPB);
                 jmp = *length - temp;
                 ADD_SIZET(jmp);
                 jmp = *length - temp2;
                 *(size_t *)(*bytecode + temp2) = jmp;
+                if (AS(while, node)->no_list) {
+                        ADD_OP(BRD_VM_UNIT);
+                }
                 break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {

@@ -1,6 +1,9 @@
 set x = 1
 
-while x <= 45 do
+# normally loops build a list
+# the star operator here prevents this, and instead the value of the expression
+# is just "unit"
+while* x <= 1000 do
   set three = x % 3 = 0
   set five  = x % 5 = 0
 

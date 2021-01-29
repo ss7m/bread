@@ -759,9 +759,17 @@ struct brd_node_elif brd_parse_elif(struct brd_token_list *tokens)
 struct brd_node *brd_parse_while(struct brd_token_list *tokens)
 {
         struct brd_node *cond, *body;
-        int skip_copy = skip_newlines;
+        int skip_copy = skip_newlines, no_list;
 
         skip_newlines = true;
+
+        if (brd_token_list_peek(tokens) == BRD_TOK_MUL) {
+                brd_token_list_pop_token(tokens);
+                no_list = true;
+        } else {
+                no_list = false;
+        }
+
         cond = brd_parse_expression(tokens);
         if (brd_token_list_pop_token(tokens) != BRD_TOK_DO) {
                 BARF("you're missing a do");
@@ -772,5 +780,5 @@ struct brd_node *brd_parse_while(struct brd_token_list *tokens)
                 BARF("there is no end");
         }
 
-        return brd_node_while_new(cond, body);
+        return brd_node_while_new(no_list, cond, body);
 }

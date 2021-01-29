@@ -4,6 +4,7 @@
 /* 
  * If I were smarter I'd make the bucket grow
  * But for the mean time that feels like a premature optimization
+ * NOTE: I tried to do that but the result was a lot slower lol
  */
 #define BUCKET_SIZE 32
 

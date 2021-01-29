@@ -169,6 +169,7 @@ struct brd_node_index {
 
 struct brd_node_while {
         struct brd_node _node;
+        int no_list;
         struct brd_node *cond;
         struct brd_node *body;
 };
@@ -190,7 +191,7 @@ struct brd_node *brd_node_builtin_new(char *builtin);
 struct brd_node *brd_node_body_new();
 struct brd_node *brd_node_ifexpr_new(struct brd_node *cond, struct brd_node *body, struct brd_node_elif *elifs, size_t num_elifs, struct brd_node *els);
 struct brd_node *brd_node_index_new(struct brd_node *list, struct brd_node *idx);
-struct brd_node *brd_node_while_new(struct brd_node *cond, struct brd_node *body);
+struct brd_node *brd_node_while_new(int no_list, struct brd_node *cond, struct brd_node *body);
 
 #define brd_node_destroy(n) (((struct brd_node *)n)->destroy((struct brd_node *)n))
 

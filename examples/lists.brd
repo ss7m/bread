@@ -16,10 +16,9 @@ set x[0][1] = "wow!"
 set x = []
 @writeln( x or "this list empty. YEET" )
 
-set i = 1
+set i = 0
 set x = while i < 10 do
-  set i = i + 1
-  0
+  -1 + (set i = i + 1)
 end
 @writeln(x)
 
