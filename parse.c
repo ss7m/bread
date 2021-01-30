@@ -46,7 +46,6 @@ brd_parse_program(struct brd_token_list *tokens)
 struct brd_node *
 brd_parse_expression_stmt(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy = *tokens;
         struct brd_node *node;
         int found_term;
 
@@ -69,7 +68,7 @@ brd_parse_expression_stmt(struct brd_token_list *tokens)
                         if (found_term) {
                                 return node;
                         } else {
-                                *tokens = copy;
+                                BARF("expression statement with no newline");
                                 return NULL;
                         }
                 }
@@ -358,28 +357,26 @@ brd_parse_powexp(struct brd_token_list *tokens)
 struct brd_node *
 brd_parse_prefix(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy = *tokens;
         struct brd_node *node;
 
-        switch (brd_token_list_pop_token(tokens)) {
+        switch (brd_token_list_peek(tokens)) {
         case BRD_TOK_NOT:
+                brd_token_list_pop_token(tokens);
                 node = brd_parse_prefix(tokens);
                 if (node == NULL) {
-                        *tokens = copy;
                         return NULL;
                 } else {
                         return brd_node_unary_new(BRD_NOT, node);
                 }
         case BRD_TOK_MINUS:
+                brd_token_list_pop_token(tokens);
                 node = brd_parse_prefix(tokens);
                 if (node == NULL) {
-                        *tokens = copy;
                         return NULL;
                 } else {
                         return brd_node_unary_new(BRD_NEGATE, node);
                 }
         default:
-                *tokens = copy;
                 return brd_parse_postfix(tokens);
         }
 }
@@ -431,17 +428,16 @@ brd_parse_postfix(struct brd_token_list *tokens)
 struct brd_node *
 brd_parse_base(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy = *tokens;
         struct brd_node_arglist *items;
         struct brd_node *node;
         int skip_copy = skip_newlines;
 
-        switch (brd_token_list_pop_token(tokens)) {
+        switch (brd_token_list_peek(tokens)) {
         case BRD_TOK_LPAREN:
+                brd_token_list_pop_token(tokens);
                 skip_newlines = true;
                 node = brd_parse_expression(tokens);
                 if (node == NULL) {
-                        *tokens = copy;
                         skip_newlines = skip_copy;
                         return NULL;
                 } else if (brd_token_list_pop_token(tokens) == BRD_TOK_RPAREN) {
@@ -452,6 +448,7 @@ brd_parse_base(struct brd_token_list *tokens)
                         return NULL;
                 }
         case BRD_TOK_LBRACKET:
+                brd_token_list_pop_token(tokens);
                 skip_newlines = true;
                 items = brd_parse_arglist(tokens);
                 if (items == NULL) {
@@ -462,20 +459,28 @@ brd_parse_base(struct brd_token_list *tokens)
                 skip_newlines = skip_copy;
                 return brd_node_list_lit_new(items);
         case BRD_TOK_VAR:
+                brd_token_list_pop_token(tokens);
                 return brd_node_var_new(brd_token_list_pop_string(tokens));
         case BRD_TOK_NUM:
+                brd_token_list_pop_token(tokens);
                 return brd_node_num_lit_new(brd_token_list_pop_num(tokens));
         case BRD_TOK_STR:
+                brd_token_list_pop_token(tokens);
                 return brd_node_string_lit_new(brd_token_list_pop_string(tokens));
         case BRD_TOK_UNIT:
+                brd_token_list_pop_token(tokens);
                 return brd_node_unit_lit_new();
         case BRD_TOK_TRUE:
+                brd_token_list_pop_token(tokens);
                 return brd_node_bool_lit_new(true);
         case BRD_TOK_FALSE:
+                brd_token_list_pop_token(tokens);
                 return brd_node_bool_lit_new(false);
         case BRD_TOK_BUILTIN:
+                brd_token_list_pop_token(tokens);
                 return brd_node_builtin_new(brd_token_list_pop_string(tokens));
         case BRD_TOK_BEGIN:
+                brd_token_list_pop_token(tokens);
                 node = brd_parse_body(tokens);
                 if (node == NULL) {
                         BARF("bad begin/end expression");
@@ -488,6 +493,7 @@ brd_parse_base(struct brd_token_list *tokens)
                 }
                 break;
         case BRD_TOK_IF:
+                brd_token_list_pop_token(tokens);
                 node = brd_parse_ifexpr(tokens);
                 if (node == NULL) {
                         BARF("bad if expression");
@@ -496,6 +502,7 @@ brd_parse_base(struct brd_token_list *tokens)
                 }
                 break;
         case BRD_TOK_WHILE:
+                brd_token_list_pop_token(tokens);
                 node = brd_parse_while(tokens);
                 if (node == NULL) {
                         BARF("bad while expression");
@@ -504,6 +511,7 @@ brd_parse_base(struct brd_token_list *tokens)
                 }
                 break;
         case BRD_TOK_FUNC:
+                brd_token_list_pop_token(tokens);
                 node = brd_parse_func(tokens);
                 if (node == NULL) {
                         BARF("bad function def");
@@ -512,7 +520,6 @@ brd_parse_base(struct brd_token_list *tokens)
                 }
                 break;
         default:
-                *tokens = copy;
                 return NULL;
         }
 }
@@ -605,7 +612,6 @@ brd_parse_body(struct brd_token_list *tokens)
         size_t length = 0, capacity = LIST_SIZE;
         struct brd_node **stmts;
         struct brd_node *node;
-        struct brd_token_list copy = *tokens;
         int skip_copy = skip_newlines;
 
         skip_newlines = false;
@@ -638,7 +644,7 @@ brd_parse_body(struct brd_token_list *tokens)
         if (length >= 1) {
                 return brd_node_body_new(stmts, length);
         } else {
-                *tokens = copy;
+                BARF("body must have at least one statement");
                 return NULL;
         }
 }
@@ -647,7 +653,6 @@ brd_parse_body(struct brd_token_list *tokens)
 struct brd_node *
 brd_parse_body_stmt(struct brd_token_list *tokens)
 {
-        struct brd_token_list copy = *tokens;
         struct brd_node *node;
         int found_term;
 
@@ -667,7 +672,7 @@ brd_parse_body_stmt(struct brd_token_list *tokens)
                         if (found_term) {
                                 return node;
                         } else {
-                                *tokens = copy;
+                                BARF("statement without terminator");
                                 return NULL;
                         }
                 }
