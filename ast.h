@@ -170,9 +170,9 @@ struct brd_node_index {
 
 struct brd_node_while {
         struct brd_node _node;
-        int no_list;
         struct brd_node *cond;
         struct brd_node *body;
+        int no_list;
 };
 
 struct brd_node *brd_node_program_new(struct brd_node **stmts, size_t num_stmts);

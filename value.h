@@ -29,16 +29,16 @@ void brd_value_list_set(struct brd_value_list *list, size_t idx, struct brd_valu
 
 struct brd_heap_entry {
         struct brd_heap_entry *next;
-        enum brd_heap_type htype;
-        
-        /* GC stuff */
-        int marked;
 
         union {
                 char *string;
                 struct brd_value_list *list;
                 struct brd_value_closure *closure;
         } as;
+
+        int marked; /* for GC */
+
+        enum brd_heap_type htype;
 };
 
 void brd_heap_mark(struct brd_heap_entry *entry);
