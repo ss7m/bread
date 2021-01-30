@@ -9,6 +9,7 @@
 /* declare parser global variables */
 int skip_newlines = false;
 int line_number = 1;
+const char *error_message = "";
 
 struct brd_node_program *
 brd_parse_program(struct brd_token_list *tokens)
@@ -37,7 +38,9 @@ brd_parse_program(struct brd_token_list *tokens)
         }
 
         if (tokens->data != tokens->end) {
-                BARF("Parsing finished prematurely");
+                // TODO I'm pretty sure well have found a different
+                // error if this happens
+                // error_message = "parsing finished prematurely";
                 return NULL;
         }
 
@@ -70,7 +73,8 @@ brd_parse_expression_stmt(struct brd_token_list *tokens)
                         if (found_term) {
                                 return node;
                         } else {
-                                BARF("expression statement with no newline");
+                                error_message = "expression statement with no \
+                                                 terminating newline";
                                 return NULL;
                         }
                 }
@@ -88,13 +92,11 @@ brd_parse_expression(struct brd_token_list *tokens)
                 brd_token_list_pop_token(tokens);
                 skip_newlines = true;
                 if ((l = brd_parse_lvalue(tokens)) == NULL) {
-                        BARF("Goodbye.");
                         return NULL;
                 } else if (brd_token_list_pop_token(tokens) != BRD_TOK_EQ) {
-                        BARF("Goodbye.");
+                        error_message = "expected an equals sign";
                         return NULL;
                 } else if ((r = brd_parse_expression(tokens)) == NULL) {
-                        BARF("Goodbye.");
                         return NULL;
                 } else {
                         skip_newlines = skip_copy;
@@ -113,7 +115,8 @@ brd_parse_lvalue(struct brd_token_list *tokens)
         if (brd_token_list_pop_token(tokens) == BRD_TOK_VAR) {
                 node = brd_node_var_new(brd_token_list_pop_string(tokens));
         } else {
-                BARF("error parsing lvalue");
+                error_message = "expected variable name";
+                return NULL;
         }
 
         for (;;) {
@@ -122,9 +125,10 @@ brd_parse_lvalue(struct brd_token_list *tokens)
                         brd_token_list_pop_token(tokens);
                         idx = brd_parse_expression(tokens);
                         if (idx == NULL) {
-                                BARF("bad index");
+                                return NULL;
                         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RBRACKET) {
-                                BARF("you're missing a right bracket");
+                                error_message = "expected a right bracket";
+                                return NULL;
                         }
                         node = brd_node_index_new(node, idx);
                         break;
@@ -150,7 +154,7 @@ brd_parse_concatexp(struct brd_token_list *tokens)
                         brd_token_list_pop_token(tokens);
                         r = brd_parse_orexp(tokens);
                         if (r == NULL) {
-                                BARF("Bad concat expression");
+                                return NULL;
                         } else {
                                 l = brd_node_binop_new(BRD_CONCAT, l, r);
                         }
@@ -175,12 +179,7 @@ brd_parse_orexp(struct brd_token_list *tokens)
         case BRD_TOK_OR:
                 brd_token_list_pop_token(tokens);
                 r = brd_parse_orexp(tokens);
-                if (r == NULL) {
-                        BARF("Bad or expression");
-                        return NULL;
-                } else {
-                        return brd_node_binop_new(BRD_OR, l, r);
-                }
+                return (r == NULL) ? NULL : brd_node_binop_new(BRD_OR, l, r);
         default:
                 return l;
         }
@@ -200,12 +199,7 @@ brd_parse_andexp(struct brd_token_list *tokens)
         case BRD_TOK_AND:
                 brd_token_list_pop_token(tokens);
                 r = brd_parse_andexp(tokens);
-                if (r == NULL) {
-                        BARF("Bad and expression");
-                        return NULL;
-                } else {
-                        return brd_node_binop_new(BRD_AND, l, r);
-                }
+                return (r == NULL) ? NULL : brd_node_binop_new(BRD_AND, l, r);
         default:
                 return l;
         }
@@ -248,12 +242,7 @@ brd_parse_compexp(struct brd_token_list *tokens)
         }
         
         r = brd_parse_addexp(tokens);
-        if (r == NULL) {
-                BARF("Bad comparison expression");
-                return NULL;
-        } else {
-                return brd_node_binop_new(binop, l, r);
-        }
+        return (r == NULL) ? NULL : brd_node_binop_new(binop, l, r);
 }
 
 struct brd_node *
@@ -283,7 +272,7 @@ brd_parse_addexp(struct brd_token_list *tokens)
 
                 r = brd_parse_mulexp(tokens);
                 if (r == NULL) {
-                        BARF("Bad addition expression");
+                        return NULL;
                 } else {
                         l = brd_node_binop_new(binop, l, r);
                 }
@@ -325,7 +314,7 @@ brd_parse_mulexp(struct brd_token_list *tokens)
 
                 r = brd_parse_powexp(tokens);
                 if (r == NULL) {
-                        BARF("Bad multiplication expression");
+                        return NULL;
                 } else {
                         l = brd_node_binop_new(binop, l, r);
                 }
@@ -345,12 +334,7 @@ brd_parse_powexp(struct brd_token_list *tokens)
         if (brd_token_list_peek(tokens) == BRD_TOK_POW) {
                 brd_token_list_pop_token(tokens);
                 r = brd_parse_powexp(tokens);
-                if (r == NULL) {
-                        BARF("Bad pow expression");
-                        return NULL;
-                } else {
-                        return brd_node_binop_new(BRD_POW, l, r);
-                }
+                return (r == NULL) ? NULL : brd_node_binop_new(BRD_POW, l, r);
         } else {
                 return l;
         }
@@ -365,19 +349,11 @@ brd_parse_prefix(struct brd_token_list *tokens)
         case BRD_TOK_NOT:
                 brd_token_list_pop_token(tokens);
                 node = brd_parse_prefix(tokens);
-                if (node == NULL) {
-                        return NULL;
-                } else {
-                        return brd_node_unary_new(BRD_NOT, node);
-                }
+                return (node == NULL) ? NULL : brd_node_unary_new(BRD_NOT, node);
         case BRD_TOK_MINUS:
                 brd_token_list_pop_token(tokens);
                 node = brd_parse_prefix(tokens);
-                if (node == NULL) {
-                        return NULL;
-                } else {
-                        return brd_node_unary_new(BRD_NEGATE, node);
-                }
+                return (node = NULL) ? NULL : brd_node_unary_new(BRD_NEGATE, node);
         default:
                 return brd_parse_postfix(tokens);
         }
@@ -402,9 +378,10 @@ brd_parse_postfix(struct brd_token_list *tokens)
                         skip_newlines = true;
                         args = brd_parse_arglist(tokens);
                         if (args == NULL) {
-                                BARF("bad argument list");
+                                return NULL;
                         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RPAREN) {
-                                BARF("you're missing a right paren");
+                                error_message = "expected a right parenthesis";
+                                return NULL;
                         }
                         skip_newlines = skip_copy;
                         node = brd_node_funcall_new(node, args);
@@ -414,9 +391,10 @@ brd_parse_postfix(struct brd_token_list *tokens)
                         skip_newlines = true;
                         idx = brd_parse_expression(tokens);
                         if (idx == NULL) {
-                                BARF("bad index");
+                                return NULL;
                         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RBRACKET) {
-                                BARF("you're missing a right bracket");
+                                error_message = "expected a right bracket";
+                                return NULL;
                         }
                         skip_newlines = skip_copy;
                         node = brd_node_index_new(node, idx);
@@ -446,7 +424,7 @@ brd_parse_base(struct brd_token_list *tokens)
                         skip_newlines = skip_copy;
                         return node;
                 } else {
-                        BARF("You're missing a right paren there m8");
+                        error_message = "expected a right parenthesis";
                         return NULL;
                 }
         case BRD_TOK_LBRACKET:
@@ -454,9 +432,10 @@ brd_parse_base(struct brd_token_list *tokens)
                 skip_newlines = true;
                 items = brd_parse_arglist(tokens);
                 if (items == NULL) {
-                        BARF("bad argument list");
+                        return NULL;
                 } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RBRACKET) {
-                        BARF("you're missing a right bracket");
+                        error_message = "expected a right bracket";
+                        return NULL;
                 }
                 skip_newlines = skip_copy;
                 return brd_node_list_lit_new(items);
@@ -485,43 +464,24 @@ brd_parse_base(struct brd_token_list *tokens)
                 brd_token_list_pop_token(tokens);
                 node = brd_parse_body(tokens);
                 if (node == NULL) {
-                        BARF("bad begin/end expression");
                         return NULL;
                 } else if (brd_token_list_pop_token(tokens) == BRD_TOK_END) {
                         return node;
                 } else {
-                        BARF("begin must be followed by end");
+                        error_message = "expected an \"end\" token";
                         return NULL;
                 }
-                break;
         case BRD_TOK_IF:
                 brd_token_list_pop_token(tokens);
-                node = brd_parse_ifexpr(tokens);
-                if (node == NULL) {
-                        BARF("bad if expression");
-                } else {
-                        return node;
-                }
-                break;
+                return brd_parse_ifexpr(tokens); /* could be null */
         case BRD_TOK_WHILE:
                 brd_token_list_pop_token(tokens);
-                node = brd_parse_while(tokens);
-                if (node == NULL) {
-                        BARF("bad while expression");
-                } else {
-                        return node;
-                }
-                break;
+                return brd_parse_while(tokens); /* could be null */
         case BRD_TOK_FUNC:
                 brd_token_list_pop_token(tokens);
-                node = brd_parse_func(tokens);
-                if (node == NULL) {
-                        BARF("bad function def");
-                } else {
-                        return node;
-                }
-                break;
+                return brd_parse_func(tokens); /* could be null */
         default:
+                error_message = "expected... something";
                 return NULL;
         }
 }
@@ -537,7 +497,7 @@ brd_parse_func(struct brd_token_list *tokens)
 
         skip_newlines = true;
         if (brd_token_list_pop_token(tokens) != BRD_TOK_LPAREN) {
-                BARF("need an lparen here");
+                error_message = "expected a left parenthesis";
                 return NULL;
         }
 
@@ -563,7 +523,7 @@ brd_parse_func(struct brd_token_list *tokens)
         }
 
         if (brd_token_list_pop_token(tokens) != BRD_TOK_RPAREN) {
-                BARF("need an rparen here");
+                error_message = "expected a right parenthesis";
                 return NULL;
         }
 
@@ -572,7 +532,8 @@ brd_parse_func(struct brd_token_list *tokens)
                 skip_newlines = skip_copy;
                 return brd_node_closure_new(args, length, body);
         } else {
-                BARF("there is no end");
+                error_message = "expected an \"end\" token";
+                return NULL;
         }
 }
 
@@ -646,7 +607,7 @@ brd_parse_body(struct brd_token_list *tokens)
         if (length >= 1) {
                 return brd_node_body_new(stmts, length);
         } else {
-                BARF("body must have at least one statement");
+                error_message = "body must have at least one statement";
                 return NULL;
         }
 }
@@ -674,7 +635,7 @@ brd_parse_body_stmt(struct brd_token_list *tokens)
                         if (found_term) {
                                 return node;
                         } else {
-                                BARF("statement without terminator");
+                                error_message = "expected a newline";
                                 return NULL;
                         }
                 }
@@ -682,7 +643,8 @@ brd_parse_body_stmt(struct brd_token_list *tokens)
 }
 
 /* the if token has already been consumed */
-struct brd_node *brd_parse_ifexpr(struct brd_token_list *tokens)
+struct brd_node *
+brd_parse_ifexpr(struct brd_token_list *tokens)
 {
         size_t length = 0, capacity = LIST_SIZE;
         struct brd_node *cond, *body, *els;
@@ -692,21 +654,25 @@ struct brd_node *brd_parse_ifexpr(struct brd_token_list *tokens)
         skip_newlines = true;
         cond = brd_parse_expression(tokens);
         if (cond == NULL) {
-                BARF("error parsing if condition");
+                return NULL;
         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_THEN) {
-                BARF("You're missing a then");
+                error_message = "expected a \"then\" token";
+                return NULL;
         }
         
         body = brd_parse_body(tokens);
         if (body == NULL) {
-                BARF("error parsing if body");
+                return NULL;
         }
+
         elifs = malloc(sizeof(struct brd_node_elif) * capacity);
         for (;;) {
-                struct brd_node_elif e = brd_parse_elif(tokens);
-                if (e.cond == NULL) {
+                struct brd_node_elif e;
+                if (!brd_parse_elif(tokens, &e)) {
                         break;
-                } else if (length >= capacity) {
+                }
+
+                if (length >= capacity) {
                         capacity *= GROW;
                         elifs = realloc(elifs, sizeof(struct brd_node_elif) * capacity);
                 }
@@ -718,7 +684,7 @@ struct brd_node *brd_parse_ifexpr(struct brd_token_list *tokens)
                 brd_token_list_pop_token(tokens);
                 els = brd_parse_body(tokens);
                 if (els == NULL) {
-                        BARF("can't parse else body");
+                        return NULL;
                 }
         } else {
                 els = NULL;
@@ -728,42 +694,38 @@ struct brd_node *brd_parse_ifexpr(struct brd_token_list *tokens)
                 skip_newlines = skip_copy;
                 return brd_node_ifexpr_new(cond, body, elifs, length, els);
         } else {
-                BARF("there is no end");
+                error_message = "expected an \"end\" token";
                 return NULL;
         }
 }
 
 /* 
- * yeah I'm returning a struct, sue me
- * the struct is only two points so, like, it's fine ig
+ * return true on success, false otherwise
  */
-struct brd_node_elif brd_parse_elif(struct brd_token_list *tokens)
+int
+brd_parse_elif(struct brd_token_list *tokens, struct brd_node_elif *elif)
 {
-        struct brd_node_elif elif;
-
         if (brd_token_list_peek(tokens) == BRD_TOK_ELIF) {
                 brd_token_list_pop_token(tokens);
         } else {
-                return (struct brd_node_elif){ NULL, NULL };
+                return false;
         }
 
-        elif.cond = brd_parse_expression(tokens);
-        if (elif.cond == NULL) {
-                BARF("oops");
+        elif->cond = brd_parse_expression(tokens);
+        if (elif->cond == NULL) {
+                return false;
         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_THEN) {
-                BARF("You're missing a 'then'");
+                error_message = "expected a \"then\" token";
+                return false;
         }
 
-        elif.body = brd_parse_body(tokens);
-        if (elif.body == NULL) {
-                BARF("oops");
-        }
-
-        return elif;
+        elif->body = brd_parse_body(tokens);
+        return elif->body != NULL;
 }
 
 /* the while token has already been consumed */
-struct brd_node *brd_parse_while(struct brd_token_list *tokens)
+struct brd_node *
+brd_parse_while(struct brd_token_list *tokens)
 {
         struct brd_node *cond, *body;
         int skip_copy = skip_newlines, no_list;
@@ -779,12 +741,15 @@ struct brd_node *brd_parse_while(struct brd_token_list *tokens)
 
         cond = brd_parse_expression(tokens);
         if (brd_token_list_pop_token(tokens) != BRD_TOK_DO) {
-                BARF("you're missing a do");
+                error_message = "expected a \"do\" token";
+                return NULL;
         }
+
         skip_newlines = skip_copy;
         body = brd_parse_body(tokens);
         if (brd_token_list_pop_token(tokens) != BRD_TOK_END) {
-                BARF("there is no end");
+                error_message = "expected an \"end\" token";
+                return NULL;
         }
 
         return brd_node_while_new(no_list, cond, body);

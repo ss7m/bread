@@ -22,3 +22,15 @@ set a = func(m, n)
 end
 
 @writeln(a(3, 3))
+
+@writeln()
+
+set list = [1, 2, 3, 4]
+set foo = func()
+  @writeln(list)
+end
+foo()
+set list[1] = "wow"
+foo()
+set list = 7
+foo()

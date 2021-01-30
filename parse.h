@@ -21,7 +21,7 @@ struct brd_node *brd_parse_builtin(struct brd_token_list *tokens);
 struct brd_node *brd_parse_body(struct brd_token_list *tokens);
 struct brd_node *brd_parse_body_stmt(struct brd_token_list *tokens);
 struct brd_node *brd_parse_ifexpr(struct brd_token_list *tokens);
-struct brd_node_elif brd_parse_elif(struct brd_token_list *tokens);
+int brd_parse_elif(struct brd_token_list *tokens, struct brd_node_elif *e);
 struct brd_node *brd_parse_while(struct brd_token_list *tokens);
 
 #endif

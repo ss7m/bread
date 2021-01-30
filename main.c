@@ -37,6 +37,15 @@ main(int argc, char **argv)
         copy = list;
 
         program = brd_parse_program(&list);
+        if (program == NULL) {
+                fprintf(
+                        stderr,
+                        "Parser error: %s on line %d\n",
+                        error_message,
+                        line_number
+                );
+                return EXIT_FAILURE;
+        }
         brd_token_list_destroy(&copy);
 
         bytecode = brd_node_compile((struct brd_node *)program);

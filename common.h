@@ -15,6 +15,7 @@
  */
 extern int skip_newlines;
 extern int line_number;
+extern const char *error_message;
 
 #ifdef DEBUG
 #define BARF(fmt, ...) do { \
