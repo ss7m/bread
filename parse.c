@@ -9,6 +9,7 @@
 /* declare parser global variables */
 int skip_newlines = false;
 int line_number = 1;
+int found_eof = false;
 const char *error_message = "";
 char bad_character[2] = {0};
 
@@ -20,6 +21,7 @@ brd_parse_program(struct brd_token_list *tokens)
         struct brd_node *node;
 
         skip_newlines = false;
+        found_eof = false;
 
         while(brd_token_list_peek(tokens) == BRD_TOK_NEWLINE) {
                 brd_token_list_pop_token(tokens);
@@ -38,10 +40,11 @@ brd_parse_program(struct brd_token_list *tokens)
                 }
         }
 
-        if (tokens->data != tokens->end) {
-                // TODO I'm pretty sure well have found a different
-                // error if this happens
-                // error_message = "parsing finished prematurely";
+        if (!found_eof) {
+                for (int i = 0; i < length; i++) {
+                        brd_node_destroy(stmts[i]);
+                }
+                free(stmts);
                 return NULL;
         }
 
@@ -64,6 +67,7 @@ brd_parse_expression_stmt(struct brd_token_list *tokens)
         for (;;) {
                 switch (brd_token_list_peek(tokens)) {
                 case BRD_TOK_EOF:
+                        found_eof = true;
                         brd_token_list_pop_token(tokens);
                         return node;
                 case BRD_TOK_NEWLINE:
@@ -95,9 +99,11 @@ brd_parse_expression(struct brd_token_list *tokens)
                 if ((l = brd_parse_lvalue(tokens)) == NULL) {
                         return NULL;
                 } else if (brd_token_list_pop_token(tokens) != BRD_TOK_EQ) {
+                        brd_node_destroy(l);
                         error_message = "expected an equals sign";
                         return NULL;
                 } else if ((r = brd_parse_expression(tokens)) == NULL) {
+                        brd_node_destroy(l);
                         return NULL;
                 } else {
                         skip_newlines = skip_copy;
@@ -126,8 +132,10 @@ brd_parse_lvalue(struct brd_token_list *tokens)
                         brd_token_list_pop_token(tokens);
                         idx = brd_parse_expression(tokens);
                         if (idx == NULL) {
+                                brd_node_destroy(node);
                                 return NULL;
                         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RBRACKET) {
+                                brd_node_destroy(node);
                                 error_message = "expected a right bracket";
                                 return NULL;
                         }
@@ -155,6 +163,7 @@ brd_parse_concatexp(struct brd_token_list *tokens)
                         brd_token_list_pop_token(tokens);
                         r = brd_parse_orexp(tokens);
                         if (r == NULL) {
+                                brd_node_destroy(l);
                                 return NULL;
                         } else {
                                 l = brd_node_binop_new(BRD_CONCAT, l, r);
@@ -180,7 +189,12 @@ brd_parse_orexp(struct brd_token_list *tokens)
         case BRD_TOK_OR:
                 brd_token_list_pop_token(tokens);
                 r = brd_parse_orexp(tokens);
-                return (r == NULL) ? NULL : brd_node_binop_new(BRD_OR, l, r);
+                if (r == NULL) {
+                        brd_node_destroy(l);
+                        return NULL;
+                } else {
+                        return brd_node_binop_new(BRD_OR, l, r);
+                }
         default:
                 return l;
         }
@@ -200,7 +214,12 @@ brd_parse_andexp(struct brd_token_list *tokens)
         case BRD_TOK_AND:
                 brd_token_list_pop_token(tokens);
                 r = brd_parse_andexp(tokens);
-                return (r == NULL) ? NULL : brd_node_binop_new(BRD_AND, l, r);
+                if (r == NULL) {
+                        brd_node_destroy(l);
+                        return NULL;
+                } else {
+                        return brd_node_binop_new(BRD_AND, l, r);
+                }
         default:
                 return l;
         }
@@ -243,7 +262,12 @@ brd_parse_compexp(struct brd_token_list *tokens)
         }
         
         r = brd_parse_addexp(tokens);
-        return (r == NULL) ? NULL : brd_node_binop_new(binop, l, r);
+        if (r == NULL) {
+                brd_node_destroy(l);
+                return NULL;
+        } else {
+                return brd_node_binop_new(binop, l, r);
+        }
 }
 
 struct brd_node *
@@ -273,6 +297,7 @@ brd_parse_addexp(struct brd_token_list *tokens)
 
                 r = brd_parse_mulexp(tokens);
                 if (r == NULL) {
+                        brd_node_destroy(l);
                         return NULL;
                 } else {
                         l = brd_node_binop_new(binop, l, r);
@@ -315,6 +340,7 @@ brd_parse_mulexp(struct brd_token_list *tokens)
 
                 r = brd_parse_powexp(tokens);
                 if (r == NULL) {
+                        brd_node_destroy(l);
                         return NULL;
                 } else {
                         l = brd_node_binop_new(binop, l, r);
@@ -335,7 +361,12 @@ brd_parse_powexp(struct brd_token_list *tokens)
         if (brd_token_list_peek(tokens) == BRD_TOK_POW) {
                 brd_token_list_pop_token(tokens);
                 r = brd_parse_powexp(tokens);
-                return (r == NULL) ? NULL : brd_node_binop_new(BRD_POW, l, r);
+                if (r == NULL) {
+                        brd_node_destroy(l);
+                        return NULL;
+                } else {
+                        return brd_node_binop_new(BRD_POW, l, r);
+                }
         } else {
                 return l;
         }
@@ -379,10 +410,10 @@ brd_parse_postfix(struct brd_token_list *tokens)
                         skip_newlines = true;
                         args = brd_parse_arglist(tokens);
                         if (args == NULL) {
-                                return NULL;
+                                goto error_exit;
                         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RPAREN) {
                                 error_message = "expected a right parenthesis";
-                                return NULL;
+                                goto error_exit;
                         }
                         skip_newlines = skip_copy;
                         node = brd_node_funcall_new(node, args);
@@ -392,10 +423,10 @@ brd_parse_postfix(struct brd_token_list *tokens)
                         skip_newlines = true;
                         idx = brd_parse_expression(tokens);
                         if (idx == NULL) {
-                                return NULL;
+                                goto error_exit;
                         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RBRACKET) {
                                 error_message = "expected a right bracket";
-                                return NULL;
+                                goto error_exit;
                         }
                         skip_newlines = skip_copy;
                         node = brd_node_index_new(node, idx);
@@ -404,6 +435,10 @@ brd_parse_postfix(struct brd_token_list *tokens)
                         return node;
                 }
         }
+
+error_exit:
+        free(node);
+        return NULL;
 }
 
 struct brd_node *
@@ -525,7 +560,7 @@ brd_parse_func(struct brd_token_list *tokens)
 
         if (brd_token_list_pop_token(tokens) != BRD_TOK_RPAREN) {
                 error_message = "expected a right parenthesis";
-                return NULL;
+                goto error_exit;
         }
 
         body = brd_parse_body(tokens);
@@ -534,8 +569,15 @@ brd_parse_func(struct brd_token_list *tokens)
                 return brd_node_closure_new(args, length, body);
         } else {
                 error_message = "expected an \"end\" token";
-                return NULL;
+                goto error_exit;
         }
+
+error_exit:
+        for (int i = 0; i < length; i++) {
+                free(args[i]);
+        }
+        free(args);
+        return NULL;
 }
 
 struct brd_node_arglist *
@@ -609,6 +651,7 @@ brd_parse_body(struct brd_token_list *tokens)
                 return brd_node_body_new(stmts, length);
         } else {
                 error_message = "body must have at least one statement";
+                free(stmts);
                 return NULL;
         }
 }
@@ -637,6 +680,7 @@ brd_parse_body_stmt(struct brd_token_list *tokens)
                                 return node;
                         } else {
                                 error_message = "expected a newline";
+                                brd_node_destroy(node);
                                 return NULL;
                         }
                 }
@@ -663,6 +707,7 @@ brd_parse_ifexpr(struct brd_token_list *tokens)
         
         body = brd_parse_body(tokens);
         if (body == NULL) {
+                brd_node_destroy(cond);
                 return NULL;
         }
 
@@ -685,7 +730,7 @@ brd_parse_ifexpr(struct brd_token_list *tokens)
                 brd_token_list_pop_token(tokens);
                 els = brd_parse_body(tokens);
                 if (els == NULL) {
-                        return NULL;
+                        goto error_exit;
                 }
         } else {
                 els = NULL;
@@ -696,8 +741,21 @@ brd_parse_ifexpr(struct brd_token_list *tokens)
                 return brd_node_ifexpr_new(cond, body, elifs, length, els);
         } else {
                 error_message = "expected an \"end\" token";
-                return NULL;
+                goto error_exit;
         }
+
+error_exit:
+        brd_node_destroy(cond);
+        brd_node_destroy(body);
+        if (els != NULL) {
+                brd_node_destroy(els);
+        }
+        for (int i = 0; i < length; i++) {
+                brd_node_destroy(elifs[i].cond);
+                brd_node_destroy(elifs[i].body);
+        }
+        free(elifs);
+        return NULL;
 }
 
 /* 
@@ -717,11 +775,17 @@ brd_parse_elif(struct brd_token_list *tokens, struct brd_node_elif *elif)
                 return false;
         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_THEN) {
                 error_message = "expected a \"then\" token";
+                brd_node_destroy(elif->cond);
                 return false;
         }
 
         elif->body = brd_parse_body(tokens);
-        return elif->body != NULL;
+        if (elif->body == NULL) {
+                brd_node_destroy(elif->cond);
+                return false;
+        } else {
+                return true;
+        }
 }
 
 /* the while token has already been consumed */
@@ -741,15 +805,23 @@ brd_parse_while(struct brd_token_list *tokens)
         }
 
         cond = brd_parse_expression(tokens);
-        if (brd_token_list_pop_token(tokens) != BRD_TOK_DO) {
+        if (cond == NULL) {
+                return NULL;
+        } else if (brd_token_list_pop_token(tokens) != BRD_TOK_DO) {
                 error_message = "expected a \"do\" token";
+                brd_node_destroy(cond);
                 return NULL;
         }
 
         skip_newlines = skip_copy;
         body = brd_parse_body(tokens);
-        if (brd_token_list_pop_token(tokens) != BRD_TOK_END) {
+        if (body == NULL) {
+                brd_node_destroy(cond);
+                return NULL;
+        } else if (brd_token_list_pop_token(tokens) != BRD_TOK_END) {
                 error_message = "expected an \"end\" token";
+                brd_node_destroy(cond);
+                brd_node_destroy(body);
                 return NULL;
         }
 

@@ -5,6 +5,8 @@
 #include "token.h"
 #include "parse.h"
 
+// TODO: free resources on parser error
+
 static char *
 brd_read_file(const char *file_name)
 {
@@ -26,16 +28,133 @@ brd_read_file(const char *file_name)
         return contents;
 }
 
+enum brd_repl_parser_failure_reason {
+        BRD_REPL_TOKEN,
+        BRD_REPL_PARSER,
+} failure_reason;
+
+static brd_bytecode_t *
+brd_parse_and_compile_repl(char *code)
+{
+        struct brd_token_list tokens;
+        struct brd_node *program;
+        brd_bytecode_t *bytecode;
+
+        brd_token_list_init(&tokens);
+        if (!brd_token_list_tokenize(&tokens, code)) {
+                fprintf(
+                        stderr,
+                        "Tokenizer error: %s%s\n",
+                        error_message,
+                        bad_character
+                );
+                brd_token_list_destroy(&tokens);
+                failure_reason = BRD_REPL_TOKEN;
+                return NULL;
+        }
+
+        program = brd_parse_program(&tokens);
+        brd_token_list_destroy(&tokens);
+        if (program == NULL) {
+                failure_reason = BRD_REPL_PARSER;
+                return NULL;
+        }
+
+        bytecode = brd_node_compile(program);
+        brd_node_destroy(program);
+
+        return bytecode;
+}
+
+static void
+brd_repl(void)
+{
+        /*
+         * need to hold onto old_code because string constants
+         * point into the bytecode
+         */
+        brd_bytecode_t **old_code;
+        size_t oc_length, oc_capacity;
+
+        oc_length = 0;
+        oc_capacity = 4;
+        old_code = malloc(sizeof(brd_bytecode_t *) * oc_capacity);
+
+        brd_vm_init(NULL);
+
+        for (;;) {
+                brd_bytecode_t *bytecode;
+                char *code = NULL;
+                size_t n;
+                int empty_line;
+
+                printf("> ");
+                n = getline(&code, &n, stdin);
+                if (n == -1) {
+                        free(code);
+                        break;
+                } else if (code == NULL) {
+                        break;
+                }
+
+                empty_line = true;
+                for (int i = 0; i < n; i++) {
+                        if (!isspace(code[i])) {
+                                empty_line = false;
+                                break;
+                        }
+                }
+                if (empty_line) {
+                        free(code);
+                        continue;
+                }
+
+                bytecode = brd_parse_and_compile_repl(code);
+                while (bytecode == NULL) {
+                        char *a = NULL, *b;
+
+                        // TODO: tokenizer error
+                        // TODO: be able to quit this mode 
+                        printf(" | ");
+                        n = getline(&a, &n, stdin);
+                        b = malloc(strlen(code) + strlen(a) + 1);
+                        strcpy(b, code);
+                        strcat(b, a);
+                        free(code);
+                        free(a);
+                        code = b;
+
+                        bytecode = brd_parse_and_compile_repl(code);
+                }
+                free(code);
+
+                brd_vm_reset(bytecode);
+                brd_vm_run();
+
+                if (oc_length >= oc_capacity) {
+                        oc_capacity *= 1.5;
+                        old_code = realloc(
+                                old_code,
+                                sizeof(brd_bytecode_t *) * oc_capacity
+                        );
+                }
+                old_code[oc_length++] = bytecode;
+        }
+
+        brd_vm_reset(NULL);
+        for (int i = 0; i < oc_length; i++) {
+                free(old_code[i]);
+        }
+        free(old_code);
+        brd_vm_destroy();
+}
+
 static brd_bytecode_t *
 brd_parse_and_compile(char *code)
 {
         struct brd_token_list tokens;
         struct brd_node *program;
         brd_bytecode_t *bytecode;
-
-        if (code == NULL) {
-                exit(EXIT_FAILURE);
-        }
 
         brd_token_list_init(&tokens);
         if (!brd_token_list_tokenize(&tokens, code)) {
@@ -70,10 +189,16 @@ brd_parse_and_compile(char *code)
 static void
 brd_run_file(char *file_name)
 {
-        char *code = brd_read_file(file_name);
-        brd_bytecode_t *bytecode = brd_parse_and_compile(code);
+        char *code;
+        brd_bytecode_t *bytecode;
 
+        code = brd_read_file(file_name);
+        if (code == NULL) {
+                fprintf(stderr, "Unable to open file %s\n", file_name);
+        }
+        bytecode = brd_parse_and_compile(code);
         free(code);
+
         brd_vm_init(bytecode);
         brd_vm_run();
         brd_vm_destroy();
@@ -82,9 +207,10 @@ brd_run_file(char *file_name)
 int
 main(int argc, char **argv)
 {
-        if (argc != 2) {
-                BARF("Enter exactly 1 argument");
-        }
 
-        brd_run_file(argv[1]);
+        if (argc == 1) {
+                brd_repl();
+        } else {
+                brd_run_file(argv[1]);
+        }
 }

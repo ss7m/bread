@@ -667,7 +667,7 @@ _builtin_readln(struct brd_value *args, size_t num_args, struct brd_value *out)
         out->as.heap->as.string = NULL;
 
         n = getline(&out->as.heap->as.string, &n, stdin);
-        out->as.heap->as.string[n-1] = '\0';
+        out->as.heap->as.string[n-1] = '\0'; /* remove newline */
         return true;
 }
 

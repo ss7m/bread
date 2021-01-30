@@ -397,8 +397,11 @@ brd_vm_destroy(void)
                 free(heap);
                 heap = n;
         }
+
         brd_value_map_destroy(&vm.frame[0].vars);
-        free(vm.bytecode);
+        if (vm.bytecode != NULL) {
+                free(vm.bytecode);
+        }
 }
 
 void
@@ -414,6 +417,14 @@ brd_vm_init(brd_bytecode_t *bytecode)
         vm.fp = 0;
         vm.frame[0].pc = 0;
         brd_value_map_init(&vm.frame[0].vars);
+}
+
+void
+brd_vm_reset(brd_bytecode_t *bytecode)
+{
+        vm.bytecode = bytecode;
+        vm.fp = 0; /* not really necessary */
+        vm.frame[0].pc = 0;
 }
 
 static void

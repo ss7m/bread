@@ -94,6 +94,7 @@ brd_bytecode_t *brd_node_compile(struct brd_node *node);
 
 void brd_vm_destroy(void);
 void brd_vm_init(brd_bytecode_t *bytecode);
+void brd_vm_reset(brd_bytecode_t *bytecode);
 void brd_vm_allocate(struct brd_heap_entry *entry);
 void brd_vm_run(void);
 

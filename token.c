@@ -1,8 +1,6 @@
 #include "common.h"
 #include "token.h"
 
-#include <ctype.h>
-
 #define LIST_INITIAL_SIZE 32
 #define GROW 1.5
 
