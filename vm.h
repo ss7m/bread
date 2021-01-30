@@ -1,9 +1,11 @@
 #ifndef BRD_VM_H
 #define BRD_VM_H
 
-/* stack is limited to 32 values */
-/* this is less dumb than you think; function calls create their own stack */
-#define STACK_SIZE 32
+/* stack is limited to 256 values */
+#define STACK_SIZE 256
+
+/* number of frames is limited to 64 */
+#define FRAME_SIZE 64
 
 /* VM bytecode */
 /* Stack based virtual machine */
@@ -66,13 +68,20 @@ struct brd_stack {
         struct brd_value *sp;
 };
 
+struct brd_frame {
+        size_t pc;
+        struct brd_value_map vars;
+};
+
 struct brd_vm {
         struct brd_stack stack;
         struct brd_heap_entry *heap;
         void *bytecode;
-        size_t pc;
-        struct brd_value_map globals;
+        size_t fp;
+        struct brd_frame frame[FRAME_SIZE];
 };
+
+extern struct brd_vm vm;
 
 void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
 struct brd_value *brd_stack_pop(struct brd_stack *stack);
@@ -80,10 +89,10 @@ struct brd_value *brd_stack_peek(struct brd_stack *stack);
 
 void *brd_node_compile(struct brd_node *node);
 
-void brd_vm_destroy(struct brd_vm *vm);
-void brd_vm_init(struct brd_vm *vm, void *bytecode);
-void brd_vm_allocate(struct brd_vm *vm, struct brd_heap_entry *entry);
-void brd_vm_run(struct brd_vm *vm, struct brd_value *out);
+void brd_vm_destroy(void);
+void brd_vm_init(void *bytecode);
+void brd_vm_allocate(struct brd_heap_entry *entry);
+void brd_vm_run(void);
 
-void brd_vm_gc(struct brd_vm *vm);
+void brd_vm_gc(void);
 #endif

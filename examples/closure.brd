@@ -1,38 +1,14 @@
-set list = [1, 2, 3, 4]
-
-set foo = func(a, b)
-  @writeln(list)
-  set list = "" .. ""
-  a + b
-end
-
-set res = foo(1, 2)
-@writeln("function returned: ", res)
-
-set list[1] = "wow!"
-
-foo(3, 4)
-
-set list = unit
-
-foo(7, 8)
-
-set add = func(a)
+set make_adder = func(a)
   func(b)
     a + b
   end
 end
 
-set add_5 = add(5)
+set add_5 = make_adder(5)
 
 @writeln(add_5(20.2))
 
-@writeln(add(14)(6))
-
-set string = "Hello, " .. "World!"
-set foo = func() string end
-set string = unit
-@writeln(foo())
+@writeln(make_adder(14)(6))
 
 # use self for recursive functions
 set a = func(m, n)
@@ -45,4 +21,4 @@ set a = func(m, n)
   end
 end
 
-@writeln(a(3, 4))
+@writeln(a(3, 3))

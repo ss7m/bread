@@ -70,7 +70,7 @@ struct brd_value_map_list {
 };
 
 struct brd_value_map {
-        struct brd_value_map_list bucket[BUCKET_SIZE];
+        struct brd_value_map_list *bucket;
 };
 
 void brd_value_map_init(struct brd_value_map *map);
@@ -84,10 +84,10 @@ struct brd_value_closure {
         struct brd_value_map env;
         char **args;
         size_t num_args;
-        void *bytecode;
+        size_t pc;
 };
 
-void brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, void *bytecode);
+void brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, size_t pc);
 void brd_value_closure_destroy(struct brd_value_closure *closure);
 
 #ifdef DEBUG

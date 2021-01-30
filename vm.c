@@ -8,6 +8,8 @@
 #define LIST_SIZE 32
 #define GROW 1.5
 
+struct brd_vm vm;
+
 #ifdef DEBUG
 static void
 brd_bytecode_debug(enum brd_bytecode op)
@@ -77,10 +79,10 @@ brd_stack_peek(struct brd_stack *stack)
 }
 
 void
-brd_vm_allocate(struct brd_vm *vm, struct brd_heap_entry *entry)
+brd_vm_allocate(struct brd_heap_entry *entry)
 {
-        entry->next = vm->heap->next;
-        vm->heap->next = entry;
+        entry->next = vm.heap->next;
+        vm.heap->next = entry;
 }
 
 #define ADD_OP(x) do {\
@@ -370,10 +372,10 @@ brd_node_compile(struct brd_node *node)
 }
 
 void
-brd_vm_destroy(struct brd_vm *vm)
+brd_vm_destroy(void)
 {
         /* note to self: for container types, don't free the members! */
-        struct brd_heap_entry *heap = vm->heap;
+        struct brd_heap_entry *heap = vm.heap;
         while (heap != NULL) {
                 struct brd_heap_entry *n = heap->next;
                 switch(heap->htype) {
@@ -392,90 +394,57 @@ brd_vm_destroy(struct brd_vm *vm)
                 free(heap);
                 heap = n;
         }
-        brd_value_map_destroy(&vm->globals);
-        free(vm->bytecode);
+        brd_value_map_destroy(&vm.frame[0].vars);
+        free(vm.bytecode);
 }
 
 void
-brd_vm_init(struct brd_vm *vm, void *bytecode)
+brd_vm_init(void *bytecode)
 {
-        vm->heap = malloc(sizeof(*vm->heap));
-        vm->heap->next = NULL;
-        vm->heap->htype = BRD_HEAP_STRING;
-        vm->heap->as.string = malloc(1);
-        brd_value_map_init(&vm->globals);
-        vm->bytecode = bytecode;
-        vm->pc = 0;
-        vm->stack.sp = vm->stack.values;
+        vm.heap = malloc(sizeof(*vm.heap));
+        vm.heap->next = NULL;
+        vm.heap->htype = BRD_HEAP_STRING;
+        vm.heap->as.string = malloc(1);
+        vm.bytecode = bytecode;
+        vm.stack.sp = vm.stack.values;
+
+        vm.fp = 0;
+        vm.frame[0].pc = 0;
+        brd_value_map_init(&vm.frame[0].vars);
 }
 
-static int
-brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args, struct brd_value *out)
+static void
+brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
 {
-        if (f->vtype == BRD_VAL_BUILTIN) {
-                return builtin_function[f->as.builtin](args, num_args, out);
-        } else if (f->vtype == BRD_VAL_HEAP &&
-                        f->as.heap->htype == BRD_HEAP_CLOSURE) {
+        if (f->vtype == BRD_VAL_HEAP && f->as.heap->htype == BRD_HEAP_CLOSURE) {
                 /* this is suuuuper hacky */
-                int on_heap, new;
                 struct brd_value_closure *closure = f->as.heap->as.closure;
-                struct brd_vm *vm = malloc(sizeof(*vm));
-                brd_vm_init(vm, closure->bytecode);
-                brd_value_map_copy(&vm->globals, &closure->env);
-                brd_value_map_set(&vm->globals, "self", f); /* for recursive funcs */
 
-                if (num_args != closure->num_args) {
+                if (vm.fp >= FRAME_SIZE - 1) {
+                        BARF("stack overflow error");
+                } else if (num_args != closure->num_args) {
                         BARF("wrong number of arguments");
                 }
 
+                vm.fp++;
+                vm.frame[vm.fp].pc = closure->pc;
+                vm.frame[vm.fp].vars = closure->env;
+
+                brd_value_map_set(&vm.frame[vm.fp].vars, "self", f);
                 for (int i = 0; i < num_args; i++) {
-                        brd_value_map_set(&vm->globals, closure->args[i], &args[i]);
+                        brd_value_map_set(
+                                &vm.frame[vm.fp].vars,
+                                closure->args[i],
+                                &args[i]
+                        );
                 }
-                brd_vm_run(vm, out);
-
-                /* cleanup
-                 * if the return value is on the heap, we need to not free it
-                 * and we need to allocate the return value on the callee's vm
-                 * only if the value is on the heap (i.e not in the closure's env)
-                 */
-                on_heap = out->vtype == BRD_VAL_HEAP;
-                new = false;
-                while (vm->heap != NULL) {
-                        struct brd_heap_entry *n = vm->heap->next;
-                        if (on_heap && vm->heap == out->as.heap) {
-                                new = true;
-                                vm->heap = n;
-                                continue;
-                        }
-
-                        switch(vm->heap->htype) {
-                        case BRD_HEAP_STRING:
-                                free(vm->heap->as.string);
-                                break;
-                        case BRD_HEAP_LIST:
-                                free(vm->heap->as.list->items);
-                                free(vm->heap->as.list);
-                                break;
-                        case BRD_HEAP_CLOSURE:
-                                brd_value_closure_destroy(vm->heap->as.closure);
-                                free(vm->heap->as.closure);
-                                break;
-                        }
-                        free(vm->heap);
-                        vm->heap = n;
-                }
-                brd_value_map_destroy(&vm->globals);
-                free(vm);
-
-                return new;
         } else {
                 BARF("attempted to call a non-callable");
-                return -1;
         }
 }
 
 void
-brd_vm_run(struct brd_vm *vm, struct brd_value *out)
+brd_vm_run(void)
 {
         enum brd_bytecode op;
         struct brd_value value1, value2, value3;
@@ -484,8 +453,8 @@ brd_vm_run(struct brd_vm *vm, struct brd_value *out)
         size_t jmp, num_args;
 
         for (;;) {
-                op = *(enum brd_bytecode *)(vm->bytecode + vm->pc);
-                vm->pc += sizeof(enum brd_bytecode);
+                op = *(enum brd_bytecode *)(vm.bytecode + vm.frame[vm.fp].pc);
+                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode);
 
 #ifdef DEBUG
                 brd_bytecode_debug(op);
@@ -494,227 +463,236 @@ brd_vm_run(struct brd_vm *vm, struct brd_value *out)
                 switch (op) {
                 case BRD_VM_NUM:
                         value1.vtype = BRD_VAL_NUM;
-                        value1.as.num = *(long double *)(vm->bytecode + vm->pc);
-                        vm->pc += sizeof(long double);
-                        brd_stack_push(&vm->stack, &value1);
+                        value1.as.num = *(long double *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        vm.frame[vm.fp].pc += sizeof(long double);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_STR:
                         value1.vtype = BRD_VAL_STRING;
-                        value1.as.string = (char *)(vm->bytecode + vm->pc);
-                        while (*(char *)(vm->bytecode + vm->pc++));
-                        brd_stack_push(&vm->stack, &value1);
+                        value1.as.string = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_GET_VAR:
-                        id = (char *)(vm->bytecode + vm->pc);
-                        while (*(char *)(vm->bytecode + vm->pc++));
+                        id = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
                         value1.vtype = BRD_VAL_UNIT;
-                        value1 = *(brd_value_map_get(&vm->globals, id) ?: &value1);
-                        brd_stack_push(&vm->stack, &value1);
+                        value1 = *(brd_value_map_get(&vm.frame[vm.fp].vars, id) ?: &value1);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_TRUE:
                         value1.vtype = BRD_VAL_BOOL;
                         value1.as.boolean = true;
-                        brd_stack_push(&vm->stack, &value1);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_FALSE:
                         value1.vtype = BRD_VAL_BOOL;
                         value1.as.boolean = false;
-                        brd_stack_push(&vm->stack, &value1);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_UNIT:
                         value1.vtype = BRD_VAL_UNIT;
-                        brd_stack_push(&vm->stack, &value1);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_PLUS:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
                         value2.as.num += value1.as.num;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_MINUS:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
                         value2.as.num -= value1.as.num;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_MUL:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
                         value2.as.num *= value1.as.num;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_DIV:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
                         value2.as.num /= value1.as.num;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_IDIV:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
                         value2.as.num = floorl(
                                 value2.as.num / value1.as.num
                         );
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_MOD:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
                         value2.as.num = (long long int) value2.as.num
                                 % (long long int) value1.as.num;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_POW:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
                         value2.as.num = powl(
                                 value2.as.num,
                                 value1.as.num
                         );
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_CONCAT:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         brd_value_concat(&value2, &value1);
-                        brd_vm_allocate(vm, value2.as.heap);
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_vm_allocate(value2.as.heap);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_LT:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         value2.as.boolean = brd_value_compare(&value2, &value1) < 0;
                         value2.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_LEQ:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         value2.as.boolean = brd_value_compare(&value2, &value1) <= 0;
                         value2.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_GT:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         value2.as.boolean = brd_value_compare(&value2, &value1) > 0;
                         value2.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_GEQ:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         value2.as.boolean = brd_value_compare(&value2, &value1) >= 0;
                         value2.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_EQ:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         value2.as.boolean = brd_value_compare(&value2, &value1) == 0;
                         value2.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_NEGATE:
-                        value1 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         value1.as.num *= -1;
-                        brd_stack_push(&vm->stack, &value1);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_NOT:
-                        value1 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
                         value1.as.boolean = !brd_value_truthify(&value1);
                         value1.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm->stack, &value1);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_TEST:
-                        if (brd_value_truthify(brd_stack_peek(&vm->stack))) {
-                                brd_stack_pop(&vm->stack);
-                                vm->pc += sizeof(enum brd_bytecode) + sizeof(size_t);
+                        if (brd_value_truthify(brd_stack_peek(&vm.stack))) {
+                                brd_stack_pop(&vm.stack);
+                                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode) + sizeof(size_t);
                         }
                         break;
                 case BRD_VM_TESTN:
-                        if (!brd_value_truthify(brd_stack_peek(&vm->stack))) {
-                                brd_stack_pop(&vm->stack);
-                                vm->pc += sizeof(enum brd_bytecode) + sizeof(size_t);
+                        if (!brd_value_truthify(brd_stack_peek(&vm.stack))) {
+                                brd_stack_pop(&vm.stack);
+                                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode) + sizeof(size_t);
                         }
                         break;
                 case BRD_VM_TESTP:
-                        if (brd_value_truthify(brd_stack_pop(&vm->stack))) {
-                                vm->pc += sizeof(enum brd_bytecode) + sizeof(size_t);
+                        if (brd_value_truthify(brd_stack_pop(&vm.stack))) {
+                                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode) + sizeof(size_t);
                         }
                         break;
                 case BRD_VM_SET_VAR:
-                        id = (char *)(vm->bytecode + vm->pc);
-                        while (*(char *)(vm->bytecode + vm->pc++));
-                        value1 = *brd_stack_pop(&vm->stack);
-                        brd_value_map_set(&vm->globals, id, &value1);
-                        brd_stack_push(&vm->stack, &value1);
+                        id = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
+                        value1 = *brd_stack_pop(&vm.stack);
+                        brd_value_map_set(&vm.frame[vm.fp].vars, id, &value1);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_JMP:
-                        jmp = *(size_t *)(vm->bytecode + vm->pc);
-                        vm->pc += jmp;
+                        jmp = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        vm.frame[vm.fp].pc += jmp;
                         break;
                 case BRD_VM_JMPB:
-                        jmp = *(size_t *)(vm->bytecode + vm->pc);
-                        vm->pc -= jmp;
+                        jmp = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        vm.frame[vm.fp].pc -= jmp;
                         break;
                 case BRD_VM_BUILTIN:
                         value1.vtype = BRD_VAL_BUILTIN;
-                        value1.as.builtin = *(size_t *)(vm->bytecode + vm->pc);
-                        vm->pc += sizeof(size_t);
-                        brd_stack_push(&vm->stack, &value1);
+                        value1.as.builtin = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        vm.frame[vm.fp].pc += sizeof(size_t);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_CALL:
-                        num_args = *(size_t *)(vm->bytecode + vm->pc);
-                        vm->pc += sizeof(size_t);
-                        value1 = *brd_stack_pop(&vm->stack);
-                        vm->stack.sp -= num_args;
-                        if (brd_value_call(&value1, vm->stack.sp, num_args, &value2)) {
-                                brd_vm_allocate(vm, value2.as.heap);
+                        num_args = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        vm.frame[vm.fp].pc += sizeof(size_t);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        vm.stack.sp -= num_args;
+                        if (value1.vtype == BRD_VAL_BUILTIN) {
+                                int new = builtin_function[value1.as.builtin](
+                                        vm.stack.sp,
+                                        num_args,
+                                        &value2
+                                );
+                                if (new) {
+                                        brd_vm_allocate(value2.as.heap);
+                                }
+                                brd_stack_push(&vm.stack, &value2);
+                        } else {
+                                brd_value_call(&value1, vm.stack.sp, num_args);
                         }
-                        brd_stack_push(&vm->stack, &value2);
                         break;
                 case BRD_VM_CLOSURE:
                         value1.vtype = BRD_VAL_HEAP;
                         value1.as.heap = malloc(sizeof(struct brd_heap_entry));
-                        brd_vm_allocate(vm, value1.as.heap);
+                        brd_vm_allocate(value1.as.heap);
                         value1.as.heap->htype = BRD_HEAP_CLOSURE;
                         value1.as.heap->as.closure =
                                 malloc(sizeof(struct brd_value_closure));
-                        num_args = *(size_t *)(vm->bytecode + vm->pc);
-                        vm->pc += sizeof(size_t);
+                        num_args = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        vm.frame[vm.fp].pc += sizeof(size_t);
                         args = malloc(sizeof(char *) * num_args);
                         for (int i = 0; i < num_args; i++) {
-                                args[i] = (char *)(vm->bytecode + vm->pc);
-                                while (*(char *)(vm->bytecode + vm->pc++));
+                                args[i] = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
+                                while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
                         }
                         brd_value_closure_init(
                                 value1.as.heap->as.closure,
                                 args,
                                 num_args,
-                                vm->bytecode + vm->pc
+                                vm.frame[vm.fp].pc
                                 + sizeof(enum brd_bytecode) + sizeof(size_t)
                         );
                         brd_value_map_copy(
                                 &value1.as.heap->as.closure->env,
-                                &vm->globals
+                                &vm.frame[vm.fp].vars
                         );
-                        brd_stack_push(&vm->stack, &value1);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_LIST:
                         value1.vtype = BRD_VAL_HEAP;
@@ -724,88 +702,93 @@ brd_vm_run(struct brd_vm *vm, struct brd_value *out)
                                 sizeof(struct brd_value_list)
                         );
                         brd_value_list_init(value1.as.heap->as.list);
-                        brd_vm_allocate(vm, value1.as.heap);
-                        brd_stack_push(&vm->stack, &value1);
+                        brd_vm_allocate(value1.as.heap);
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_GET_IDX:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         if (value1.vtype != BRD_VAL_NUM) {
                                 BARF("attempted to index with a non-number");
                         }
                         if (brd_value_index(&value2, floorl(value1.as.num))) {
-                                brd_vm_allocate(vm, value2.as.heap);
+                                brd_vm_allocate(value2.as.heap);
                         }
-                        brd_stack_push(&vm->stack, &value2);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_SET_IDX:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
                         if (value2.vtype != BRD_VAL_HEAP
                                         || value2.as.heap->htype != BRD_HEAP_LIST) {
                                 BARF("attempted to index a non-list");
                         } else if (value1.vtype != BRD_VAL_NUM) {
                                 BARF("attempted to index with a non-number");
                         }
-                        value3 = *brd_stack_pop(&vm->stack);
+                        value3 = *brd_stack_pop(&vm.stack);
                         brd_value_list_set(
                                 value2.as.heap->as.list,
                                 (size_t) floorl(value1.as.num),
                                 &value3
                         );
-                        brd_stack_push(&vm->stack, &value3);
+                        brd_stack_push(&vm.stack, &value3);
                         break;
                 case BRD_VM_PUSH:
-                        value1 = *brd_stack_pop(&vm->stack);
-                        value2 = *brd_stack_peek(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_peek(&vm.stack);
                         brd_value_list_push(
                                 value2.as.heap->as.list,
                                 &value1
                         );
                         break;
                 case BRD_VM_RETURN:
-                        goto exit_loop;
+                        if (vm.fp == 0) {
+                                goto exit_loop;
+                        } else {
+                                vm.fp--;
+                        }
+                        break;
                 case BRD_VM_POP:
 #ifdef DEBUG
-                        value1 = *brd_stack_pop(&vm->stack);
+                        value1 = *brd_stack_pop(&vm.stack);
                         brd_value_debug(&value1);
 #else
-                        brd_stack_pop(&vm->stack);
+                        brd_stack_pop(&vm.stack);
 #endif
-                        brd_vm_gc(vm);
+                        brd_vm_gc();
                         break;
                 }
         }
 
 exit_loop:
-        if (out != NULL) {
-                *out = *brd_stack_pop(&vm->stack);
-        }
-        return;
+        ;
 }
 
 void
-brd_vm_gc(struct brd_vm *vm)
+brd_vm_gc(void)
 {
         struct brd_heap_entry *heap, *prev;
 
-        heap = vm->heap->next;
+        heap = vm.heap->next;
         while (heap != NULL) {
                 heap->marked = false;
                 heap = heap->next;
         }
 
         /* mark values in the stack */
-        for (struct brd_value *p = vm->stack.values; p < vm->stack.sp; p++) {
+        for (struct brd_value *p = vm.stack.values; p < vm.stack.sp; p++) {
                 if (p->vtype == BRD_VAL_HEAP) {
                         p->as.heap->marked = true;
                 }
         }
 
         /* mark values held by variables */
-        brd_value_map_mark(&vm->globals);
+        /* TODO this might be broken */
+        for (int i = 0; i <= vm.fp; i++) {
+                brd_value_map_mark(&vm.frame[i].vars);
+        }
 
-        prev = vm->heap;
+        prev = vm.heap;
         heap = prev->next;
         while (heap != NULL) {
                 struct brd_heap_entry *next = heap->next;

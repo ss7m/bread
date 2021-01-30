@@ -85,6 +85,7 @@ brd_heap_mark(struct brd_heap_entry *entry)
 void
 brd_value_map_init(struct brd_value_map *map)
 {
+        map->bucket = malloc(sizeof(struct brd_value_map_list) * BUCKET_SIZE);
         for (int i = 0; i < BUCKET_SIZE; i++) {
                 map->bucket[i].key = "";
                 map->bucket[i].val.vtype = BRD_VAL_UNIT;
@@ -106,6 +107,7 @@ brd_value_map_destroy(struct brd_value_map *map)
                         list = next;
                 }
         }
+        free(map->bucket);
 }
 
 void
@@ -178,12 +180,20 @@ brd_value_map_mark(struct brd_value_map *map)
 }
 
 void
-brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, void *bytecode)
+brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, size_t pc)
 {
+        struct brd_value val;
+
         brd_value_map_init(&closure->env);
         closure->args = args;
         closure->num_args = num_args;
-        closure->bytecode = bytecode;
+        closure->pc = pc;
+
+        val.vtype = BRD_VAL_UNIT;
+        brd_value_map_set(&closure->env, "self", &val);
+        for (int i = 0; i < num_args; i++) {
+                brd_value_map_set(&closure->env, args[i], &val);
+        }
 }
 
 void

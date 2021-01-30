@@ -14,9 +14,7 @@ main(int argc, char **argv)
 
         struct brd_token_list list, copy;
         struct brd_node_program *program;
-        struct brd_vm *vm;
         void *bytecode;
-
 
         if (argc != 2) {
                 BARF("Enter exactly 1 argument");
@@ -44,9 +42,7 @@ main(int argc, char **argv)
         bytecode = brd_node_compile((struct brd_node *)program);
         brd_node_destroy(program);
         
-        vm = malloc(sizeof(*vm));
-        brd_vm_init(vm, bytecode);
-        brd_vm_run(vm, NULL);
-        brd_vm_destroy(vm);
-        free(vm);
+        brd_vm_init(bytecode);
+        brd_vm_run();
+        brd_vm_destroy();
 }
