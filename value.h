@@ -6,7 +6,7 @@
  * But for the mean time that feels like a premature optimization
  * NOTE: I tried to do that but the result was a lot slower lol
  */
-#define BUCKET_SIZE 32
+#define BUCKET_SIZE 24
 
 struct brd_value;
 struct brd_value_closure;

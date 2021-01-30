@@ -5,6 +5,7 @@
 #define STACK_SIZE 256
 
 /* number of frames is limited to 64 */
+/* so you can only do recursion 64 calls deep */
 #define FRAME_SIZE 64
 
 /* VM bytecode */

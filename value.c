@@ -189,8 +189,12 @@ brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t nu
         closure->num_args = num_args;
         closure->pc = pc;
 
+        /* 
+         * technically this isn't necessary, but theoretically
+         * with a large env this will make accessing function arguments
+         * more efficient
+         */
         val.vtype = BRD_VAL_UNIT;
-        brd_value_map_set(&closure->env, "self", &val);
         for (int i = 0; i < num_args; i++) {
                 brd_value_map_set(&closure->env, args[i], &val);
         }

@@ -430,7 +430,6 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                 vm.frame[vm.fp].pc = closure->pc;
                 vm.frame[vm.fp].vars = closure->env;
 
-                brd_value_map_set(&vm.frame[vm.fp].vars, "self", f);
                 for (int i = 0; i < num_args; i++) {
                         brd_value_map_set(
                                 &vm.frame[vm.fp].vars,
@@ -687,6 +686,11 @@ brd_vm_run(void)
                                 num_args,
                                 vm.frame[vm.fp].pc
                                 + sizeof(enum brd_bytecode) + sizeof(size_t)
+                        );
+                        brd_value_map_set( /* for recursive functions */
+                                &value1.as.heap->as.closure->env,
+                                "self",
+                                &value1
                         );
                         brd_value_map_copy(
                                 &value1.as.heap->as.closure->env,
