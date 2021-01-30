@@ -5,39 +5,43 @@
 #include "token.h"
 #include "parse.h"
 
-//void
-//runFile(char *file)
-//{
-//        FILE *file;
-//        char *code;
-//        size_t file_length;
-//}
+char *open_file(char *file_name);
+void run_file(char *file_name);
 
-int
-main(int argc, char **argv)
+char *
+open_file(char *file_name)
 {
         FILE *file;
-        char *code;
-        size_t file_length;
+        char *contents;
+        size_t length;
 
-        struct brd_token_list tokens;
-        struct brd_node_program *program;
-        void *bytecode;
-
-        if (argc != 2) {
-                BARF("Enter exactly 1 argument");
-        }
-
-        file = fopen(argv[1], "rb");
+        file = fopen(file_name, "rb");
         if (file == NULL) {
-                BARFA("File %s doesn't exist", argv[1]);
+                return NULL;
         }
         fseek(file, 0, SEEK_END);
-        file_length = ftell(file);
+        length = ftell(file);
         fseek(file, 0, SEEK_SET);
-        code = malloc(file_length + 1);
-        code[fread(code, sizeof(char), file_length, file)] = '\0';
+        contents = malloc(length + 1);
+        contents[fread(contents, sizeof(char), length, file)] = '\0';
         fclose(file);
+
+        return contents;
+}
+
+void
+run_file(char *file_name)
+{
+        char *code;
+        struct brd_token_list tokens;
+        struct brd_node *program;
+        brd_bytecode_t *bytecode;
+
+        code = open_file(file_name);
+
+        if (code == NULL) {
+                exit(EXIT_FAILURE);
+        }
 
         brd_token_list_init(&tokens);
         if (!brd_token_list_tokenize(&tokens, code)) {
@@ -47,10 +51,13 @@ main(int argc, char **argv)
                         error_message,
                         bad_character
                 );
+                brd_token_list_destroy(&tokens);
+                exit(EXIT_FAILURE);
         }
         free(code);
 
         program = brd_parse_program(&tokens);
+        brd_token_list_destroy(&tokens);
         if (program == NULL) {
                 fprintf(
                         stderr,
@@ -58,14 +65,23 @@ main(int argc, char **argv)
                         error_message,
                         line_number
                 );
-                return EXIT_FAILURE;
+                exit(EXIT_FAILURE);
         }
-        brd_token_list_destroy(&tokens);
 
-        bytecode = brd_node_compile((struct brd_node *)program);
+        bytecode = brd_node_compile(program);
         brd_node_destroy(program);
-        
+
         brd_vm_init(bytecode);
         brd_vm_run();
         brd_vm_destroy();
+}
+
+int
+main(int argc, char **argv)
+{
+        if (argc != 2) {
+                BARF("Enter exactly 1 argument");
+        }
+
+        run_file(argv[1]);
 }

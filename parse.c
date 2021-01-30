@@ -12,7 +12,7 @@ int line_number = 1;
 const char *error_message = "";
 char bad_character[2] = {0};
 
-struct brd_node_program *
+struct brd_node *
 brd_parse_program(struct brd_token_list *tokens)
 {
         size_t length = 0, capacity = LIST_SIZE;
@@ -45,7 +45,7 @@ brd_parse_program(struct brd_token_list *tokens)
                 return NULL;
         }
 
-        return (struct brd_node_program *)brd_node_program_new(stmts, length);
+        return brd_node_program_new(stmts, length);
 }
 
 /* skip_newlines should be false when this is called */
