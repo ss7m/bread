@@ -34,7 +34,7 @@ enum brd_token
 brd_token_list_peek(struct brd_token_list *list)
 {
         enum brd_token tok;
-        void *data = list->data;
+        brd_token_t *data = list->data;
 
         if (skip_newlines) {
                 do {
@@ -331,7 +331,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_CONCAT);
                                 string += 2;
                         } else {
-                                BARFA("We don't have a dot operator yet!");
+                                BARF("We don't have a dot operator yet!");
                         }
                         break;
                 case '@':

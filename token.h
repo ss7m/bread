@@ -1,6 +1,8 @@
 #ifndef BRD_TOKEN_H
 #define BRD_TOKEN_H
 
+typedef char brd_token_t;
+
 enum brd_token {
         /* literals */
         BRD_TOK_NUM, /* has arg: long double */
@@ -64,7 +66,7 @@ enum brd_token {
 };
 
 struct brd_token_list {
-        void *data, *end;
+        brd_token_t *data, *end;
         size_t capacity;
 };
 

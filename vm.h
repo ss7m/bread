@@ -11,6 +11,8 @@
 /* VM bytecode */
 /* Stack based virtual machine */
 
+typedef char brd_bytecode_t;
+
 enum brd_bytecode {
         BRD_VM_NUM, /* has arg: long double */
         BRD_VM_STR, /* has arg: string */
@@ -77,7 +79,7 @@ struct brd_frame {
 struct brd_vm {
         struct brd_stack stack;
         struct brd_heap_entry *heap;
-        void *bytecode;
+        brd_bytecode_t *bytecode;
         size_t fp;
         struct brd_frame frame[FRAME_SIZE];
 };
@@ -88,10 +90,10 @@ void brd_stack_push(struct brd_stack *stack, struct brd_value *value);
 struct brd_value *brd_stack_pop(struct brd_stack *stack);
 struct brd_value *brd_stack_peek(struct brd_stack *stack);
 
-void *brd_node_compile(struct brd_node *node);
+brd_bytecode_t *brd_node_compile(struct brd_node *node);
 
 void brd_vm_destroy(void);
-void brd_vm_init(void *bytecode);
+void brd_vm_init(brd_bytecode_t *bytecode);
 void brd_vm_allocate(struct brd_heap_entry *entry);
 void brd_vm_run(void);
 

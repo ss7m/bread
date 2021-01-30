@@ -60,10 +60,13 @@ brd_bytecode_debug(enum brd_bytecode op)
 void
 brd_stack_push(struct brd_stack *stack, struct brd_value *value)
 {
-        if (stack->sp - stack->values >= STACK_SIZE) {
+        if (value == NULL) {
+                return;
+        } else if (stack->sp - stack->values >= STACK_SIZE) {
                 BARF("stack overflow error");
+        } else {
+                *(stack->sp++) = *value;
         }
-        *(stack->sp++) = *value;
 }
 
 struct brd_value *
@@ -128,7 +131,7 @@ brd_vm_allocate(struct brd_heap_entry *entry)
 
 static void _brd_node_compile(
         struct brd_node *node,
-        void **bytecode,
+        brd_bytecode_t **bytecode,
         size_t *length,
         size_t *capacity
 );
@@ -136,7 +139,7 @@ static void _brd_node_compile(
 static void
 brd_node_compile_lvalue(
         struct brd_node *node,
-        void **bytecode,
+        brd_bytecode_t **bytecode,
         size_t *length,
         size_t *capacity)
 {
@@ -158,7 +161,7 @@ brd_node_compile_lvalue(
 static void
 _brd_node_compile(
         struct brd_node *node,
-        void **bytecode,
+        brd_bytecode_t **bytecode,
         size_t *length,
         size_t *capacity)
 {
@@ -360,11 +363,11 @@ mkbinop:
 #undef RECURSE_ON
 #undef AS
 
-void *
+brd_bytecode_t *
 brd_node_compile(struct brd_node *node)
 {
         size_t length = 0, capacity = LIST_SIZE;
-        void *bytecode = malloc(capacity);
+        brd_bytecode_t *bytecode = malloc(capacity);
         (void)brd_node_compile_lvalue;
 
         _brd_node_compile(node, &bytecode, &length, &capacity);
@@ -399,7 +402,7 @@ brd_vm_destroy(void)
 }
 
 void
-brd_vm_init(void *bytecode)
+brd_vm_init(brd_bytecode_t *bytecode)
 {
         vm.heap = malloc(sizeof(*vm.heap));
         vm.heap->next = NULL;
@@ -476,8 +479,10 @@ brd_vm_run(void)
                         id = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
                         while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
                         value1.vtype = BRD_VAL_UNIT;
-                        value1 = *(brd_value_map_get(&vm.frame[vm.fp].vars, id) ?: &value1);
-                        brd_stack_push(&vm.stack, &value1);
+                        brd_stack_push( /* stack won't push if value is NULL */
+                                &vm.stack,
+                                brd_value_map_get(&vm.frame[vm.fp].vars, id)
+                        );
                         break;
                 case BRD_VM_TRUE:
                         value1.vtype = BRD_VAL_BOOL;
