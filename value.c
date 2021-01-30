@@ -796,7 +796,7 @@ enum brd_builtin brd_lookup_builtin(char *builtin)
                 }
         }
 
-        BARF("Unknown builtin: %s", builtin);
+        BARFA("Unknown builtin: %s", builtin);
 }
 
 const builtin_fn_dec builtin_function[BRD_NUM_BUILTIN] = {

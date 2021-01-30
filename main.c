@@ -22,7 +22,7 @@ main(int argc, char **argv)
 
         file = fopen(argv[1], "rb");
         if (file == NULL) {
-                BARF("File %s doesn't exist", argv[1]);
+                BARFA("File %s doesn't exist", argv[1]);
         }
         fseek(file, 0, SEEK_END);
         file_length = ftell(file);

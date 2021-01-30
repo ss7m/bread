@@ -18,7 +18,7 @@ extern int line_number;
 extern const char *error_message;
 
 #ifdef DEBUG
-#define BARF(fmt, ...) do { \
+#define BARFA(fmt, ...) do { \
         fprintf(stderr, "Error: " fmt "\n", ##__VA_ARGS__); \
         fprintf(stderr, "\tat line %d\n", __LINE__); \
         fprintf(stderr, "\tin function %s\n", __func__); \
@@ -26,10 +26,12 @@ extern const char *error_message;
         exit(EXIT_FAILURE); \
 } while (0)
 #else
-#define BARF(fmt, ...) do { \
+#define BARFA(fmt, ...) do { \
         fprintf(stderr, "Error: " fmt "\n", ##__VA_ARGS__); \
         exit(EXIT_FAILURE); \
 } while (0)
 #endif
+
+#define BARF(str) BARFA("%s", str)
 
 #endif

@@ -153,7 +153,7 @@ brd_parse_string_literal(char **string, char *out)
                         case 't': *p = '\t'; break;
                         case '"': *p = '"'; break;
                         default:
-                                  BARF("Bad escape character: <<%c>>", **string);
+                                  BARFA("Bad escape character: <<%c>>", **string);
                         }
                         (*string)++;
                         p++;
@@ -331,7 +331,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_CONCAT);
                                 string += 2;
                         } else {
-                                BARF("We don't have a dot operator yet!");
+                                BARFA("We don't have a dot operator yet!");
                         }
                         break;
                 case '@':
@@ -350,7 +350,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         }
                         break;
                 default:
-                        BARF("Tokenizer broke on char <<%c>>\n", *string);
+                        BARFA("Tokenizer broke on char <<%c>>\n", *string);
                 }
         }
 }

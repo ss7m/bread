@@ -2,7 +2,7 @@ INSTALL_DIR=$(HOME)/.local/bin
 
 LIBS=
 
-CFLAGS=-Wall -Wextra -std=c99 -fshort-enums -lm \
+CFLAGS=-Wall -Wextra -std=c99 -pedantic -fshort-enums -lm \
 	   -Wdeclaration-after-statement -Wno-sign-compare \
 	   $(foreach p,$(LIBS),$(shell pkg-config --cflags --libs $(p)))
 
