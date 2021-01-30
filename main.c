@@ -5,11 +5,8 @@
 #include "token.h"
 #include "parse.h"
 
-char *open_file(char *file_name);
-void run_file(char *file_name);
-
-char *
-open_file(char *file_name)
+static char *
+brd_read_file(const char *file_name)
 {
         FILE *file;
         char *contents;
@@ -29,15 +26,12 @@ open_file(char *file_name)
         return contents;
 }
 
-void
-run_file(char *file_name)
+static brd_bytecode_t *
+brd_parse_and_compile(char *code)
 {
-        char *code;
         struct brd_token_list tokens;
         struct brd_node *program;
         brd_bytecode_t *bytecode;
-
-        code = open_file(file_name);
 
         if (code == NULL) {
                 exit(EXIT_FAILURE);
@@ -54,7 +48,6 @@ run_file(char *file_name)
                 brd_token_list_destroy(&tokens);
                 exit(EXIT_FAILURE);
         }
-        free(code);
 
         program = brd_parse_program(&tokens);
         brd_token_list_destroy(&tokens);
@@ -71,6 +64,16 @@ run_file(char *file_name)
         bytecode = brd_node_compile(program);
         brd_node_destroy(program);
 
+        return bytecode;
+}
+
+static void
+brd_run_file(char *file_name)
+{
+        char *code = brd_read_file(file_name);
+        brd_bytecode_t *bytecode = brd_parse_and_compile(code);
+
+        free(code);
         brd_vm_init(bytecode);
         brd_vm_run();
         brd_vm_destroy();
@@ -83,5 +86,5 @@ main(int argc, char **argv)
                 BARF("Enter exactly 1 argument");
         }
 
-        run_file(argv[1]);
+        brd_run_file(argv[1]);
 }
