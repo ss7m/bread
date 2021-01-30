@@ -9,23 +9,25 @@
 static void
 brd_token_list_grow(struct brd_token_list *list)
 {
-        ptrdiff_t diff = list->end - list->data;
+        ptrdiff_t diff1 = list->end - list->start;
+        ptrdiff_t diff2 = list->data - list->start;
         list->capacity *= GROW;
-        list->data = realloc(list->data, list->capacity);
-        list->end = list->data + diff;
+        list->start = realloc(list->data, list->capacity);
+        list->end = list->start + diff1;
+        list->data = list->start + diff2;
 }
 
 void
 brd_token_list_init(struct brd_token_list *list)
 {
         list->capacity = LIST_INITIAL_SIZE;
-        list->end = list->data = malloc(list->capacity);
+        list->end = list->data = list->start = malloc(list->capacity);
 }
 
 void
 brd_token_list_destroy(struct brd_token_list *list)
 {
-        free(list->data);
+        free(list->start);
 }
 
 

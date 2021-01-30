@@ -42,7 +42,7 @@ struct brd_value *
 brd_value_list_get(struct brd_value_list *list, size_t idx)
 {
         if (idx >= list->length) {
-                BARF("index out of boudns error");
+                BARF("index out of bounds error");
         } else {
                 return &list->items[idx];
         }

@@ -2,10 +2,10 @@ INSTALL_DIR=$(HOME)/.local/bin
 
 LIBS=
 
-CFLAGS=-Wall -Wextra -std=c99 -pedantic -fshort-enums -lm \
+CFLAGS=-Wall -Wextra -std=c99 -pedantic -fshort-enums -lm  -Werror \
 	   -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes \
 	   -Wdeclaration-after-statement -Wno-sign-compare -Wstrict-prototypes \
-	   -Wold-style-definition \
+	   -Wold-style-definition -Wvla \
 	   $(foreach p,$(LIBS),$(shell pkg-config --cflags --libs $(p)))
 
 SRCS=main.c ast.c vm.c token.c parse.c value.c

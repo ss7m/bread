@@ -5,6 +5,14 @@
 #include "token.h"
 #include "parse.h"
 
+//void
+//runFile(char *file)
+//{
+//        FILE *file;
+//        char *code;
+//        size_t file_length;
+//}
+
 int
 main(int argc, char **argv)
 {
@@ -12,7 +20,7 @@ main(int argc, char **argv)
         char *code;
         size_t file_length;
 
-        struct brd_token_list list, copy;
+        struct brd_token_list tokens;
         struct brd_node_program *program;
         void *bytecode;
 
@@ -31,12 +39,11 @@ main(int argc, char **argv)
         code[fread(code, sizeof(char), file_length, file)] = '\0';
         fclose(file);
 
-        brd_token_list_init(&list);
-        brd_token_list_tokenize(&list, code);
+        brd_token_list_init(&tokens);
+        brd_token_list_tokenize(&tokens, code);
         free(code);
-        copy = list;
 
-        program = brd_parse_program(&list);
+        program = brd_parse_program(&tokens);
         if (program == NULL) {
                 fprintf(
                         stderr,
@@ -46,7 +53,7 @@ main(int argc, char **argv)
                 );
                 return EXIT_FAILURE;
         }
-        brd_token_list_destroy(&copy);
+        brd_token_list_destroy(&tokens);
 
         bytecode = brd_node_compile((struct brd_node *)program);
         brd_node_destroy(program);

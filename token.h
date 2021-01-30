@@ -66,7 +66,7 @@ enum brd_token {
 };
 
 struct brd_token_list {
-        brd_token_t *data, *end;
+        brd_token_t *start, *data, *end;
         size_t capacity;
 };
 
