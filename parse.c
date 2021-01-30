@@ -6,7 +6,9 @@
 #define GROW 1.5
 #define LIST_SIZE 4
 
+/* declare parser global variables */
 int skip_newlines = false;
+int line_number = 1;
 
 struct brd_node_program *
 brd_parse_program(struct brd_token_list *tokens)

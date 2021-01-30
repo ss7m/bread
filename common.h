@@ -11,10 +11,10 @@
 #include <assert.h>
 
 /* 
- * spooky global variable
- * whether or not the parser is allowed to skip newlines
+ * global variables for the parser
  */
 extern int skip_newlines;
+extern int line_number;
 
 #ifdef DEBUG
 #define BARF(fmt, ...) do { \

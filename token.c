@@ -54,13 +54,18 @@ brd_token_list_pop_token(struct brd_token_list *list)
         enum brd_token tok;
 
         if (skip_newlines) {
+                line_number -= 1;
                 do {
+                        line_number++;
                         tok = *(enum brd_token *)list->data;
                         list->data += sizeof(enum brd_token);
                 } while (tok == BRD_TOK_NEWLINE);
         } else {
                 tok = *(enum brd_token *)list->data;
                 list->data += sizeof(enum brd_token);
+                if (tok == BRD_TOK_NEWLINE) {
+                        line_number++;
+                }
         }
 
         return tok;
