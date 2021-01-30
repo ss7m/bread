@@ -113,8 +113,12 @@ brd_repl(void)
                 while (bytecode == NULL) {
                         char *a = NULL, *b;
 
-                        // TODO: tokenizer error
-                        // TODO: be able to quit this mode 
+                        if (failure_reason == BRD_REPL_TOKEN) {
+                                free(code);
+                                goto loop_end;
+                        }
+
+                        // TODO: be able to quit this mode (CTRL-C ??)
                         printf(" | ");
                         n = getline(&a, &n, stdin);
                         b = malloc(strlen(code) + strlen(a) + 1);
@@ -139,6 +143,7 @@ brd_repl(void)
                         );
                 }
                 old_code[oc_length++] = bytecode;
+loop_end:;
         }
 
         brd_vm_reset(NULL);
