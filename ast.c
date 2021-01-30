@@ -150,7 +150,7 @@ brd_node_bool_lit_new(int b)
 }
 
 struct brd_node *
-brd_node_unit_lit_new()
+brd_node_unit_lit_new(void)
 {
         struct brd_node_unit_lit *n = malloc(sizeof(*n));
         n->_node.ntype = BRD_NODE_UNIT_LIT;

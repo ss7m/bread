@@ -622,13 +622,13 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                                 break;
                         case BRD_HEAP_LIST:
                                 printf("[ ");
-                                for (int i = 0; i < value.as.heap->as.list->length; i++) {
+                                for (int j = 0; j < value.as.heap->as.list->length; j++) {
                                         _builtin_write(
-                                                &value.as.heap->as.list->items[i],
+                                                &value.as.heap->as.list->items[j],
                                                 1,
                                                 NULL
                                         );
-                                        if (i < value.as.heap->as.list->length - 1) {
+                                        if (j < value.as.heap->as.list->length - 1) {
                                                 printf(", ");
                                         }
                                 }
