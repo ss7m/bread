@@ -10,6 +10,7 @@
 int skip_newlines = false;
 int line_number = 1;
 const char *error_message = "";
+char bad_character[2] = {0};
 
 struct brd_node_program *
 brd_parse_program(struct brd_token_list *tokens)

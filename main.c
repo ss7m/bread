@@ -40,7 +40,14 @@ main(int argc, char **argv)
         fclose(file);
 
         brd_token_list_init(&tokens);
-        brd_token_list_tokenize(&tokens, code);
+        if (!brd_token_list_tokenize(&tokens, code)) {
+                fprintf(
+                        stderr,
+                        "Tokenizer error: %s%s\n",
+                        error_message,
+                        bad_character
+                );
+        }
         free(code);
 
         program = brd_parse_program(&tokens);

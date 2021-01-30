@@ -141,7 +141,8 @@ is_insig_space(char c)
         return isspace(c) && c != '\n';
 }
 
-static void
+/* return true upon success */
+static int
 brd_parse_string_literal(char **string, char *out)
 {
         char *p = out;
@@ -155,12 +156,16 @@ brd_parse_string_literal(char **string, char *out)
                         case 't': *p = '\t'; break;
                         case '"': *p = '"'; break;
                         default:
-                                  BARFA("Bad escape character: <<%c>>", **string);
+                                  error_message = "Bad escape character: ";
+                                  bad_character[0] = **string;
+                                  return false;
                         }
                         (*string)++;
                         p++;
                 } else if (**string == '\0') {
-                        BARF("Unexpcted EOF while parsing string literal");
+                        error_message = "Unexpected EOF while parsing string literal";
+                        bad_character[0] = '\0';
+                        return false;
                 } else {
                         *p = **string;
                         (*string)++;
@@ -170,6 +175,7 @@ brd_parse_string_literal(char **string, char *out)
 
         *p = '\0';
         (*string)++; /* last char is " */
+        return true;
 }
 
 static void
@@ -182,7 +188,7 @@ brd_parse_identifier(char **string, char *out)
         *p = '\0';
 }
 
-void
+int /* return true upon success */
 brd_token_list_tokenize(struct brd_token_list *list, char *string)
 {
         /* 
@@ -195,7 +201,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                 while (is_insig_space(string[0])) string++;
                 if (string[0] == '\0') {
                         brd_token_list_add_token(list, BRD_TOK_EOF);
-                        break;
+                        return true;
                 }
 
                 /* number */
@@ -250,7 +256,9 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                 }
 
                 if (string[0] == '"') {
-                        brd_parse_string_literal(&string, buffer);
+                        if (!brd_parse_string_literal(&string, buffer)) {
+                                return false;
+                        }
                         brd_token_list_add_token(list, BRD_TOK_STR);
                         brd_token_list_add_string(list, buffer);
                         continue;
@@ -333,7 +341,9 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_CONCAT);
                                 string += 2;
                         } else {
-                                BARF("We don't have a dot operator yet!");
+                                error_message = "dot operator not implemented yet";
+                                bad_character[0] = '\0';
+                                return false;
                         }
                         break;
                 case '@':
@@ -352,7 +362,9 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         }
                         break;
                 default:
-                        BARFA("Tokenizer broke on char <<%c>>\n", *string);
+                        error_message = "unrecognized character: ";
+                        bad_character[0] = string[0];
+                        return false;
                 }
         }
 }

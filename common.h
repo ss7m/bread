@@ -16,6 +16,7 @@
 extern int skip_newlines;
 extern int line_number;
 extern const char *error_message;
+extern char bad_character[2];
 
 #ifdef DEBUG
 #define BARFA(fmt, ...) do { \

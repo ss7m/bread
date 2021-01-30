@@ -82,6 +82,6 @@ void brd_token_list_add_token(struct brd_token_list *list, enum brd_token tok);
 void brd_token_list_add_num(struct brd_token_list *list, long double num);
 void brd_token_list_add_string(struct brd_token_list *list, const char *string);
 
-void brd_token_list_tokenize(struct brd_token_list *list, char *string);
+int brd_token_list_tokenize(struct brd_token_list *list, char *string);
 
 #endif
