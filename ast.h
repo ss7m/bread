@@ -32,6 +32,7 @@ typedef void (*brd_node_fn)(struct brd_node *);
 
 struct brd_node {
         brd_node_fn destroy;
+        int line_number;
         enum brd_node_type ntype;
 };
 
