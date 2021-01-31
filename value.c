@@ -41,21 +41,22 @@ brd_value_list_push(struct brd_value_list *list, struct brd_value *value)
 struct brd_value *
 brd_value_list_get(struct brd_value_list *list, size_t idx)
 {
-        if (idx >= list->length) {
-                BARF("index out of bounds error");
-        } else {
-                return &list->items[idx];
-        }
+        idx = idx % list->length;
+        return &list->items[idx];
 }
 
 void
 brd_value_list_set(struct brd_value_list *list, size_t idx, struct brd_value *value)
 {
-        if (idx >= list->length) {
-                BARF("index out of bounds error");
-        } else {
-                list->items[idx] = *value;
-        }
+        idx = idx % list->length;
+        list->items[idx] = *value;
+}
+
+void
+brd_value_string_init(struct brd_value_string *string, char *s)
+{
+        string->s = s;
+        string->length = strlen(s);
 }
 
 void
@@ -369,9 +370,7 @@ brd_value_index(struct brd_value *value, size_t idx)
         }
 
 index_string:
-        if (idx >= strlen(string) ) {
-                BARF("index out of bounds error");
-        }
+        idx = idx % strlen(string);
         c = malloc(sizeof(char) * 2);
         c[0] = string[idx];
         c[1] = '\0';
