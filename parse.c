@@ -564,10 +564,13 @@ brd_parse_func(struct brd_token_list *tokens)
         }
 
         body = brd_parse_body(tokens);
-        if (brd_token_list_pop_token(tokens) == BRD_TOK_END) {
+        if (body == NULL) {
+                goto error_exit;
+        } else if (brd_token_list_pop_token(tokens) == BRD_TOK_END) {
                 skip_newlines = skip_copy;
                 return brd_node_closure_new(args, length, body);
         } else {
+                brd_node_destroy(body);
                 error_message = "expected an \"end\" token";
                 goto error_exit;
         }

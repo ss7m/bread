@@ -5,11 +5,6 @@
 #include "token.h"
 #include "parse.h"
 
-/*
- * TODO: don't gc the bottom of the stack in the repl, because
- * we want to put it in the _ variable, figure this out
- */
-
 /* reason the parser failed (used for repl */
 enum brd_compiler_status {
         BRD_REPL_SUCCESS,
@@ -66,6 +61,10 @@ brd_parse_and_compile_repl(char *code)
         brd_node_compile(program);
         brd_node_destroy(program);
 
+        /* overwrite the last pop so that it can later be saved into "_" */
+        vm.bc_length -= sizeof(enum brd_bytecode);
+        *(enum brd_bytecode *)(vm.bytecode + vm.bc_length - 1) = BRD_VM_RETURN;
+
         return BRD_REPL_SUCCESS;
 }
 
@@ -116,12 +115,12 @@ brd_repl(void)
 
                 brd_vm_run();
 
-                // FIXME: see TODO at top of file
-                //if (vm.stack.values[0].vtype != BRD_VAL_UNIT) {
-                //        brd_value_debug(&vm.stack.values[0]);
-                //        printf("\n");
-                //}
-                //brd_value_map_set(&vm.frame[0].vars, "_", &vm.stack.values[0]);
+                if (brd_stack_peek(&vm.stack)->vtype != BRD_VAL_UNIT) {
+                        struct brd_value *val = brd_stack_pop(&vm.stack);
+                        brd_value_map_set(&vm.frame[0].vars, "_", val);
+                        brd_value_debug(val);
+                        printf("\n");
+                }
 loop_end:;
         }
 
