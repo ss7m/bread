@@ -213,7 +213,7 @@ brd_value_debug(struct brd_value *value)
 {
         switch (value->vtype) {
         case BRD_VAL_NUM:
-                printf("%Lf", value->as.num);
+                printf("%.10Lg", value->as.num);
                 break;
         case BRD_VAL_STRING:
                 printf("\"%s\"", value->as.string);
@@ -600,7 +600,7 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
 
                 switch (value.vtype) {
                 case BRD_VAL_NUM:
-                        printf("%Lg", value.as.num);
+                        printf("%.10Lg", value.as.num);
                         break;
                 case BRD_VAL_STRING:
                         printf("%s", value.as.string);
