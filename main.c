@@ -5,7 +5,11 @@
 #include "token.h"
 #include "parse.h"
 
-// TODO: free resources on parser error
+/* reason the parser failed (used for repl */
+static enum brd_repl_parser_failure_reason {
+        BRD_REPL_TOKEN,
+        BRD_REPL_PARSER,
+} failure_reason;
 
 static char *
 brd_read_file(const char *file_name)
@@ -27,11 +31,6 @@ brd_read_file(const char *file_name)
 
         return contents;
 }
-
-enum brd_repl_parser_failure_reason {
-        BRD_REPL_TOKEN,
-        BRD_REPL_PARSER,
-} failure_reason;
 
 static brd_bytecode_t *
 brd_parse_and_compile_repl(char *code)
@@ -84,53 +83,41 @@ brd_repl(void)
 
         for (;;) {
                 brd_bytecode_t *bytecode;
-                char *code = NULL;
-                size_t n;
+                char code[1024];
                 int empty_line;
 
                 printf("> ");
-                n = getline(&code, &n, stdin);
-                if (n == -1) {
-                        free(code);
-                        break;
-                } else if (code == NULL) {
+                if (fgets(code, sizeof(code), stdin) == NULL) {
                         break;
                 }
 
                 empty_line = true;
-                for (int i = 0; i < n; i++) {
+                for (int i = 0; code[i] != '\0'; i++) {
                         if (!isspace(code[i])) {
                                 empty_line = false;
                                 break;
                         }
                 }
                 if (empty_line) {
-                        free(code);
                         continue;
                 }
 
                 bytecode = brd_parse_and_compile_repl(code);
                 while (bytecode == NULL) {
-                        char *a = NULL, *b;
+                        char c[512];
 
                         if (failure_reason == BRD_REPL_TOKEN) {
-                                free(code);
                                 goto loop_end;
                         }
 
-                        // TODO: be able to quit this mode (CTRL-C ??)
-                        printf(" | ");
-                        n = getline(&a, &n, stdin);
-                        b = malloc(strlen(code) + strlen(a) + 1);
-                        strcpy(b, code);
-                        strcat(b, a);
-                        free(code);
-                        free(a);
-                        code = b;
+                        printf("| ");
+                        if (fgets(c, sizeof(c), stdin) == NULL) {
+                                goto loop_end;
+                        }
 
+                        strcat(code, c);
                         bytecode = brd_parse_and_compile_repl(code);
                 }
-                free(code);
 
                 brd_vm_reset(bytecode);
                 brd_vm_run();
@@ -143,6 +130,7 @@ brd_repl(void)
                         );
                 }
                 old_code[oc_length++] = bytecode;
+
 loop_end:;
         }
 
@@ -212,7 +200,6 @@ brd_run_file(char *file_name)
 int
 main(int argc, char **argv)
 {
-
         if (argc == 1) {
                 brd_repl();
         } else {
