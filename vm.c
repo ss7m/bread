@@ -86,6 +86,32 @@ brd_vm_allocate(struct brd_heap_entry *entry)
         vm.heap->next = entry;
 }
 
+struct brd_string_constant_list *
+brd_vm_add_string_constant(char *string)
+{
+        /* basic string interning
+         * this is kinda slow, considering this will be called every time
+         * a variable name is compiled
+         */
+        size_t length;
+        struct brd_string_constant_list *entry = vm.strings;
+        while (entry != NULL) {
+                if (strcmp(string, entry->string.s) == 0) {
+                        return entry;
+                }
+                entry = entry->next;
+        }
+
+        /* new string constant */
+        length = strlen(string);
+        entry = malloc(sizeof(*entry));
+        entry->string.s = malloc(length + 1);
+        strcpy(entry->string.s, string);
+        entry->next = vm.strings;
+        vm.strings = entry;
+        return entry;
+}
+
 #define ADD_OP(x) do {\
         if(sizeof(enum brd_bytecode) + vm.bc_length >= vm.bc_capacity) {\
                 vm.bc_capacity *= GROW;\
@@ -114,13 +140,14 @@ brd_vm_allocate(struct brd_heap_entry *entry)
 } while (0)
 
 #define ADD_STR(x) do {\
-        size_t len = strlen(x) + 1;\
-        while (len + vm.bc_length >= vm.bc_capacity) {\
+        struct brd_string_constant_list *entry;\
+        if (sizeof(struct brd_string_constant_list *) + vm.bc_length >= vm.bc_capacity) {\
                 vm.bc_capacity *= GROW;\
                 vm.bytecode = realloc(vm.bytecode, vm.bc_capacity);\
         }\
-        strcpy((vm.bytecode) + vm.bc_length, (x));\
-        vm.bc_length += len;\
+        entry = brd_vm_add_string_constant(x);\
+        *(struct brd_string_constant_list **)(vm.bytecode + vm.bc_length) = entry;\
+        vm.bc_length += sizeof(struct brd_string_constant_list *);\
 } while (0)
 
 #define RECURSE_ON(x) (brd_node_compile((x)))
@@ -371,6 +398,7 @@ brd_vm_destroy(void)
 
         while (vm.strings != NULL) {
                 struct brd_string_constant_list *n = vm.strings->next;
+                free(vm.strings->string.s);
                 free(vm.strings);
                 vm.strings = n;
         }
@@ -388,7 +416,9 @@ brd_vm_init(void)
         vm.heap->as.string = malloc(1);
         vm.stack.sp = vm.stack.values;
 
-        vm.strings = malloc(sizeof(&vm.strings));
+        vm.strings = malloc(sizeof(*vm.strings));
+        vm.strings->string.s = malloc(1);
+        vm.strings->string.s[0] = '\0';
         vm.strings->next = NULL;
 
         vm.bc_length = 0;
@@ -438,6 +468,12 @@ brd_vm_run(void)
         char **args;
         size_t jmp, num_args;
 
+#define READ_STRING_INTO(v) do {\
+        v = (*(struct brd_string_constant_list **)(vm.bytecode + vm.frame[vm.fp].pc))\
+                ->string.s;\
+        vm.frame[vm.fp].pc += sizeof(struct brd_string_constant_list *);\
+}while(0)
+
         for (;;) {
                 op = *(enum brd_bytecode *)(vm.bytecode + vm.frame[vm.fp].pc);
                 vm.frame[vm.fp].pc += sizeof(enum brd_bytecode);
@@ -455,13 +491,11 @@ brd_vm_run(void)
                         break;
                 case BRD_VM_STR:
                         value1.vtype = BRD_VAL_STRING;
-                        value1.as.string = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
-                        while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
+                        READ_STRING_INTO(value1.as.string);
                         brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_GET_VAR:
-                        id = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
-                        while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
+                        READ_STRING_INTO(id);
                         valuep = brd_value_map_get(&vm.frame[vm.fp].vars, id);
                         if (valuep == NULL) {
                                 value1.vtype = BRD_VAL_UNIT;
@@ -618,8 +652,7 @@ brd_vm_run(void)
                         }
                         break;
                 case BRD_VM_SET_VAR:
-                        id = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
-                        while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
+                        READ_STRING_INTO(id);
                         value1 = *brd_stack_pop(&vm.stack);
                         brd_value_map_set(&vm.frame[vm.fp].vars, id, &value1);
                         brd_stack_push(&vm.stack, &value1);
@@ -668,8 +701,7 @@ brd_vm_run(void)
                         vm.frame[vm.fp].pc += sizeof(size_t);
                         args = malloc(sizeof(char *) * num_args);
                         for (int i = 0; i < num_args; i++) {
-                                args[i] = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
-                                while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
+                                READ_STRING_INTO(args[i]);
                         }
                         brd_value_closure_init(
                                 value1.as.heap->as.closure,
@@ -759,6 +791,7 @@ brd_vm_run(void)
 
 exit_loop:
         ;
+#undef READ_STRING_INTO
 }
 
 void

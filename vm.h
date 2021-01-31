@@ -102,6 +102,7 @@ void brd_node_compile(struct brd_node *node);
 void brd_vm_destroy(void);
 void brd_vm_init(void);
 void brd_vm_allocate(struct brd_heap_entry *entry);
+struct brd_string_constant_list *brd_vm_add_string_constant(char *string);
 void brd_vm_run(void);
 
 void brd_vm_gc(void);

@@ -6,14 +6,6 @@
 #include "parse.h"
 
 /*
- * TODO: closures don't work in the repl
- * because the pc field of the closure doesn't make sense when the VM
- * is running on an entirely different bytecode
- * will have to do something like appending onto the bytecode instead of this
- * business of keeping the old bytecodes in an array
- */
-
-/*
  * TODO: don't gc the bottom of the stack in the repl, because
  * we want to put it in the _ variable, figure this out
  */
