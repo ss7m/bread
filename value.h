@@ -33,12 +33,13 @@ struct brd_value_string {
 };
 
 void brd_value_string_init(struct brd_value_string *string, char *s);
+struct brd_value_string *brd_value_string_new(char *s);
 
 struct brd_heap_entry {
         struct brd_heap_entry *next;
 
         union {
-                char *string;
+                struct brd_value_string *string;
                 struct brd_value_list *list;
                 struct brd_value_closure *closure;
         } as;
@@ -62,7 +63,7 @@ enum brd_value_type {
 struct brd_value {
         union {
                 long double num;
-                const char *string;
+                struct brd_value_string *string;
                 int boolean;
                 int builtin;
                 struct brd_heap_entry *heap;
@@ -128,6 +129,16 @@ typedef int (*builtin_fn_dec)(
 extern const builtin_fn_dec builtin_function[BRD_NUM_BUILTIN];
 
 extern const char *builtin_name[BRD_NUM_BUILTIN];
+
+extern struct brd_value_string builtin_string[BRD_NUM_BUILTIN];
+extern struct brd_value_string number_string;
+extern struct brd_value_string string_string;
+extern struct brd_value_string boolean_string;
+extern struct brd_value_string unit_string;
+extern struct brd_value_string list_string;
+extern struct brd_value_string closure_string;
+extern struct brd_value_string true_string;
+extern struct brd_value_string false_string;
 
 enum brd_builtin brd_lookup_builtin(char *builtin);
 

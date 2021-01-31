@@ -59,6 +59,14 @@ brd_value_string_init(struct brd_value_string *string, char *s)
         string->length = strlen(s);
 }
 
+struct brd_value_string *
+brd_value_string_new(char *s)
+{
+        struct brd_value_string *string = malloc(sizeof(*string));
+        brd_value_string_init(string, s);
+        return string;
+}
+
 void
 brd_heap_mark(struct brd_heap_entry *entry)
 {
@@ -217,7 +225,7 @@ brd_value_debug(struct brd_value *value)
                 printf("%.10Lg", value->as.num);
                 break;
         case BRD_VAL_STRING:
-                printf("\"%s\"", value->as.string);
+                printf("\"%s\"", value->as.string->s);
                 break;
         case BRD_VAL_BOOL:
                 printf("%s", value->as.boolean ? "true" : "false");
@@ -231,7 +239,7 @@ brd_value_debug(struct brd_value *value)
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
-                        printf("%s", value->as.heap->as.string);
+                        printf("%s", value->as.heap->as.string->s);
                         break;
                 case BRD_HEAP_LIST:
                         printf("[ ");
@@ -272,7 +280,7 @@ brd_value_coerce_num(struct brd_value *value)
         case BRD_VAL_NUM:
                 break;
         case BRD_VAL_STRING:
-                value->as.num = strtold(value->as.string, NULL);
+                value->as.num = strtold(value->as.string->s, NULL);
                 break;
         case BRD_VAL_BOOL:
                 value->as.num = value->as.boolean ? 1 : 0;
@@ -286,7 +294,7 @@ brd_value_coerce_num(struct brd_value *value)
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
-                        value->as.num = strtold(value->as.heap->as.string, NULL);
+                        value->as.num = strtold(value->as.heap->as.string->s, NULL);
                         break;
                 case BRD_HEAP_LIST:
                         BARF("can't coerce a list to a number");
@@ -310,21 +318,21 @@ brd_value_coerce_string(struct brd_value *value)
                 sprintf(string, "%Lg", value->as.num);
                 value->as.heap = malloc(sizeof(struct brd_heap_entry));
                 value->as.heap->htype = BRD_HEAP_STRING;
-                value->as.heap->as.string = string;
+                value->as.heap->as.string = brd_value_string_new(string);
                 return true;
         case BRD_VAL_STRING:
                 return false;
         case BRD_VAL_BOOL:
                 value->vtype = BRD_VAL_STRING;
-                value->as.string = value->as.boolean ? "true" : "false";
+                value->as.string = value->as.boolean ? &true_string : &false_string;
                 return false;
         case BRD_VAL_UNIT:
                 value->vtype = BRD_VAL_STRING;
-                value->as.string = "unit";
+                value->as.string = &unit_string;
                 return false;
         case BRD_VAL_BUILTIN:
                 value->vtype = BRD_VAL_STRING;
-                value->as.string = builtin_name[value->as.builtin];
+                value->as.string = &builtin_string[value->as.builtin];
                 return false;
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
@@ -350,12 +358,12 @@ brd_value_index(struct brd_value *value, size_t idx)
 
         switch (value->vtype) {
         case BRD_VAL_STRING:
-                string = value->as.string;
+                string = value->as.string->s;
                 goto index_string;
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
-                        string = value->as.heap->as.string;
+                        string = value->as.heap->as.string->s;
                         goto index_string;
                 case BRD_HEAP_LIST:
                         *value = *brd_value_list_get(value->as.heap->as.list, idx);
@@ -377,7 +385,7 @@ index_string:
         value->vtype = BRD_VAL_HEAP;
         value->as.heap = malloc(sizeof(struct brd_heap_entry));
         value->as.heap->htype = BRD_HEAP_STRING;
-        value->as.heap->as.string = c;
+        value->as.heap->as.string = brd_value_string_new(c);
         return true;
 }
 
@@ -388,7 +396,7 @@ brd_value_truthify(struct brd_value *value)
         case BRD_VAL_NUM:
                 return value->as.num != 0;
         case BRD_VAL_STRING:
-                return value->as.string[0] != '\0';
+                return value->as.string->length > 0;
         case BRD_VAL_BOOL:
                 return value->as.boolean;
         case BRD_VAL_UNIT:
@@ -398,7 +406,7 @@ brd_value_truthify(struct brd_value *value)
         case BRD_VAL_HEAP:
                 switch(value->as.heap->htype) {
                 case BRD_HEAP_STRING:
-                        return value->as.heap->as.string[0] != '\0';
+                        return value->as.heap->as.string->length > 0;
                 case BRD_HEAP_LIST:
                         return value->as.heap->as.list->length > 0;
                 case BRD_HEAP_CLOSURE:
@@ -422,19 +430,22 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         brd_value_coerce_num(a);
                         return (int) (a->as.num - b->as.num);
                 case BRD_VAL_STRING:
-                        return strcmp(a->as.string, b->as.string);
+                        return strcmp(a->as.string->s, b->as.string->s);
                 case BRD_VAL_BOOL:
                         /* This is obviously a very good idea */
-                        return strcmp(a->as.string, b->as.boolean ? "true" : "false");
+                        return strcmp(a->as.string->s, b->as.boolean ? "true" : "false");
                 case BRD_VAL_UNIT:
-                        return a->as.string[0] != '\0';
+                        return a->as.string->length;
                 case BRD_VAL_BUILTIN:
                         BARF("can't compare functions");
                         break;
                 case BRD_VAL_HEAP:
                         switch (b->as.heap->htype) {
                         case BRD_HEAP_STRING:
-                                return strcmp(a->as.string, b->as.heap->as.string);
+                                return strcmp(
+                                        a->as.string->s,
+                                        b->as.heap->as.string->s
+                                );
                         case BRD_HEAP_LIST:
                                 BARF("can't compare a list and a string");
                                 return -1;
@@ -451,7 +462,7 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         return (int) (a->as.num - b->as.num);
                 case BRD_VAL_STRING:
                         /* Again, this is the obvious thing to do there */
-                        return strcmp(a->as.boolean ? "true" : "false", b->as.string);
+                        return strcmp(a->as.boolean ? "true" : "false", b->as.string->s);
                 case BRD_VAL_BOOL:
                         return a->as.boolean - b->as.boolean;
                 case BRD_VAL_UNIT:
@@ -464,7 +475,7 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         case BRD_HEAP_STRING:
                                 return strcmp(
                                         a->as.boolean ? "true" : "false",
-                                        b->as.heap->as.string
+                                        b->as.heap->as.string->s
                                 );
                         case BRD_HEAP_LIST:
                                 BARF("can't compare a list and a boolean");
@@ -479,7 +490,7 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                 case BRD_VAL_NUM:
                         return -fabsl(b->as.num);
                 case BRD_VAL_STRING:
-                        return -(b->as.string[0] != '\0');
+                        return -b->as.string->length;
                 case BRD_VAL_BOOL:
                         return -b->as.boolean;
                 case BRD_VAL_UNIT:
@@ -490,7 +501,7 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                 case BRD_VAL_HEAP:
                         switch (b->as.heap->htype) {
                         case BRD_HEAP_STRING:
-                                return -(b->as.heap->as.string[0] != '\0');
+                                return -b->as.heap->as.string->length;
                         case BRD_HEAP_LIST:
                                 BARF("can't compare a list and unit");
                                 return -1;
@@ -511,19 +522,28 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                 brd_value_coerce_num(a);
                                 return (int) (a->as.num - b->as.num);
                         case BRD_VAL_STRING:
-                                return strcmp(a->as.heap->as.string, b->as.string);
+                                return strcmp(
+                                        a->as.heap->as.string->s,
+                                        b->as.string->s
+                                );
                         case BRD_VAL_BOOL:
                                 /* This is obviously a very good idea */
-                                return strcmp(a->as.heap->as.string, b->as.boolean ? "true" : "false");
+                                return strcmp(
+                                        a->as.heap->as.string->s,
+                                        b->as.boolean ? "true" : "false"
+                                );
                         case BRD_VAL_UNIT:
-                                return a->as.heap->as.string[0] != '\0';
+                                return a->as.heap->as.string->length;
                         case BRD_VAL_BUILTIN:
                                 BARF("can't compare functions");
                                 break;
                         case BRD_VAL_HEAP:
                                 switch (b->as.heap->htype) {
                                 case BRD_HEAP_STRING:
-                                        return strcmp(a->as.heap->as.string, b->as.heap->as.string);
+                                        return strcmp(
+                                                a->as.heap->as.string->s,
+                                                b->as.heap->as.string->s
+                                        );
                                 case BRD_HEAP_LIST:
                                         BARF("can't compare a list and a string");
                                         return -1;
@@ -555,30 +575,35 @@ brd_value_concat(struct brd_value *a, struct brd_value *b)
 {
         /* new string put into a */
         int free_a, free_b;
-        const char *string_a, *string_b;
+        char *string_a, *string_b, *string_new;
         size_t len_a, len_b;
         struct brd_heap_entry *new;
         
         free_a = brd_value_coerce_string(a);
         free_b = brd_value_coerce_string(b);
 
-        string_a = a->vtype == BRD_VAL_STRING ? a->as.string : a->as.heap->as.string;
-        string_b = b->vtype == BRD_VAL_STRING ? b->as.string : b->as.heap->as.string;
+        string_a = a->vtype == BRD_VAL_STRING ? a->as.string->s
+                : a->as.heap->as.string->s;
+        string_b = b->vtype == BRD_VAL_STRING ? b->as.string->s
+                : b->as.heap->as.string->s;
 
         len_a = strlen(string_a);
         len_b = strlen(string_b);
 
         new = malloc(sizeof(*new));
         new->htype = BRD_HEAP_STRING;
-        new->as.string = malloc((len_a + len_b + 1) * sizeof(char));
-        strcpy(new->as.string, string_a);
-        strcat(new->as.string, string_b);
+        string_new = malloc((len_a + len_b + 1) * sizeof(char));
+        strcpy(string_new, string_a);
+        strcat(string_new, string_b);
+        new->as.string = brd_value_string_new(string_new);
 
         if (free_a) {
+                free(a->as.heap->as.string->s);
                 free(a->as.heap->as.string);
                 free(a->as.heap);
         }
         if (free_b) {
+                free(b->as.heap->as.string->s);
                 free(b->as.heap->as.string);
                 free(b->as.heap);
         }
@@ -602,7 +627,7 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                         printf("%.10Lg", value.as.num);
                         break;
                 case BRD_VAL_STRING:
-                        printf("%s", value.as.string);
+                        printf("%s", value.as.string->s);
                         break;
                 case BRD_VAL_BOOL:
                         printf("%s", value.as.boolean ? "true" : "false");
@@ -616,7 +641,7 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                 case BRD_VAL_HEAP:
                         switch (value.as.heap->htype) {
                         case BRD_HEAP_STRING:
-                                printf("%s", value.as.heap->as.string);
+                                printf("%s", value.as.heap->as.string->s);
                                 break;
                         case BRD_HEAP_LIST:
                                 printf("[ ");
@@ -653,6 +678,7 @@ static int
 _builtin_readln(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
         size_t n = 0;
+        char *str;
 
         (void)args;
         if (num_args > 0) {
@@ -662,10 +688,11 @@ _builtin_readln(struct brd_value *args, size_t num_args, struct brd_value *out)
         out->vtype = BRD_VAL_HEAP;
         out->as.heap = malloc(sizeof(struct brd_heap_entry));
         out->as.heap->htype = BRD_HEAP_STRING;
-        out->as.heap->as.string = NULL;
 
-        n = getline(&out->as.heap->as.string, &n, stdin);
-        out->as.heap->as.string[n-1] = '\0'; /* remove newline */
+        str = NULL;
+        n = getline(&str, &n, stdin);
+        str[n-1] = '\0'; /* remove newline */
+        out->as.heap->as.string = brd_value_string_new(str);
         return true;
 }
 
@@ -680,12 +707,12 @@ _builtin_length(struct brd_value *args, size_t num_args, struct brd_value *out)
 
         switch(args[0].vtype) {
         case BRD_VAL_STRING:
-                out->as.num = strlen(args[0].as.string);
+                out->as.num = args[0].as.string->length;
                 break;
         case BRD_VAL_HEAP:
                 switch (args[0].as.heap->htype) {
                 case BRD_HEAP_STRING:
-                        out->as.num = strlen(args[0].as.heap->as.string);
+                        out->as.num = args[0].as.heap->as.string->length;
                         break;
                 case BRD_HEAP_LIST:
                         out->as.num = args[0].as.heap->as.list->length;
@@ -713,30 +740,30 @@ _builtin_typeof(struct brd_value *args, size_t num_args, struct brd_value *out)
         out->vtype = BRD_VAL_STRING;
         switch (args[0].vtype) {
         case BRD_VAL_NUM:
-                out->as.string = "number";
+                out->as.string = &number_string;
                 break;
         case BRD_VAL_STRING:
-                out->as.string = "string";
+                out->as.string = &string_string;
                 break;
         case BRD_VAL_BOOL:
-                out->as.string = "boolean";
+                out->as.string = &boolean_string;
                 break;
         case BRD_VAL_UNIT:
-                out->as.string = "unit";
+                out->as.string = &unit_string;
                 break;
         case BRD_VAL_BUILTIN:
-                out->as.string = "builtin";
+                out->as.string = &builtin_string[args[0].as.builtin];
                 break;
         case BRD_VAL_HEAP:
                 switch (args[0].as.heap->htype) {
                 case BRD_HEAP_STRING:
-                        out->as.string = "string";
+                        out->as.string = &string_string;
                         break;
                 case BRD_HEAP_LIST:
-                        out->as.string = "list";
+                        out->as.string = &list_string;
                         break;
                 case BRD_HEAP_CLOSURE:
-                        out->as.string = "closure";
+                        out->as.string = &closure_string;
                         break;
                 }
         }
@@ -757,18 +784,16 @@ _builtin_system(struct brd_value *args, size_t num_args, struct brd_value *out)
 
         len = 1;
         for (int i = 0; i < num_args; i++) {
-                len += strlen(
-                        args[i].vtype == BRD_VAL_STRING ? args[i].as.string
-                        : args[i].as.heap->as.string
-                );
+                len += args[i].vtype == BRD_VAL_STRING ? args[i].as.string->length
+                        : args[i].as.heap->as.string->length;
         }
         cmd = malloc(sizeof(char) * len);
         cmd[0] = '\0';
         for (int i = 0; i < num_args; i++) {
                 strcat(
                         cmd,
-                        args[i].vtype == BRD_VAL_STRING ? args[i].as.string
-                        : args[i].as.heap->as.string
+                        args[i].vtype == BRD_VAL_STRING ? args[i].as.string->s
+                        : args[i].as.heap->as.string->s
                 );
         }
 
@@ -815,3 +840,24 @@ const char *builtin_name[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_SYSTEM] = "system",
 };
 
+#define MK_BUILTIN_STRING(str) { str, sizeof(str) - 1 }
+
+struct brd_value_string builtin_string[BRD_NUM_BUILTIN] = {
+        [BRD_BUILTIN_WRITE]   = MK_BUILTIN_STRING("<< write >>"),
+        [BRD_BUILTIN_WRITELN] = MK_BUILTIN_STRING("<< writeln >>"),
+        [BRD_BUILTIN_READLN]  = MK_BUILTIN_STRING("<< readln >>"),
+        [BRD_BUILTIN_LENGTH]  = MK_BUILTIN_STRING("<< length >>"),
+        [BRD_BUILTIN_TYPEOF]  = MK_BUILTIN_STRING("<< typeof >>"),
+        [BRD_BUILTIN_SYSTEM]  = MK_BUILTIN_STRING("<< system >>"),
+};
+
+struct brd_value_string number_string = MK_BUILTIN_STRING("number");
+struct brd_value_string string_string = MK_BUILTIN_STRING("string");
+struct brd_value_string boolean_string = MK_BUILTIN_STRING("boolean");
+struct brd_value_string unit_string = MK_BUILTIN_STRING("unit");
+struct brd_value_string list_string = MK_BUILTIN_STRING("list");
+struct brd_value_string closure_string = MK_BUILTIN_STRING("closure");
+struct brd_value_string true_string = MK_BUILTIN_STRING("true");
+struct brd_value_string false_string = MK_BUILTIN_STRING("false");
+
+#undef MK_BUILTIN_STRING
