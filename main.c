@@ -103,7 +103,7 @@ brd_repl(void)
 
                 printf(">>> ");
                 if (fgets(code, sizeof(code), stdin) == NULL) {
-                        goto loop_end;
+                        break;
                 }
 
                 empty_line = true;
@@ -127,6 +127,8 @@ brd_repl(void)
 
                         printf(" <| ");
                         if (fgets(c, sizeof(c), stdin) == NULL) {
+                                printf("\nKeyboard Interrupt\n");
+                                clearerr(stdin);
                                 goto loop_end;
                         }
 
@@ -137,11 +139,12 @@ brd_repl(void)
                 brd_vm_reset(bytecode);
                 brd_vm_run();
 
-                if (vm.stack.values[0].vtype != BRD_VAL_UNIT) {
-                        brd_value_debug(&vm.stack.values[0]);
-                        printf("\n");
-                }
-                brd_value_map_set(&vm.frame[0].vars, "_", &vm.stack.values[0]);
+                // FIXME: see TODO at top of file
+                //if (vm.stack.values[0].vtype != BRD_VAL_UNIT) {
+                //        brd_value_debug(&vm.stack.values[0]);
+                //        printf("\n");
+                //}
+                //brd_value_map_set(&vm.frame[0].vars, "_", &vm.stack.values[0]);
 
                 if (oc_length >= oc_capacity) {
                         oc_capacity *= 1.5;
@@ -152,9 +155,9 @@ brd_repl(void)
                 }
                 old_code[oc_length++] = bytecode;
 
+loop_end:;
         }
 
-loop_end:
         brd_vm_reset(NULL);
         for (int i = 0; i < oc_length; i++) {
                 free(old_code[i]);

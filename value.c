@@ -207,6 +207,7 @@ brd_value_closure_destroy(struct brd_value_closure *closure)
         free(closure->args);
 }
 
+#ifdef DEBUG
 void
 brd_value_debug(struct brd_value *value)
 {
@@ -249,6 +250,7 @@ brd_value_debug(struct brd_value *value)
                 }
         }
 }
+#endif
 
 int brd_value_is_string(struct brd_value *value)
 {
