@@ -19,10 +19,11 @@
  */
 
 /* reason the parser failed (used for repl */
-static enum brd_repl_parser_failure_reason {
+enum brd_compiler_status {
+        BRD_REPL_SUCCESS,
         BRD_REPL_TOKEN,
         BRD_REPL_PARSER,
-} failure_reason;
+};
 
 static char *
 brd_read_file(const char *file_name)
@@ -45,12 +46,12 @@ brd_read_file(const char *file_name)
         return contents;
 }
 
-static brd_bytecode_t *
+static int
 brd_parse_and_compile_repl(char *code)
 {
+        /* return true upon success */
         struct brd_token_list tokens;
         struct brd_node *program;
-        brd_bytecode_t *bytecode;
 
         brd_token_list_init(&tokens);
         if (!brd_token_list_tokenize(&tokens, code)) {
@@ -61,45 +62,32 @@ brd_parse_and_compile_repl(char *code)
                         bad_character
                 );
                 brd_token_list_destroy(&tokens);
-                failure_reason = BRD_REPL_TOKEN;
-                return NULL;
+                return BRD_REPL_TOKEN;
         }
 
         program = brd_parse_program(&tokens);
         brd_token_list_destroy(&tokens);
         if (program == NULL) {
-                failure_reason = BRD_REPL_PARSER;
-                return NULL;
+                return BRD_REPL_PARSER;
         }
 
-        bytecode = brd_node_compile(program);
+        brd_node_compile(program);
         brd_node_destroy(program);
 
-        return bytecode;
+        return BRD_REPL_SUCCESS;
 }
 
 static void
 brd_repl(void)
 {
-        /*
-         * need to hold onto old_code because string constants
-         * point into the bytecode
-         */
-        brd_bytecode_t **old_code;
-        size_t oc_length, oc_capacity;
-
         printf("Welcome to the repl!\n");
 
-        oc_length = 0;
-        oc_capacity = 4;
-        old_code = malloc(sizeof(brd_bytecode_t *) * oc_capacity);
-
-        brd_vm_init(NULL);
+        brd_vm_init();
 
         for (;;) {
-                brd_bytecode_t *bytecode;
                 char code[1024];
                 int empty_line;
+                enum brd_compiler_status compiler_status;
 
                 printf(">>> ");
                 if (fgets(code, sizeof(code), stdin) == NULL) {
@@ -117,11 +105,11 @@ brd_repl(void)
                         continue;
                 }
 
-                bytecode = brd_parse_and_compile_repl(code);
-                while (bytecode == NULL) {
+                compiler_status = brd_parse_and_compile_repl(code);
+                while (compiler_status != BRD_REPL_SUCCESS) {
                         char c[512];
 
-                        if (failure_reason == BRD_REPL_TOKEN) {
+                        if (compiler_status == BRD_REPL_TOKEN) {
                                 goto loop_end;
                         }
 
@@ -133,10 +121,9 @@ brd_repl(void)
                         }
 
                         strcat(code, c);
-                        bytecode = brd_parse_and_compile_repl(code);
+                        compiler_status = brd_parse_and_compile_repl(code);
                 }
 
-                brd_vm_reset(bytecode);
                 brd_vm_run();
 
                 // FIXME: see TODO at top of file
@@ -145,35 +132,19 @@ brd_repl(void)
                 //        printf("\n");
                 //}
                 //brd_value_map_set(&vm.frame[0].vars, "_", &vm.stack.values[0]);
-
-                if (oc_length >= oc_capacity) {
-                        oc_capacity *= 1.5;
-                        old_code = realloc(
-                                old_code,
-                                sizeof(brd_bytecode_t *) * oc_capacity
-                        );
-                }
-                old_code[oc_length++] = bytecode;
-
 loop_end:;
         }
 
-        brd_vm_reset(NULL);
-        for (int i = 0; i < oc_length; i++) {
-                free(old_code[i]);
-        }
-        free(old_code);
         brd_vm_destroy();
 
         printf("\nGoodbye!\n");
 }
 
-static brd_bytecode_t *
+static void
 brd_parse_and_compile(char *code)
 {
         struct brd_token_list tokens;
         struct brd_node *program;
-        brd_bytecode_t *bytecode;
 
         brd_token_list_init(&tokens);
         if (!brd_token_list_tokenize(&tokens, code)) {
@@ -199,26 +170,24 @@ brd_parse_and_compile(char *code)
                 exit(EXIT_FAILURE);
         }
 
-        bytecode = brd_node_compile(program);
+        brd_node_compile(program);
         brd_node_destroy(program);
-
-        return bytecode;
 }
 
 static void
 brd_run_file(char *file_name)
 {
         char *code;
-        brd_bytecode_t *bytecode;
+
+        brd_vm_init();
 
         code = brd_read_file(file_name);
         if (code == NULL) {
                 fprintf(stderr, "Unable to open file %s\n", file_name);
         }
-        bytecode = brd_parse_and_compile(code);
+        brd_parse_and_compile(code);
         free(code);
 
-        brd_vm_init(bytecode);
         brd_vm_run();
         brd_vm_destroy();
 }
