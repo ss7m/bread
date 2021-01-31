@@ -802,6 +802,7 @@ _builtin_system(struct brd_value *args, size_t num_args, struct brd_value *out)
 
         for (int i = 0; i < num_args; i++) {
                 if (malloced[i]) {
+                        free(args[i].as.heap->as.string->s);
                         free(args[i].as.heap->as.string);
                         free(args[i].as.heap);
                 }

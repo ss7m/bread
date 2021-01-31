@@ -20,6 +20,8 @@ extern int found_eof;
 extern const char *error_message;
 extern char bad_character[2];
 
+extern int vm_error;
+
 #ifdef DEBUG
 #define BARFA(fmt, ...) do { \
         fprintf(stderr, "Error: " fmt "\n", ##__VA_ARGS__); \

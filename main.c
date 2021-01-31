@@ -74,8 +74,6 @@ brd_repl(void)
 {
         printf("Welcome to the repl!\n");
 
-        brd_vm_init();
-
         for (;;) {
                 char code[1024];
                 int empty_line;
@@ -127,8 +125,6 @@ brd_repl(void)
 loop_end:;
         }
 
-        brd_vm_destroy();
-
         printf("\nGoodbye!\n");
 }
 
@@ -171,8 +167,6 @@ brd_run_file(char *file_name)
 {
         char *code;
 
-        brd_vm_init();
-
         code = brd_read_file(file_name);
         if (code == NULL) {
                 fprintf(stderr, "Unable to open file %s\n", file_name);
@@ -181,15 +175,16 @@ brd_run_file(char *file_name)
         free(code);
 
         brd_vm_run();
-        brd_vm_destroy();
 }
 
 int
 main(int argc, char **argv)
 {
+        brd_vm_init();
         if (argc == 1) {
                 brd_repl();
         } else {
                 brd_run_file(argv[1]);
         }
+        brd_vm_destroy();
 }

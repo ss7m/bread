@@ -9,6 +9,7 @@
 #define GROW 1.5
 
 struct brd_vm vm;
+int vm_error = false;
 
 #ifdef DEBUG
 static void
