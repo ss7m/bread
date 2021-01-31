@@ -28,9 +28,11 @@ the command is
 bread file.brd
 ```
 
+To start a REPL, just run `bread` with no arguments.
+
 ## Acknowledgements
 
-[Crafting Interpreters](https://craftinginterpreters.com/) For reference/inspiration
+[Crafting Interpreters](https://craftinginterpreters.com/) for reference/inspiration
 in implementing various parts of the interpreter, especially the virtual
 machine and garbage collector.
 
