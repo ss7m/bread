@@ -350,24 +350,29 @@ void
 brd_vm_destroy(void)
 {
         /* note to self: for container types, don't free the members! */
-        struct brd_heap_entry *heap = vm.heap;
-        while (heap != NULL) {
-                struct brd_heap_entry *n = heap->next;
-                switch(heap->htype) {
+        while (vm.heap != NULL) {
+                struct brd_heap_entry *n = vm.heap->next;
+                switch(vm.heap->htype) {
                 case BRD_HEAP_STRING:
-                        free(heap->as.string);
+                        free(vm.heap->as.string);
                         break;
                 case BRD_HEAP_LIST:
-                        free(heap->as.list->items);
-                        free(heap->as.list);
+                        free(vm.heap->as.list->items);
+                        free(vm.heap->as.list);
                         break;
                 case BRD_HEAP_CLOSURE:
-                        brd_value_closure_destroy(heap->as.closure);
-                        free(heap->as.closure);
+                        brd_value_closure_destroy(vm.heap->as.closure);
+                        free(vm.heap->as.closure);
                         break;
                 }
-                free(heap);
-                heap = n;
+                free(vm.heap);
+                vm.heap = n;
+        }
+
+        while (vm.strings != NULL) {
+                struct brd_string_constant_list *n = vm.strings->next;
+                free(vm.strings);
+                vm.strings = n;
         }
 
         brd_value_map_destroy(&vm.frame[0].vars);
@@ -382,6 +387,9 @@ brd_vm_init(void)
         vm.heap->htype = BRD_HEAP_STRING;
         vm.heap->as.string = malloc(1);
         vm.stack.sp = vm.stack.values;
+
+        vm.strings = malloc(sizeof(&vm.strings));
+        vm.strings->next = NULL;
 
         vm.bc_length = 0;
         vm.bc_capacity = LIST_SIZE;

@@ -76,9 +76,15 @@ struct brd_frame {
         struct brd_value_map vars;
 };
 
+struct brd_string_constant_list {
+        struct brd_string_constant_list *next;
+        struct brd_value_string string;
+};
+
 struct brd_vm {
         struct brd_stack stack;
         struct brd_heap_entry *heap;
+        struct brd_string_constant_list *strings;
         brd_bytecode_t *bytecode;
         size_t bc_length, bc_capacity;
         size_t fp;
