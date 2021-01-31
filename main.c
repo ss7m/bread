@@ -88,7 +88,7 @@ brd_repl(void)
 
                 printf("> ");
                 if (fgets(code, sizeof(code), stdin) == NULL) {
-                        break;
+                        goto loop_end;
                 }
 
                 empty_line = true;
@@ -131,9 +131,9 @@ brd_repl(void)
                 }
                 old_code[oc_length++] = bytecode;
 
-loop_end:;
         }
 
+loop_end:
         brd_vm_reset(NULL);
         for (int i = 0; i < oc_length; i++) {
                 free(old_code[i]);
