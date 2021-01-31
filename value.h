@@ -90,10 +90,7 @@ struct brd_value_closure {
 void brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, size_t pc);
 void brd_value_closure_destroy(struct brd_value_closure *closure);
 
-#ifdef DEBUG
 void brd_value_debug(struct brd_value *value);
-#endif
-
 int brd_value_is_string(struct brd_value *value);
 void brd_value_coerce_num(struct brd_value *value);
 int brd_value_coerce_string(struct brd_value *value);

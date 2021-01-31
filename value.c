@@ -207,31 +207,29 @@ brd_value_closure_destroy(struct brd_value_closure *closure)
         free(closure->args);
 }
 
-#ifdef DEBUG
 void
 brd_value_debug(struct brd_value *value)
 {
-        printf(" ======== ");
         switch (value->vtype) {
         case BRD_VAL_NUM:
-                printf("%Lf\n", value->as.num);
+                printf("%Lf", value->as.num);
                 break;
         case BRD_VAL_STRING:
-                printf("%s\n", value->as.string);
+                printf("\"%s\"", value->as.string);
                 break;
         case BRD_VAL_BOOL:
-                printf("%s\n", value->as.boolean ? "true" : "false");
+                printf("%s", value->as.boolean ? "true" : "false");
                 break;
         case BRD_VAL_UNIT:
-                printf("unit\n");
+                printf("unit");
                 break;
         case BRD_VAL_BUILTIN:
-                printf("<< builtin: %s >>\n", builtin_name[value->as.builtin]);
+                printf("<< builtin: %s >>", builtin_name[value->as.builtin]);
                 break;
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
-                        printf("%s\n", value->as.heap->as.string);
+                        printf("%s", value->as.heap->as.string);
                         break;
                 case BRD_HEAP_LIST:
                         printf("[ ");
@@ -243,15 +241,14 @@ brd_value_debug(struct brd_value *value)
                                         printf(", ");
                                 }
                         }
-                        printf(" ]\n");
+                        printf(" ]");
                         break;
                 case BRD_HEAP_CLOSURE:
-                        printf("closure\n");
+                        printf("closure");
                         break;
                 }
         }
 }
-#endif
 
 int brd_value_is_string(struct brd_value *value)
 {

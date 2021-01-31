@@ -60,9 +60,7 @@ brd_bytecode_debug(enum brd_bytecode op)
 void
 brd_stack_push(struct brd_stack *stack, struct brd_value *value)
 {
-        if (value == NULL) {
-                return;
-        } else if (stack->sp - stack->values >= STACK_SIZE) {
+        if (stack->sp - stack->values >= STACK_SIZE) {
                 BARF("stack overflow error");
         } else {
                 *(stack->sp++) = *value;
@@ -460,7 +458,7 @@ void
 brd_vm_run(void)
 {
         enum brd_bytecode op;
-        struct brd_value value1, value2, value3;
+        struct brd_value value1, value2, value3, *valuep;
         char *id;
         char **args;
         size_t jmp, num_args;
@@ -489,11 +487,13 @@ brd_vm_run(void)
                 case BRD_VM_GET_VAR:
                         id = (char *)(vm.bytecode + vm.frame[vm.fp].pc);
                         while (*(char *)(vm.bytecode + vm.frame[vm.fp].pc++));
-                        value1.vtype = BRD_VAL_UNIT;
-                        brd_stack_push( /* stack won't push if value is NULL */
-                                &vm.stack,
-                                brd_value_map_get(&vm.frame[vm.fp].vars, id)
-                        );
+                        valuep = brd_value_map_get(&vm.frame[vm.fp].vars, id);
+                        if (valuep == NULL) {
+                                value1.vtype = BRD_VAL_UNIT;
+                                brd_stack_push(&vm.stack, &value1);
+                        } else {
+                                brd_stack_push(&vm.stack, valuep);
+                        }
                         break;
                 case BRD_VM_TRUE:
                         value1.vtype = BRD_VAL_BOOL;
@@ -771,7 +771,9 @@ brd_vm_run(void)
                 case BRD_VM_POP:
 #ifdef DEBUG
                         value1 = *brd_stack_pop(&vm.stack);
+                        printf(" ======== ");
                         brd_value_debug(&value1);
+                        printf("\n");
 #else
                         brd_stack_pop(&vm.stack);
 #endif

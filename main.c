@@ -5,6 +5,19 @@
 #include "token.h"
 #include "parse.h"
 
+/*
+ * TODO: closures don't work in the repl
+ * because the pc field of the closure doesn't make sense when the VM
+ * is running on an entirely different bytecode
+ * will have to do something like appending onto the bytecode instead of this
+ * business of keeping the old bytecodes in an array
+ */
+
+/*
+ * TODO: don't gc the bottom of the stack in the repl, because
+ * we want to put it in the _ variable, figure this out
+ */
+
 /* reason the parser failed (used for repl */
 static enum brd_repl_parser_failure_reason {
         BRD_REPL_TOKEN,
@@ -75,6 +88,8 @@ brd_repl(void)
         brd_bytecode_t **old_code;
         size_t oc_length, oc_capacity;
 
+        printf("Welcome to the repl!\n");
+
         oc_length = 0;
         oc_capacity = 4;
         old_code = malloc(sizeof(brd_bytecode_t *) * oc_capacity);
@@ -86,7 +101,7 @@ brd_repl(void)
                 char code[1024];
                 int empty_line;
 
-                printf("> ");
+                printf(">>> ");
                 if (fgets(code, sizeof(code), stdin) == NULL) {
                         goto loop_end;
                 }
@@ -110,7 +125,7 @@ brd_repl(void)
                                 goto loop_end;
                         }
 
-                        printf("| ");
+                        printf(" <| ");
                         if (fgets(c, sizeof(c), stdin) == NULL) {
                                 goto loop_end;
                         }
@@ -121,6 +136,12 @@ brd_repl(void)
 
                 brd_vm_reset(bytecode);
                 brd_vm_run();
+
+                if (vm.stack.values[0].vtype != BRD_VAL_UNIT) {
+                        brd_value_debug(&vm.stack.values[0]);
+                        printf("\n");
+                }
+                brd_value_map_set(&vm.frame[0].vars, "_", &vm.stack.values[0]);
 
                 if (oc_length >= oc_capacity) {
                         oc_capacity *= 1.5;
@@ -140,6 +161,8 @@ loop_end:
         }
         free(old_code);
         brd_vm_destroy();
+
+        printf("\nGoodbye!\n");
 }
 
 static brd_bytecode_t *

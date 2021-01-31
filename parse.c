@@ -385,7 +385,7 @@ brd_parse_prefix(struct brd_token_list *tokens)
         case BRD_TOK_MINUS:
                 brd_token_list_pop_token(tokens);
                 node = brd_parse_prefix(tokens);
-                return (node = NULL) ? NULL : brd_node_unary_new(BRD_NEGATE, node);
+                return (node == NULL) ? NULL : brd_node_unary_new(BRD_NEGATE, node);
         default:
                 return brd_parse_postfix(tokens);
         }
