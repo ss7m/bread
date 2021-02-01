@@ -238,7 +238,7 @@ brd_value_debug(struct brd_value *value)
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
-                        printf("%s", value->as.heap->as.string->s);
+                        printf("\"%s\"", value->as.heap->as.string->s);
                         break;
                 case BRD_HEAP_LIST:
                         printf("[ ");
