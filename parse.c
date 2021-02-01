@@ -230,6 +230,7 @@ brd_parse_compexp(struct brd_token_list *tokens)
 {
         struct brd_node *l, *r;
         enum brd_binop binop;
+        int neq = false;
 
         l = brd_parse_addexp(tokens);
         if (l == NULL) {
@@ -238,35 +239,36 @@ brd_parse_compexp(struct brd_token_list *tokens)
 
         switch (brd_token_list_peek(tokens)) {
         case BRD_TOK_LT:
-                brd_token_list_pop_token(tokens);
                 binop = BRD_LT;
                 break;
         case BRD_TOK_LEQ:
-                brd_token_list_pop_token(tokens);
                 binop = BRD_LEQ;
                 break;
         case BRD_TOK_EQ:
-                brd_token_list_pop_token(tokens);
                 binop = BRD_EQ;
                 break;
         case BRD_TOK_GT:
-                brd_token_list_pop_token(tokens);
                 binop = BRD_GT;
                 break;
         case BRD_TOK_GEQ:
-                brd_token_list_pop_token(tokens);
                 binop = BRD_GEQ;
+                break;
+        case BRD_TOK_NEQ:
+                neq = true;
+                binop = BRD_EQ;
                 break;
         default:
                 return l;
         }
-        
+
+        brd_token_list_pop_token(tokens); /* pop binop */
         r = brd_parse_addexp(tokens);
         if (r == NULL) {
                 brd_node_destroy(l);
                 return NULL;
         } else {
-                return brd_node_binop_new(binop, l, r);
+                l = brd_node_binop_new(binop, l, r);
+                return neq ? brd_node_unary_new(BRD_NOT, l) : l;
         }
 }
 
@@ -285,16 +287,15 @@ brd_parse_addexp(struct brd_token_list *tokens)
                 switch (brd_token_list_peek(tokens)) {
                 case BRD_TOK_PLUS:
                         binop = BRD_PLUS;
-                        brd_token_list_pop_token(tokens);
                         break;
                 case BRD_TOK_MINUS:
                         binop = BRD_MINUS;
-                        brd_token_list_pop_token(tokens);
                         break;
                 default:
                         return l;
                 }
 
+                brd_token_list_pop_token(tokens); /* pop binop */
                 r = brd_parse_mulexp(tokens);
                 if (r == NULL) {
                         brd_node_destroy(l);
@@ -320,24 +321,21 @@ brd_parse_mulexp(struct brd_token_list *tokens)
                 switch (brd_token_list_peek(tokens)) {
                 case BRD_TOK_MUL:
                         binop = BRD_MUL;
-                        brd_token_list_pop_token(tokens);
                         break;
                 case BRD_TOK_DIV:
                         binop = BRD_DIV;
-                        brd_token_list_pop_token(tokens);
                         break;
                 case BRD_TOK_IDIV:
                         binop = BRD_IDIV;
-                        brd_token_list_pop_token(tokens);
                         break;
                 case BRD_TOK_MOD:
                         binop = BRD_MOD;
-                        brd_token_list_pop_token(tokens);
                         break;
                 default:
                         return l;
                 }
 
+                brd_token_list_pop_token(tokens); /* pop binop */
                 r = brd_parse_powexp(tokens);
                 if (r == NULL) {
                         brd_node_destroy(l);

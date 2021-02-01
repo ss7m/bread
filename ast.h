@@ -49,7 +49,7 @@ struct brd_node_assign {
 
 enum brd_binop {
         /* arith */
-        BRD_PLUS,
+        BRD_PLUS = 0,
         BRD_MINUS,
         BRD_MUL,
         BRD_DIV,

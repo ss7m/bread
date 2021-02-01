@@ -152,8 +152,6 @@ brd_vm_add_string_constant(char *string)
         vm.bc_length += sizeof(struct brd_string_constant_list *);\
 } while (0)
 
-#define RECURSE_ON(x) (brd_node_compile((x)))
-
 #define AS(type, x) ((struct brd_node_ ## type *)(x))
 
 static void
@@ -165,8 +163,8 @@ brd_node_compile_lvalue(struct brd_node *node)
                 ADD_STR(AS(var, node)->id);
                 break;
         case BRD_NODE_INDEX:
-                RECURSE_ON(AS(index, node)->list);
-                RECURSE_ON(AS(index, node)->idx);
+                brd_node_compile(AS(index, node)->list);
+                brd_node_compile(AS(index, node)->idx);
                 ADD_OP(BRD_VM_SET_IDX);
                 break;
         default:
@@ -182,7 +180,7 @@ brd_node_compile(struct brd_node *node)
 
         switch (node->ntype) {
         case BRD_NODE_ASSIGN: 
-                RECURSE_ON(AS(assign, node)->r);
+                brd_node_compile(AS(assign, node)->r);
                 brd_node_compile_lvalue(AS(assign, node)->l);
                 break;
         case BRD_NODE_BINOP:
@@ -190,14 +188,14 @@ brd_node_compile(struct brd_node *node)
                 switch (AS(binop, node)->btype) {
                 case BRD_OR:
                 case BRD_AND: 
-                        RECURSE_ON(AS(binop, node)->l);
+                        brd_node_compile(AS(binop, node)->l);
                         op = (AS(binop, node)->btype == BRD_AND)
                                 ? BRD_VM_TEST : BRD_VM_TESTN;
                         ADD_OP(op);
                         ADD_OP(BRD_VM_JMP);
                         temp = vm.bc_length;
                         ADD_SIZET(0);
-                        RECURSE_ON(AS(binop, node)->r);
+                        brd_node_compile(AS(binop, node)->r);
                         jmp = vm.bc_length - temp;
                         *(size_t *)(vm.bytecode + temp) = jmp;
                         break;
@@ -215,13 +213,13 @@ brd_node_compile(struct brd_node *node)
                 case BRD_GEQ: op = BRD_VM_GEQ; goto mkbinop;
                 case BRD_EQ: op = BRD_VM_EQ; goto mkbinop;
 mkbinop:
-                        RECURSE_ON(AS(binop, node)->l);
-                        RECURSE_ON(AS(binop, node)->r);
+                        brd_node_compile(AS(binop, node)->l);
+                        brd_node_compile(AS(binop, node)->r);
                         ADD_OP(op);
                 }
                 break;
         case BRD_NODE_UNARY:
-                RECURSE_ON(AS(unary, node)->u);
+                brd_node_compile(AS(unary, node)->u);
                 switch (AS(unary, node)->utype) {
                 case BRD_NEGATE: ADD_OP(BRD_VM_NEGATE); break;
                 case BRD_NOT: ADD_OP(BRD_VM_NOT); break;
@@ -248,15 +246,15 @@ mkbinop:
         case BRD_NODE_LIST_LIT:
                 ADD_OP(BRD_VM_LIST);
                 for (int i = 0; i < AS(list_lit, node)->items->num_args; i++) {
-                        RECURSE_ON(AS(list_lit, node)->items->args[i]);
+                        brd_node_compile(AS(list_lit, node)->items->args[i]);
                         ADD_OP(BRD_VM_PUSH);
                 }
                 break;
         case BRD_NODE_FUNCALL:
                 for (int i = 0; i < AS(funcall, node)->args->num_args; i++) {
-                        RECURSE_ON(AS(funcall, node)->args->args[i]);
+                        brd_node_compile(AS(funcall, node)->args->args[i]);
                 }
-                RECURSE_ON(AS(funcall, node)->fn);
+                brd_node_compile(AS(funcall, node)->fn);
                 ADD_OP(BRD_VM_CALL);
                 ADD_SIZET(AS(funcall, node)->args->num_args);
                 break;
@@ -269,7 +267,7 @@ mkbinop:
                 ADD_OP(BRD_VM_JMP);
                 temp = vm.bc_length;
                 ADD_SIZET(0);
-                RECURSE_ON(AS(closure, node)->body);
+                brd_node_compile(AS(closure, node)->body);
                 ADD_OP(BRD_VM_RETURN);
                 jmp = vm.bc_length - temp;
                 *(size_t *)(vm.bytecode + temp) = jmp;
@@ -280,25 +278,25 @@ mkbinop:
                 break;
         case BRD_NODE_BODY:
                 for (int i = 0; i < AS(body, node)->num_stmts; i++) {
-                        RECURSE_ON(AS(body, node)->stmts[i]);
+                        brd_node_compile(AS(body, node)->stmts[i]);
                         if (i < AS(body, node)->num_stmts - 1) {
                                 ADD_OP(BRD_VM_POP);
                         }
                 }
                 break;
         case BRD_NODE_INDEX:
-                RECURSE_ON(AS(index, node)->list);
-                RECURSE_ON(AS(index, node)->idx);
+                brd_node_compile(AS(index, node)->list);
+                brd_node_compile(AS(index, node)->idx);
                 ADD_OP(BRD_VM_GET_IDX);
                 break;
         case BRD_NODE_IFEXPR:
                 ifexpr_temps = malloc(sizeof(size_t)*(1+AS(ifexpr, node)->num_elifs));
-                RECURSE_ON(AS(ifexpr, node)->cond);
+                brd_node_compile(AS(ifexpr, node)->cond);
                 ADD_OP(BRD_VM_TESTP);
                 ADD_OP(BRD_VM_JMP);
                 temp = vm.bc_length;
                 ADD_SIZET(0);
-                RECURSE_ON(AS(ifexpr, node)->body);
+                brd_node_compile(AS(ifexpr, node)->body);
                 ADD_OP(BRD_VM_JMP);
                 ifexpr_temps[0] = vm.bc_length;
                 ADD_SIZET(0);
@@ -306,12 +304,12 @@ mkbinop:
                 *(size_t *)(vm.bytecode + temp) = jmp;
 
                 for (int i = 0; i < AS(ifexpr, node)->num_elifs; i++) {
-                        RECURSE_ON(AS(ifexpr, node)->elifs[i].cond);
+                        brd_node_compile(AS(ifexpr, node)->elifs[i].cond);
                         ADD_OP(BRD_VM_TESTP);
                         ADD_OP(BRD_VM_JMP);
                         temp = vm.bc_length;
                         ADD_SIZET(0);
-                        RECURSE_ON(AS(ifexpr, node)->elifs[i].body);
+                        brd_node_compile(AS(ifexpr, node)->elifs[i].body);
                         ADD_OP(BRD_VM_JMP);
                         ifexpr_temps[i+1] = vm.bc_length;
                         ADD_SIZET(0);
@@ -320,7 +318,7 @@ mkbinop:
                 }
 
                 if (AS(ifexpr, node)->els != NULL) {
-                        RECURSE_ON(AS(ifexpr, node)->els);
+                        brd_node_compile(AS(ifexpr, node)->els);
                 } else {
                         ADD_OP(BRD_VM_UNIT);
                 }
@@ -337,12 +335,12 @@ mkbinop:
                         ADD_OP(BRD_VM_LIST);
                 }
                 temp = vm.bc_length;
-                RECURSE_ON(AS(while, node)->cond);
+                brd_node_compile(AS(while, node)->cond);
                 ADD_OP(BRD_VM_TESTP);
                 ADD_OP(BRD_VM_JMP);
                 temp2 = vm.bc_length;
                 ADD_SIZET(0);
-                RECURSE_ON(AS(while, node)->body);
+                brd_node_compile(AS(while, node)->body);
                 if (!AS(while, node)->no_list) {
                         ADD_OP(BRD_VM_PUSH);
                 } else {
@@ -359,7 +357,7 @@ mkbinop:
                 break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
-                        RECURSE_ON(AS(program, node)->stmts[i]);
+                        brd_node_compile(AS(program, node)->stmts[i]);
                         ADD_OP(BRD_VM_POP);
                 }
                 ADD_OP(BRD_VM_RETURN);
@@ -372,7 +370,6 @@ mkbinop:
 #undef ADD_OP
 #undef ADD_NUM
 #undef ADD_STR
-#undef RECURSE_ON
 #undef AS
 
 void

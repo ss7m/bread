@@ -42,12 +42,7 @@ brd_parse_and_compile_repl(char *code)
 
         brd_token_list_init(&tokens);
         if (!brd_token_list_tokenize(&tokens, code)) {
-                fprintf(
-                        stderr,
-                        "Tokenizer error: %s%s\n",
-                        error_message,
-                        bad_character
-                );
+                fprintf(stderr, "Error : %s%s\n", error_message, bad_character);
                 brd_token_list_destroy(&tokens);
                 return BRD_REPL_TOKEN;
         }
@@ -71,13 +66,12 @@ brd_parse_and_compile_repl(char *code)
 static void
 brd_repl(void)
 {
-        printf("Welcome to the repl!\n");
+        char code[1024], extra[512];
+        int empty_line;
+        enum brd_compiler_status compiler_status;
 
         for (;;) {
-                char code[1024];
-                int empty_line;
-                enum brd_compiler_status compiler_status;
-
+start_loop:
                 printf(">>> ");
                 if (fgets(code, sizeof(code), stdin) == NULL) {
                         break;
@@ -96,20 +90,18 @@ brd_repl(void)
 
                 compiler_status = brd_parse_and_compile_repl(code);
                 while (compiler_status != BRD_REPL_SUCCESS) {
-                        char c[512];
-
                         if (compiler_status == BRD_REPL_TOKEN) {
-                                goto loop_end;
+                                goto start_loop;
                         }
 
                         printf(" <| ");
-                        if (fgets(c, sizeof(c), stdin) == NULL) {
+                        if (fgets(extra, sizeof(extra), stdin) == NULL) {
                                 printf("\nKeyboard Interrupt\n");
                                 clearerr(stdin);
-                                goto loop_end;
+                                goto start_loop;
                         }
 
-                        strcat(code, c);
+                        strcat(code, extra);
                         compiler_status = brd_parse_and_compile_repl(code);
                 }
 
@@ -121,10 +113,7 @@ brd_repl(void)
                         brd_value_debug(val);
                         printf("\n");
                 }
-loop_end:;
         }
-
-        printf("\nGoodbye!\n");
 }
 
 static void
@@ -135,12 +124,7 @@ brd_parse_and_compile(char *code)
 
         brd_token_list_init(&tokens);
         if (!brd_token_list_tokenize(&tokens, code)) {
-                fprintf(
-                        stderr,
-                        "Tokenizer error: %s%s\n",
-                        error_message,
-                        bad_character
-                );
+                fprintf(stderr, "Error: %s%s\n", error_message, bad_character);
                 brd_token_list_destroy(&tokens);
                 exit(EXIT_FAILURE);
         }
@@ -148,12 +132,7 @@ brd_parse_and_compile(char *code)
         program = brd_parse_program(&tokens);
         brd_token_list_destroy(&tokens);
         if (program == NULL) {
-                fprintf(
-                        stderr,
-                        "Parser error: %s on line %d\n",
-                        error_message,
-                        line_number
-                );
+                fprintf(stderr, "Error: %s on line %d\n", error_message, line_number);
                 exit(EXIT_FAILURE);
         }
 
@@ -181,7 +160,9 @@ main(int argc, char **argv)
 {
         brd_vm_init();
         if (argc == 1) {
+                printf("Welcome to the repl!\n");
                 brd_repl();
+                printf("\nGoodbye!\n");
         } else {
                 brd_run_file(argv[1]);
         }

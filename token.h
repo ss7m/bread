@@ -37,6 +37,7 @@ enum brd_token {
         BRD_TOK_GT,
         BRD_TOK_GEQ,
         BRD_TOK_EQ,
+        BRD_TOK_NEQ,
         /* let's use = for settings and equality, what could go wrong */
 
         /* boolean */

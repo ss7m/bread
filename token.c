@@ -344,6 +344,15 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 return false;
                         }
                         break;
+                case '!':
+                        if (string[1] == '=') {
+                                brd_token_list_add_token(list, BRD_TOK_NEQ);
+                                string += 2;
+                        } else {
+                                error_message = "! is not a valid operator";
+                                return false;
+                        }
+                        break;
                 case '@':
                         string++;
                         brd_parse_identifier(&string, buffer);
