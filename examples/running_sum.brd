@@ -1,27 +1,29 @@
+# TODO: how to do super?
+
 set RunningSum = @Object subclass
-    # this is a special function, which will be called by RunningSum.new()
-    constructor(this)
-        set this.sum = 0
-        set this.sum_sq = 0
-        set this.n = 0
-    end
+  # special syntax for constructor
+  constructor()
+    set this.sum = 0
+    set this.sum_sq = 0
+    set this.n = 0
+    this # make sure to return this!!
+  end
 
-    set update = function(num)
-        set this.sum = this.sum + num
-        set this.sum_sq = this.sum_sq + num^2
-        set this.n = this.n + 1
-    end
+  set update = func(num)
+    set this.sum = this.sum + num
+    set this.sum_sq = this.sum_sq + num^2
+    set this.n = this.n + 1
+    unit
+  end
 
-    set mean = function()
-        this.sum / this.n
-    end
+  set mean = func() this.sum / this.n end
 
-    set stdev = function()
-        ((this.sum_sq / this.n) - ((this.sum / this.n) ^ 2)) ^ 0.5
-    end
+  set stdev = func()
+    ((this.sum_sq / this.n) - ((this.sum / this.n) ^ 2)) ^ 0.5
+  end
 end
 
-set x = RunningSum.new()
+set x = RunningSum()
 x::update(50)
 x::update(100.5)
 @writeln(x::mean())
@@ -29,9 +31,9 @@ x::update(100.5)
 @writeln(x.sum)
 
 set RunningSumDebug = define RunningSum subclass
-    set update = function(num)
-        super::update(num)
-        @writeln(this::mean())
-        @writeln(this::stdev())
-    end
+  set update = func(num)
+    super::update(num)
+    @writeln(this::mean())
+    @writeln(this::stdev())
+  end
 end
