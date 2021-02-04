@@ -14,11 +14,13 @@ struct brd_value_list;
 struct brd_value_map;
 struct brd_value_string;
 struct brd_value_class;
+struct brd_value_object;
 
 enum brd_heap_type {
         BRD_HEAP_STRING,
         BRD_HEAP_LIST,
         BRD_HEAP_CLOSURE,
+        BRD_HEAP_CLASS,
 };
 
 struct brd_value_list {
@@ -46,6 +48,7 @@ struct brd_heap_entry {
                 struct brd_value_string *string;
                 struct brd_value_list *list;
                 struct brd_value_closure *closure;
+                struct brd_value_class *class;
         } as;
 
         int marked; /* for GC */

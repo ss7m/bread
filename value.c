@@ -88,6 +88,8 @@ brd_heap_mark(struct brd_heap_entry *entry)
         case BRD_HEAP_CLOSURE:
                 brd_value_map_mark(&entry->as.closure->env);
                 break;
+        case BRD_HEAP_CLASS:
+                brd_value_map_mark(&entry->as.class->methods);
         }
 }
 
@@ -281,6 +283,9 @@ brd_value_debug(struct brd_value *value)
                 case BRD_HEAP_CLOSURE:
                         printf("<< closure >>");
                         break;
+                case BRD_HEAP_CLASS:
+                        printf("<< class >>");
+                        break;
                 }
         }
 }
@@ -325,7 +330,12 @@ brd_value_coerce_num(struct brd_value *value)
                         break;
                 case BRD_HEAP_CLOSURE:
                         BARF("can't coerce a closure to a number");
+                        break;
+                case BRD_HEAP_CLASS:
+                        BARF("can't coerce a class into a number");
+                        break;
                 }
+                break;
         }
         value->vtype = BRD_VAL_NUM;
 }
@@ -368,8 +378,13 @@ brd_value_coerce_string(struct brd_value *value)
                 case BRD_HEAP_CLOSURE:
                         value->vtype = BRD_VAL_STRING;
                         value->as.string = &closure_string;
-                        return -1;
+                        return false;
+                case BRD_HEAP_CLASS:
+                        value->vtype = BRD_VAL_STRING;
+                        value->as.string = &class_string;
+                        return false;
                 }
+                break;
         }
         BARF("what?");
         return -1;
@@ -436,6 +451,8 @@ brd_value_truthify(struct brd_value *value)
                         return value->as.heap->as.list->length > 0;
                 case BRD_HEAP_CLOSURE:
                         return true;
+                case BRD_HEAP_CLASS:
+                        return true;
                 }
         }
         BARF("what?");
@@ -445,6 +462,7 @@ brd_value_truthify(struct brd_value *value)
 int
 brd_value_compare(struct brd_value *a, struct brd_value *b)
 {
+        /* I hate this function so much */
         switch (a->vtype) {
         case BRD_VAL_NUM:
                 brd_value_coerce_num(b);
@@ -477,6 +495,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         case BRD_HEAP_CLOSURE:
                                 BARF("can't compare a closure and a string");
                                 return -1;
+                        case BRD_HEAP_CLASS:
+                                BARF("can't compare a class and a string");
+                                return -1;
                         }
                 }
                 break;
@@ -507,6 +528,10 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                 return -1;
                         case BRD_HEAP_CLOSURE:
                                 BARF("can't compare a closure and a boolean");
+                                return -1;
+                        case BRD_HEAP_CLASS:
+                                BARF("can't compare a class and a boolean");
+                                return -1;
                         }
                 }
                 break;
@@ -532,6 +557,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                 return -1;
                         case BRD_HEAP_CLOSURE:
                                 BARF("can't compare a closure and a unit");
+                                return -1;
+                        case BRD_HEAP_CLASS:
+                                BARF("can't compare a class and a unit");
                                 return -1;
                         }
                 }
@@ -574,6 +602,10 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                         return -1;
                                 case BRD_HEAP_CLOSURE:
                                         BARF("can't compare a closure and a string");
+                                        return -1;
+                                case BRD_HEAP_CLASS:
+                                        BARF("can't compare a class and a string");
+                                        return -1;
                                 }
                         }
                         break;
@@ -588,6 +620,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         }
                 case BRD_HEAP_CLOSURE:
                         BARF("can't compare closures");
+                        return -1;
+                case BRD_HEAP_CLASS:
+                        BARF("can't compare classes");
                         return -1;
                 }
         }
@@ -684,6 +719,10 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                                 break;
                         case BRD_HEAP_CLOSURE:
                                 printf("<< closure >>");
+                                break;
+                        case BRD_HEAP_CLASS:
+                                printf("<< class >>");
+                                break;
                         }
                 }
         }
@@ -789,6 +828,9 @@ _builtin_typeof(struct brd_value *args, size_t num_args, struct brd_value *out)
                         break;
                 case BRD_HEAP_CLOSURE:
                         out->as.string = &closure_string;
+                        break;
+                case BRD_HEAP_CLASS:
+                        out->as.string = &object_string;
                         break;
                 }
         }

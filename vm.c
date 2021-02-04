@@ -394,6 +394,10 @@ brd_vm_destroy(void)
                         brd_value_closure_destroy(vm.heap->as.closure);
                         free(vm.heap->as.closure);
                         break;
+                case BRD_HEAP_CLASS:
+                        brd_value_class_destroy(vm.heap->as.class);
+                        free(vm.heap->as.class);
+                        break;
                 }
                 free(vm.heap);
                 vm.heap = n;
@@ -853,6 +857,10 @@ brd_vm_gc(void)
                 case BRD_HEAP_CLOSURE:
                         brd_value_closure_destroy(heap->as.closure);
                         free(heap->as.closure);
+                        break;
+                case BRD_HEAP_CLASS:
+                        brd_value_class_destroy(heap->as.class);
+                        free(heap->as.class);
                         break;
                 }
                 free(heap);
