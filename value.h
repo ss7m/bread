@@ -137,6 +137,7 @@ enum brd_builtin {
         BRD_BUILTIN_LENGTH,
         BRD_BUILTIN_TYPEOF,
         BRD_BUILTIN_SYSTEM,
+        BRD_BUILTIN_STRING,
         BRD_NUM_BUILTIN,
 };
 

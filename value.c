@@ -879,6 +879,17 @@ _builtin_system(struct brd_value *args, size_t num_args, struct brd_value *out)
         return false;
 }
 
+static int
+_builtin_string(struct brd_value *args, size_t num_args, struct brd_value *out)
+{
+        if (num_args != 1) {
+                BARF("@string accepts exactly one argument");
+        }
+
+        *out = args[0];
+        return brd_value_coerce_string(out);
+}
+
 enum brd_builtin brd_lookup_builtin(char *builtin)
 {
         for (int i = 0; i < BRD_NUM_BUILTIN; i++) {
@@ -897,6 +908,7 @@ const builtin_fn_dec builtin_function[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_LENGTH] = _builtin_length,
         [BRD_BUILTIN_TYPEOF] = _builtin_typeof,
         [BRD_BUILTIN_SYSTEM] = _builtin_system,
+        [BRD_BUILTIN_STRING] = _builtin_string,
 };
 
 const char *builtin_name[BRD_NUM_BUILTIN] = {
@@ -906,6 +918,7 @@ const char *builtin_name[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_LENGTH] = "length",
         [BRD_BUILTIN_TYPEOF] = "typeof",
         [BRD_BUILTIN_SYSTEM] = "system",
+        [BRD_BUILTIN_STRING] = "string",
 };
 
 #define MK_BUILTIN_STRING(str) { str, sizeof(str) - 1 }
@@ -917,6 +930,7 @@ struct brd_value_string builtin_string[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_LENGTH]  = MK_BUILTIN_STRING("@length"),
         [BRD_BUILTIN_TYPEOF]  = MK_BUILTIN_STRING("@typeof"),
         [BRD_BUILTIN_SYSTEM]  = MK_BUILTIN_STRING("@system"),
+        [BRD_BUILTIN_STRING]  = MK_BUILTIN_STRING("@string"),
 };
 
 struct brd_value_string number_string = MK_BUILTIN_STRING("number");
