@@ -274,7 +274,10 @@ brd_value_object_init(struct brd_value_object *object, struct brd_value_class *c
 void
 brd_value_object_destroy(struct brd_value_object *object)
 {
-        object->class->num_alive--;
+        /* if we're in brd_vm_destroy, then the class has probably already been freed */
+        if (!in_vm_destruction_phase) {
+                object->class->num_alive--;
+        }
         brd_value_map_destroy(&object->fields);
 }
 

@@ -9,7 +9,7 @@
 #define GROW 1.5
 
 struct brd_vm vm;
-int vm_error = false;
+int in_vm_destruction_phase = false;
 
 #ifdef DEBUG
 static void
@@ -375,6 +375,8 @@ mkbinop:
 void
 brd_vm_destroy(void)
 {
+        in_vm_destruction_phase = true;
+
         /* destroy globals */
         brd_heap_destroy(object_class.as.heap);
         free(object_class.as.heap);
@@ -424,43 +426,65 @@ brd_vm_init(void)
         vm.strings->string.s[0] = '\0';
         vm.strings->next = NULL;
 
-        /* the initial return is for the constructor of @Object */
-        vm.bc_length = sizeof(enum brd_bytecode);
+        /* the initial instructions are for the @Object constructor */
+        vm.bc_length = 0;
         vm.bc_capacity = LIST_SIZE;
         vm.bytecode = malloc(vm.bc_capacity);
-        *vm.bytecode = BRD_VM_RETURN;
 
         vm.fp = 0;
-        vm.frame[0].pc = 1;
+        vm.frame[0].pc = 0;
         brd_value_map_init(&vm.frame[0].vars);
+}
+
+static void
+brd_value_call_closure(struct brd_value_closure *closure, struct brd_value*args, size_t num_args)
+{
+
+        if (vm.fp >= FRAME_SIZE - 1) {
+                BARF("stack overflow error");
+        } else if (num_args != closure->num_args) {
+                BARF("wrong number of arguments");
+        }
+
+        vm.fp++;
+        vm.frame[vm.fp].pc = closure->pc;
+        vm.frame[vm.fp].vars = closure->env;
+
+        for (int i = 0; i < num_args; i++) {
+                brd_value_map_set(
+                        &vm.frame[vm.fp].vars,
+                        closure->args[i],
+                        &args[i]
+                );
+        }
 }
 
 static void
 brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
 {
         if (f->vtype == BRD_VAL_HEAP && f->as.heap->htype == BRD_HEAP_CLOSURE) {
-                /* this is suuuuper hacky */
-                struct brd_value_closure *closure = f->as.heap->as.closure;
-
-                if (vm.fp >= FRAME_SIZE - 1) {
-                        BARF("stack overflow error");
-                } else if (num_args != closure->num_args) {
-                        BARF("wrong number of arguments");
-                }
-
-                vm.fp++;
-                vm.frame[vm.fp].pc = closure->pc;
-                vm.frame[vm.fp].vars = closure->env;
-
-                for (int i = 0; i < num_args; i++) {
-                        brd_value_map_set(
-                                &vm.frame[vm.fp].vars,
-                                closure->args[i],
-                                &args[i]
-                        );
-                }
+                brd_value_call_closure(f->as.heap->as.closure, args, num_args);
         } else if (f->vtype == BRD_VAL_HEAP && f->as.heap->htype == BRD_HEAP_CLASS) {
-                BARF("you called a constructor! too bad I haven't implemented this.");
+                struct brd_value_class *class = f->as.heap->as.class;
+                struct brd_value object;
+
+                object.vtype = BRD_VAL_HEAP;
+                object.as.heap = malloc(sizeof(*object.as.heap));
+                object.as.heap->htype = BRD_HEAP_OBJECT;
+                object.as.heap->as.object = malloc(sizeof(struct brd_value_object));
+                brd_value_object_init(object.as.heap->as.object, class);
+                brd_vm_allocate(object.as.heap);
+
+                /*
+                 * if we're constructing from @Object, then just push
+                 * the new object onto the stack
+                 */
+                if (f->as.heap->as.class == object_class.as.heap->as.class) {
+                        brd_stack_push(&vm.stack, &object);
+                } else {
+                        brd_value_map_set(&class->constructor.env, "this", &object);
+                        brd_value_call_closure(&class->constructor, args, num_args);
+                }
         } else {
                 BARF("attempted to call a non-callable");
         }

@@ -20,7 +20,7 @@ extern int found_eof;
 extern const char *error_message;
 extern char bad_character[2];
 
-extern int vm_error;
+extern int in_vm_destruction_phase;
 
 #ifdef DEBUG
 #define BARFA(fmt, ...) do { \
