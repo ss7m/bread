@@ -21,6 +21,7 @@ enum brd_heap_type {
         BRD_HEAP_LIST,
         BRD_HEAP_CLOSURE,
         BRD_HEAP_CLASS,
+        BRD_HEAP_OBJECT,
 };
 
 struct brd_value_list {
@@ -49,6 +50,7 @@ struct brd_heap_entry {
                 struct brd_value_list *list;
                 struct brd_value_closure *closure;
                 struct brd_value_class *class;
+                struct brd_value_object *object;
         } as;
 
         int marked; /* for GC */
@@ -56,6 +58,7 @@ struct brd_heap_entry {
         enum brd_heap_type htype;
 };
 
+void brd_heap_destroy(struct brd_heap_entry *entry);
 void brd_heap_mark(struct brd_heap_entry *entry);
 
 enum brd_value_type {

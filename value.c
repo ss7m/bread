@@ -67,6 +67,32 @@ brd_value_string_new(char *s)
         return string;
 }
 
+void brd_heap_destroy(struct brd_heap_entry *entry)
+{
+        switch(entry->htype) {
+        case BRD_HEAP_STRING:
+                free(entry->as.string->s);
+                free(entry->as.string);
+                break;
+        case BRD_HEAP_LIST:
+                free(entry->as.list->items);
+                free(entry->as.list);
+                break;
+        case BRD_HEAP_CLOSURE:
+                brd_value_closure_destroy(entry->as.closure);
+                free(entry->as.closure);
+                break;
+        case BRD_HEAP_CLASS:
+                brd_value_class_destroy(entry->as.class);
+                free(entry->as.class);
+                break;
+        case BRD_HEAP_OBJECT:
+                brd_value_object_destroy(entry->as.object);
+                free(entry->as.object);
+                break;
+        }
+}
+
 void
 brd_heap_mark(struct brd_heap_entry *entry)
 {
@@ -90,6 +116,11 @@ brd_heap_mark(struct brd_heap_entry *entry)
                 break;
         case BRD_HEAP_CLASS:
                 brd_value_map_mark(&entry->as.class->methods);
+                break;
+        case BRD_HEAP_OBJECT:
+                /* FIXME: mark the containing class */
+                brd_value_map_mark(&entry->as.object->fields);
+                break;
         }
 }
 
@@ -286,6 +317,9 @@ brd_value_debug(struct brd_value *value)
                 case BRD_HEAP_CLASS:
                         printf("<< class >>");
                         break;
+                case BRD_HEAP_OBJECT:
+                        printf("<< object >>");
+                        break;
                 }
         }
 }
@@ -334,6 +368,9 @@ brd_value_coerce_num(struct brd_value *value)
                 case BRD_HEAP_CLASS:
                         BARF("can't coerce a class into a number");
                         break;
+                case BRD_HEAP_OBJECT:
+                        BARF("can't coerce an object into a number");
+                        break;
                 }
                 break;
         }
@@ -380,6 +417,10 @@ brd_value_coerce_string(struct brd_value *value)
                         value->as.string = &closure_string;
                         return false;
                 case BRD_HEAP_CLASS:
+                        value->vtype = BRD_VAL_STRING;
+                        value->as.string = &class_string;
+                        return false;
+                case BRD_HEAP_OBJECT:
                         value->vtype = BRD_VAL_STRING;
                         value->as.string = &class_string;
                         return false;
@@ -453,6 +494,8 @@ brd_value_truthify(struct brd_value *value)
                         return true;
                 case BRD_HEAP_CLASS:
                         return true;
+                case BRD_HEAP_OBJECT:
+                        return true;
                 }
         }
         BARF("what?");
@@ -498,6 +541,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         case BRD_HEAP_CLASS:
                                 BARF("can't compare a class and a string");
                                 return -1;
+                        case BRD_HEAP_OBJECT:
+                                BARF("can't compare an object and a string");
+                                return -1;
                         }
                 }
                 break;
@@ -532,6 +578,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         case BRD_HEAP_CLASS:
                                 BARF("can't compare a class and a boolean");
                                 return -1;
+                        case BRD_HEAP_OBJECT:
+                                BARF("can't compare an object and a boolean");
+                                return -1;
                         }
                 }
                 break;
@@ -560,6 +609,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                 return -1;
                         case BRD_HEAP_CLASS:
                                 BARF("can't compare a class and a unit");
+                                return -1;
+                        case BRD_HEAP_OBJECT:
+                                BARF("can't compare an object and a unit");
                                 return -1;
                         }
                 }
@@ -606,6 +658,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                                 case BRD_HEAP_CLASS:
                                         BARF("can't compare a class and a string");
                                         return -1;
+                                case BRD_HEAP_OBJECT:
+                                        BARF("can't compare an object and a string");
+                                        return -1;
                                 }
                         }
                         break;
@@ -623,6 +678,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         return -1;
                 case BRD_HEAP_CLASS:
                         BARF("can't compare classes");
+                        return -1;
+                case BRD_HEAP_OBJECT:
+                        BARF("can't compare objects");
                         return -1;
                 }
         }
@@ -722,6 +780,9 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                                 break;
                         case BRD_HEAP_CLASS:
                                 printf("<< class >>");
+                                break;
+                        case BRD_HEAP_OBJECT:
+                                printf("<< object >>");
                                 break;
                         }
                 }
@@ -830,6 +891,9 @@ _builtin_typeof(struct brd_value *args, size_t num_args, struct brd_value *out)
                         out->as.string = &closure_string;
                         break;
                 case BRD_HEAP_CLASS:
+                        out->as.string = &class_string;
+                        break;
+                case BRD_HEAP_OBJECT:
                         out->as.string = &object_string;
                         break;
                 }

@@ -381,24 +381,7 @@ brd_vm_destroy(void)
         /* note to self: for container types, don't free the members! */
         while (vm.heap != NULL) {
                 struct brd_heap_entry *n = vm.heap->next;
-                switch(vm.heap->htype) {
-                case BRD_HEAP_STRING:
-                        free(vm.heap->as.string->s);
-                        free(vm.heap->as.string);
-                        break;
-                case BRD_HEAP_LIST:
-                        free(vm.heap->as.list->items);
-                        free(vm.heap->as.list);
-                        break;
-                case BRD_HEAP_CLOSURE:
-                        brd_value_closure_destroy(vm.heap->as.closure);
-                        free(vm.heap->as.closure);
-                        break;
-                case BRD_HEAP_CLASS:
-                        brd_value_class_destroy(vm.heap->as.class);
-                        free(vm.heap->as.class);
-                        break;
-                }
+                brd_heap_destroy(vm.heap);
                 free(vm.heap);
                 vm.heap = n;
         }
@@ -468,6 +451,8 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                                 &args[i]
                         );
                 }
+        } else if (f->vtype == BRD_VAL_HEAP && f->as.heap->htype == BRD_HEAP_CLASS) {
+                BARF("you called a constructor! too bad I haven't implemented this.");
         } else {
                 BARF("attempted to call a non-callable");
         }
@@ -845,24 +830,7 @@ brd_vm_gc(void)
                 }
 
                 prev->next = next;
-                switch(heap->htype) {
-                case BRD_HEAP_STRING:
-                        free(heap->as.string->s);
-                        free(heap->as.string);
-                        break;
-                case BRD_HEAP_LIST:
-                        free(heap->as.list->items);
-                        free(heap->as.list);
-                        break;
-                case BRD_HEAP_CLOSURE:
-                        brd_value_closure_destroy(heap->as.closure);
-                        free(heap->as.closure);
-                        break;
-                case BRD_HEAP_CLASS:
-                        brd_value_class_destroy(heap->as.class);
-                        free(heap->as.class);
-                        break;
-                }
+                brd_heap_destroy(heap);
                 free(heap);
                 heap = next;
         }
