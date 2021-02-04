@@ -10,6 +10,10 @@
 
 struct brd_value;
 struct brd_value_closure;
+struct brd_value_list;
+struct brd_value_map;
+struct brd_value_string;
+struct brd_value_class;
 
 enum brd_heap_type {
         BRD_HEAP_STRING,
@@ -98,6 +102,22 @@ struct brd_value_closure {
 void brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t num_args, size_t pc);
 void brd_value_closure_destroy(struct brd_value_closure *closure);
 
+struct brd_value_class {
+        struct brd_value_closure constructor;
+        struct brd_value_map methods;
+};
+
+void brd_value_class_init(struct brd_value_class *class);
+void brd_value_class_destroy(struct brd_value_class *class);
+
+struct brd_value_object {
+        struct brd_value_class *class;
+        struct brd_value_map fields;
+};
+
+void brd_value_object_init(struct brd_value_object *object, struct brd_value_class *class);
+void brd_value_object_destroy(struct brd_value_object *object);
+
 void brd_value_debug(struct brd_value *value);
 int brd_value_is_string(struct brd_value *value);
 void brd_value_coerce_num(struct brd_value *value);
@@ -123,6 +143,8 @@ typedef int (*builtin_fn_dec)(
         struct brd_value *out
 );
 
+enum brd_builtin brd_lookup_builtin(char *builtin);
+
 extern const builtin_fn_dec builtin_function[BRD_NUM_BUILTIN];
 
 extern const char *builtin_name[BRD_NUM_BUILTIN];
@@ -137,6 +159,7 @@ extern struct brd_value_string closure_string;
 extern struct brd_value_string true_string;
 extern struct brd_value_string false_string;
 
-enum brd_builtin brd_lookup_builtin(char *builtin);
+/* the @Object class */
+extern struct brd_value_class object_class;
 
 #endif

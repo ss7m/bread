@@ -217,6 +217,32 @@ brd_value_closure_destroy(struct brd_value_closure *closure)
 }
 
 void
+brd_value_class_init(struct brd_value_class *class)
+{
+        brd_value_map_init(&class->methods);
+}
+
+void
+brd_value_class_destroy(struct brd_value_class *class)
+{
+        brd_value_map_destroy(&class->methods);
+        brd_value_closure_destroy(&class->constructor);
+}
+
+void
+brd_value_object_init(struct brd_value_object *object, struct brd_value_class *class)
+{
+        object->class = class;
+        brd_value_map_init(&object->fields);
+}
+
+void
+brd_value_object_destroy(struct brd_value_object *object)
+{
+        brd_value_map_destroy(&object->fields);
+}
+
+void
 brd_value_debug(struct brd_value *value)
 {
         switch (value->vtype) {
@@ -253,7 +279,7 @@ brd_value_debug(struct brd_value *value)
                         printf(" ]");
                         break;
                 case BRD_HEAP_CLOSURE:
-                        printf("closure");
+                        printf("<< closure >>");
                         break;
                 }
         }
@@ -340,7 +366,8 @@ brd_value_coerce_string(struct brd_value *value)
                         BARF("write this");
                         return true;
                 case BRD_HEAP_CLOSURE:
-                        BARF("can't convert a closure to a string");
+                        value->vtype = BRD_VAL_STRING;
+                        value->as.string = &closure_string;
                         return -1;
                 }
         }
@@ -656,7 +683,7 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                                 printf(" ]");
                                 break;
                         case BRD_HEAP_CLOSURE:
-                                printf("closure");
+                                printf("<< closure >>");
                         }
                 }
         }
@@ -855,8 +882,10 @@ struct brd_value_string string_string = MK_BUILTIN_STRING("string");
 struct brd_value_string boolean_string = MK_BUILTIN_STRING("boolean");
 struct brd_value_string unit_string = MK_BUILTIN_STRING("unit");
 struct brd_value_string list_string = MK_BUILTIN_STRING("list");
-struct brd_value_string closure_string = MK_BUILTIN_STRING("closure");
+struct brd_value_string closure_string = MK_BUILTIN_STRING("<< closure >>");
 struct brd_value_string true_string = MK_BUILTIN_STRING("true");
 struct brd_value_string false_string = MK_BUILTIN_STRING("false");
+
+struct brd_value_class object_class;
 
 #undef MK_BUILTIN_STRING

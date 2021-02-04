@@ -375,6 +375,9 @@ mkbinop:
 void
 brd_vm_destroy(void)
 {
+        /* destroy builtin stuff */
+        brd_value_class_destroy(&object_class);
+
         /* note to self: for container types, don't free the members! */
         while (vm.heap != NULL) {
                 struct brd_heap_entry *n = vm.heap->next;
@@ -410,6 +413,10 @@ brd_vm_destroy(void)
 void
 brd_vm_init(void)
 {
+        /* initialize builtin stuff */
+        brd_value_class_init(&object_class);
+        brd_value_closure_init(&object_class.constructor, malloc(0), 0, 0);
+
         vm.heap = malloc(sizeof(*vm.heap));
         vm.heap->next = NULL;
         vm.heap->htype = BRD_HEAP_STRING;
@@ -422,12 +429,14 @@ brd_vm_init(void)
         vm.strings->string.s[0] = '\0';
         vm.strings->next = NULL;
 
-        vm.bc_length = 0;
+        /* the initial return is for the constructor of @Object */
+        vm.bc_length = sizeof(enum brd_bytecode);
         vm.bc_capacity = LIST_SIZE;
         vm.bytecode = malloc(vm.bc_capacity);
+        *vm.bytecode = BRD_VM_RETURN;
 
         vm.fp = 0;
-        vm.frame[0].pc = 0;
+        vm.frame[0].pc = 1;
         brd_value_map_init(&vm.frame[0].vars);
 }
 
@@ -817,7 +826,6 @@ brd_vm_gc(void)
         }
 
         /* mark values held by variables */
-        /* TODO this might be broken */
         for (int i = 0; i <= vm.fp; i++) {
                 brd_value_map_mark(&vm.frame[i].vars);
         }

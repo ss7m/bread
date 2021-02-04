@@ -15,7 +15,7 @@ highlight link breadKeyword Keyword
 syntax keyword breadBoolean true false
 highlight link breadBoolean Boolean
 
-syntax keyword breadSpecial unit self
+syntax keyword breadSpecial unit self this
 highlight link breadSpecial Special
 
 syntax match breadBuiltin "\v\@[_a-zA-Z0-9]+"

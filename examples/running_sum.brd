@@ -1,36 +1,37 @@
-set RunningSum = define Object subclass
+set RunningSum = @Object subclass
     # this is a special function, which will be called by RunningSum.new()
-    set init = function()
-        set self.sum = 0
-        set self.sum_sq = 0
-        set self.n = 0
+    constructor(this)
+        set this.sum = 0
+        set this.sum_sq = 0
+        set this.n = 0
     end
 
     set update = function(num)
-        set self.sum = self.sum + num
-        set self.sum_sq = self.sum_sq + num^2
-        set self.n = self.n + 1
+        set this.sum = this.sum + num
+        set this.sum_sq = this.sum_sq + num^2
+        set this.n = this.n + 1
     end
 
     set mean = function()
-        return self.sum / self.n
+        this.sum / this.n
     end
 
     set stdev = function()
-        return ((self.sum_sq / self.n) - ((self.sum / self.n) ^ 2)) ^ 0.5
+        ((this.sum_sq / this.n) - ((this.sum / this.n) ^ 2)) ^ 0.5
     end
 end
 
 set x = RunningSum.new()
-x.update(50)
-x.update(100.5)
-@writeln(x.mean())
-@writeln(x.stdev())
+x::update(50)
+x::update(100.5)
+@writeln(x::mean())
+@writeln(x::stdev())
+@writeln(x.sum)
 
 set RunningSumDebug = define RunningSum subclass
     set update = function(num)
-        super.update(num)
-        @writeln(self.mean())
-        @writeln(self.stdev())
+        super::update(num)
+        @writeln(this::mean())
+        @writeln(this::stdev())
     end
 end
