@@ -375,8 +375,9 @@ mkbinop:
 void
 brd_vm_destroy(void)
 {
-        /* destroy builtin stuff */
-        brd_value_class_destroy(&object_class);
+        /* destroy globals */
+        brd_heap_destroy(object_class.as.heap);
+        free(object_class.as.heap);
 
         /* note to self: for container types, don't free the members! */
         while (vm.heap != NULL) {
@@ -400,9 +401,16 @@ brd_vm_destroy(void)
 void
 brd_vm_init(void)
 {
-        /* initialize builtin stuff */
-        brd_value_class_init(&object_class);
-        brd_value_closure_init(&object_class.constructor, malloc(0), 0, 0);
+        /* initialize gloabls */
+        object_class.vtype = BRD_VAL_HEAP;
+        object_class.as.heap = malloc(sizeof(*object_class.as.heap));
+        object_class.as.heap->htype = BRD_HEAP_CLASS;
+        object_class.as.heap->as.class = malloc(sizeof(struct brd_value_class));
+        brd_value_class_init(object_class.as.heap->as.class);
+        brd_value_closure_init(
+                &object_class.as.heap->as.class->constructor,
+                malloc(0), 0, 0
+        );
 
         vm.heap = malloc(sizeof(*vm.heap));
         vm.heap->next = NULL;
@@ -462,6 +470,7 @@ void
 brd_vm_run(void)
 {
         enum brd_bytecode op;
+        enum brd_builtin b;
         struct brd_value value1, value2, value3, *valuep;
         char *id;
         char **args;
@@ -667,9 +676,15 @@ brd_vm_run(void)
                         vm.frame[vm.fp].pc -= jmp;
                         break;
                 case BRD_VM_BUILTIN:
-                        value1.vtype = BRD_VAL_BUILTIN;
-                        value1.as.builtin = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
+                        b = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
                         vm.frame[vm.fp].pc += sizeof(size_t);
+
+                        if (b == BRD_GLOBAL_OBJECT) {
+                                value1 = object_class;
+                        } else {
+                                value1.vtype = BRD_VAL_BUILTIN;
+                                value1.as.builtin = b;
+                        }
                         brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_CALL:
@@ -804,6 +819,10 @@ brd_vm_gc(void)
         heap = vm.heap->next;
         while (heap != NULL) {
                 heap->marked = false;
+                /* keep classes alive when they have objects */
+                if (heap->htype == BRD_HEAP_CLASS && heap->as.class->num_alive > 0) {
+                        heap->marked = true;
+                }
                 heap = heap->next;
         }
 

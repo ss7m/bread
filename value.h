@@ -111,6 +111,9 @@ void brd_value_closure_destroy(struct brd_value_closure *closure);
 struct brd_value_class {
         struct brd_value_closure constructor;
         struct brd_value_map methods;
+        /* keeps track of how many instances there are */
+        /* used to keep it from getting GCed when objects still exist */
+        int num_alive;
 };
 
 void brd_value_class_init(struct brd_value_class *class);
@@ -142,6 +145,7 @@ enum brd_builtin {
         BRD_BUILTIN_SYSTEM,
         BRD_BUILTIN_STRING,
         BRD_NUM_BUILTIN,
+        BRD_GLOBAL_OBJECT,
 };
 
 typedef int (*builtin_fn_dec)(
@@ -169,6 +173,6 @@ extern struct brd_value_string true_string;
 extern struct brd_value_string false_string;
 
 /* the @Object class */
-extern struct brd_value_class object_class;
+extern struct brd_value object_class;
 
 #endif

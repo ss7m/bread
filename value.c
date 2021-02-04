@@ -253,6 +253,7 @@ void
 brd_value_class_init(struct brd_value_class *class)
 {
         brd_value_map_init(&class->methods);
+        class->num_alive = 0;
 }
 
 void
@@ -266,12 +267,14 @@ void
 brd_value_object_init(struct brd_value_object *object, struct brd_value_class *class)
 {
         object->class = class;
+        object->class->num_alive++;
         brd_value_map_init(&object->fields);
 }
 
 void
 brd_value_object_destroy(struct brd_value_object *object)
 {
+        object->class->num_alive--;
         brd_value_map_destroy(&object->fields);
 }
 
@@ -962,6 +965,10 @@ enum brd_builtin brd_lookup_builtin(char *builtin)
                 }
         }
 
+        if (strcmp("Object", builtin) == 0) {
+                return BRD_GLOBAL_OBJECT;
+        }
+
         BARFA("Unknown builtin: %s", builtin);
 }
 
@@ -1008,6 +1015,6 @@ struct brd_value_string object_string = MK_BUILTIN_STRING("object");
 struct brd_value_string true_string = MK_BUILTIN_STRING("true");
 struct brd_value_string false_string = MK_BUILTIN_STRING("false");
 
-struct brd_value_class object_class;
+struct brd_value object_class;
 
 #undef MK_BUILTIN_STRING
