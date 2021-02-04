@@ -156,6 +156,8 @@ extern struct brd_value_string boolean_string;
 extern struct brd_value_string unit_string;
 extern struct brd_value_string list_string;
 extern struct brd_value_string closure_string;
+extern struct brd_value_string class_string;
+extern struct brd_value_string object_string;
 extern struct brd_value_string true_string;
 extern struct brd_value_string false_string;
 

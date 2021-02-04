@@ -869,12 +869,12 @@ const char *builtin_name[BRD_NUM_BUILTIN] = {
 #define MK_BUILTIN_STRING(str) { str, sizeof(str) - 1 }
 
 struct brd_value_string builtin_string[BRD_NUM_BUILTIN] = {
-        [BRD_BUILTIN_WRITE]   = MK_BUILTIN_STRING("<< write >>"),
-        [BRD_BUILTIN_WRITELN] = MK_BUILTIN_STRING("<< writeln >>"),
-        [BRD_BUILTIN_READLN]  = MK_BUILTIN_STRING("<< readln >>"),
-        [BRD_BUILTIN_LENGTH]  = MK_BUILTIN_STRING("<< length >>"),
-        [BRD_BUILTIN_TYPEOF]  = MK_BUILTIN_STRING("<< typeof >>"),
-        [BRD_BUILTIN_SYSTEM]  = MK_BUILTIN_STRING("<< system >>"),
+        [BRD_BUILTIN_WRITE]   = MK_BUILTIN_STRING("@write"),
+        [BRD_BUILTIN_WRITELN] = MK_BUILTIN_STRING("@writeln"),
+        [BRD_BUILTIN_READLN]  = MK_BUILTIN_STRING("@readln"),
+        [BRD_BUILTIN_LENGTH]  = MK_BUILTIN_STRING("@length"),
+        [BRD_BUILTIN_TYPEOF]  = MK_BUILTIN_STRING("@typeof"),
+        [BRD_BUILTIN_SYSTEM]  = MK_BUILTIN_STRING("@system"),
 };
 
 struct brd_value_string number_string = MK_BUILTIN_STRING("number");
@@ -882,7 +882,9 @@ struct brd_value_string string_string = MK_BUILTIN_STRING("string");
 struct brd_value_string boolean_string = MK_BUILTIN_STRING("boolean");
 struct brd_value_string unit_string = MK_BUILTIN_STRING("unit");
 struct brd_value_string list_string = MK_BUILTIN_STRING("list");
-struct brd_value_string closure_string = MK_BUILTIN_STRING("<< closure >>");
+struct brd_value_string closure_string = MK_BUILTIN_STRING("closure");
+struct brd_value_string class_string = MK_BUILTIN_STRING("class");
+struct brd_value_string object_string = MK_BUILTIN_STRING("object");
 struct brd_value_string true_string = MK_BUILTIN_STRING("true");
 struct brd_value_string false_string = MK_BUILTIN_STRING("false");
 
