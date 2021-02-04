@@ -6,7 +6,9 @@ CFLAGS=-Wall -Wextra -std=c99 -pedantic -fshort-enums -lm  -Werror \
 	   -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes \
 	   -Wdeclaration-after-statement -Wno-sign-compare -Wstrict-prototypes \
 	   -Wold-style-definition -Wvla \
-	   $(foreach p,$(LIBS),$(shell pkg-config --cflags --libs $(p)))
+	   $(foreach p,$(LIBS),$(shell pkg-config --cflags $(p)))
+
+LDFLAGS=$(foreach p,$(LIBS),$(shell pkg-config --libs $(p))) -lm
 
 SRCS=main.c ast.c vm.c token.c parse.c value.c
 OBJS=$(SRCS:.c=.o)
@@ -43,7 +45,7 @@ prep:
 debug: $(DBGEXE)
 
 $(DBGEXE): $(DBGOBJS)
-	$(CC) $(CFLAGS) $(DBGCFLAGS) $^ -o $(DBGEXE)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(DBGCFLAGS) $^ -o $(DBGEXE)
 
 $(DBGDIR)/%.o: %.c $(HDRS)
 	$(CC) -c $(CFLAGS) $(DBGCFLAGS) $< -o $@
@@ -55,7 +57,7 @@ $(DBGDIR)/%.o: %.c $(HDRS)
 release: $(RELEXE)
 
 $(RELEXE): $(RELOBJS)
-	$(CC) $(CFLAGS) $(RELCFLAGS) $^ -o $(RELEXE)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(RELCFLAGS) $^ -o $(RELEXE)
 
 $(RELDIR)/%.o: %.c $(HDRS)
 	$(CC) -c $(CFLAGS) $(RELCFLAGS) $< -o $@
