@@ -62,6 +62,8 @@ enum brd_token {
         BRD_TOK_WHILE,
         BRD_TOK_DO,
 
+        BRD_TOK_MEMBER,
+
         /* keywords */
         BRD_TOK_SET,
 };

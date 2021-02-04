@@ -318,7 +318,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 string += 2;
                         } else {
                                 brd_token_list_add_token(list, BRD_TOK_LT);
-                                string ++;
+                                string++;
                         }
                         break;
                 case '>':
@@ -327,7 +327,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 string += 2;
                         } else {
                                 brd_token_list_add_token(list, BRD_TOK_GT);
-                                string ++;
+                                string++;
                         }
                         break;
                 case '=':
@@ -339,9 +339,8 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_CONCAT);
                                 string += 2;
                         } else {
-                                error_message = "dot operator not implemented yet";
-                                bad_character[0] = '\0';
-                                return false;
+                                brd_token_list_add_token(list, BRD_TOK_MEMBER);
+                                string++;
                         }
                         break;
                 case '!':
