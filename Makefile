@@ -2,7 +2,7 @@ INSTALL_DIR=$(HOME)/.local/bin
 
 LIBS=
 
-CFLAGS=-Wall -Wextra -std=c99 -pedantic -fshort-enums -lm  -Werror \
+CFLAGS=-Wall -Wextra -std=c99 -pedantic -fshort-enums -Werror \
 	   -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes \
 	   -Wdeclaration-after-statement -Wno-sign-compare -Wstrict-prototypes \
 	   -Wold-style-definition -Wvla \

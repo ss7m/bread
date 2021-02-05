@@ -53,8 +53,8 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_PUSH: printf("BRD_VM_PUSH\n"); return;
         case BRD_VM_GET_IDX: printf("BRD_VM_GET_IDX\n"); return;
         case BRD_VM_SET_IDX: printf("BRD_VM_SET_IDX\n"); return;
-        case BRD_VM_GET_MEMBER: printf("BRD_VM_GET_MEMBER\n"); return;
-        case BRD_VM_SET_MEMBER: printf("BRD_VM_SET_MEMBER\n"); return;
+        case BRD_VM_GET_FIELD: printf("BRD_VM_GET_FIELD\n"); return;
+        case BRD_VM_SET_FIELD: printf("BRD_VM_SET_FIELD\n"); return;
         }
         printf("oops\n");
 }
@@ -169,10 +169,10 @@ brd_node_compile_lvalue(struct brd_node *node)
                 brd_node_compile(AS(index, node)->idx);
                 ADD_OP(BRD_VM_SET_IDX);
                 break;
-        case BRD_NODE_MEMBER:
-                brd_node_compile(AS(member, node)->object);
-                ADD_OP(BRD_VM_SET_MEMBER);
-                ADD_STR(AS(member, node)->field);
+        case BRD_NODE_FIELD:
+                brd_node_compile(AS(field, node)->object);
+                ADD_OP(BRD_VM_SET_FIELD);
+                ADD_STR(AS(field, node)->field);
                 break;
         default:
                 BARF("This shouldn't happen.");
@@ -362,10 +362,10 @@ mkbinop:
                         ADD_OP(BRD_VM_UNIT);
                 }
                 break;
-        case BRD_NODE_MEMBER:
-                brd_node_compile(AS(member, node)->object);
-                ADD_OP(BRD_VM_GET_MEMBER);
-                ADD_STR(AS(member, node)->field);
+        case BRD_NODE_FIELD:
+                brd_node_compile(AS(field, node)->object);
+                ADD_OP(BRD_VM_GET_FIELD);
+                ADD_STR(AS(field, node)->field);
                 break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
@@ -393,7 +393,6 @@ brd_vm_destroy(void)
         brd_heap_destroy(object_class.as.heap);
         free(object_class.as.heap);
 
-        /* note to self: for container types, don't free the members! */
         while (vm.heap != NULL) {
                 struct brd_heap_entry *n = vm.heap->next;
                 brd_heap_destroy(vm.heap);
@@ -820,7 +819,7 @@ brd_vm_run(void)
                                 &value1
                         );
                         break;
-                case BRD_VM_GET_MEMBER:
+                case BRD_VM_GET_FIELD:
                         READ_STRING_INTO(value1.as.string);
                         id = value1.as.string->s;
                         value1 = *brd_stack_pop(&vm.stack);
@@ -839,7 +838,7 @@ brd_vm_run(void)
                                 brd_stack_push(&vm.stack, valuep);
                         }
                         break;
-                case BRD_VM_SET_MEMBER:
+                case BRD_VM_SET_FIELD:
                         READ_STRING_INTO(value1.as.string);
                         id = value1.as.string->s;
                         value1 = *brd_stack_pop(&vm.stack);

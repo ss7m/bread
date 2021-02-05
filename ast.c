@@ -367,21 +367,21 @@ brd_node_while_new(int no_list, struct brd_node *cond, struct brd_node *body)
 }
 
 static void
-brd_node_member_destroy(struct brd_node *n)
+brd_node_field_destroy(struct brd_node *n)
 {
-        struct brd_node_member *m = (struct brd_node_member *)n;
+        struct brd_node_field *m = (struct brd_node_field *)n;
         brd_node_destroy(m->object);
         free(m->field);
         _brd_node_destroy(n);
 }
 
 struct brd_node *
-brd_node_member_new(struct brd_node *object, char *field)
+brd_node_field_new(struct brd_node *object, char *field)
 {
-        struct brd_node_member *n = malloc(sizeof(*n));
-        n->_node.ntype = BRD_NODE_MEMBER;
+        struct brd_node_field *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_FIELD;
         n->_node.line_number = line_number;
-        n->_node.destroy = brd_node_member_destroy;
+        n->_node.destroy = brd_node_field_destroy;
         n->object = object;
         n->field = strdup(field);
         return (struct brd_node *)n;

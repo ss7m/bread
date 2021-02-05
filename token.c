@@ -339,7 +339,7 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_CONCAT);
                                 string += 2;
                         } else {
-                                brd_token_list_add_token(list, BRD_TOK_MEMBER);
+                                brd_token_list_add_token(list, BRD_TOK_FIELD);
                                 string++;
                         }
                         break;
