@@ -851,7 +851,7 @@ brd_vm_run(void)
                                 &value1.as.heap->as.object->fields,
                                 id, &value2
                         );
-                        brd_stack_push(&vm.stack, &value1);
+                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_RETURN:
                         if (vm.fp == 0) {
