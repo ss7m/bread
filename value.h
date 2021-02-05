@@ -25,7 +25,6 @@ struct brd_value_map;
 struct brd_value_string;
 struct brd_value_class;
 struct brd_value_object;
-struct brd_value_method;
 
 enum brd_heap_type {
         BRD_HEAP_STRING,
@@ -77,7 +76,13 @@ enum brd_value_type {
         BRD_VAL_BOOL,
         BRD_VAL_UNIT,
         BRD_VAL_BUILTIN,
+        BRD_VAL_METHOD,
         BRD_VAL_HEAP,
+};
+
+struct brd_value_method {
+        struct brd_value_object *this;
+        struct brd_value_closure *fn;
 };
 
 struct brd_value {
@@ -86,6 +91,7 @@ struct brd_value {
                 struct brd_value_string *string;
                 int boolean;
                 int builtin;
+                struct brd_value_method method;
                 struct brd_heap_entry *heap;
         } as;
         enum brd_value_type vtype;
@@ -136,14 +142,6 @@ struct brd_value_object {
 void brd_value_object_init(struct brd_value_object *object, struct brd_value_class *class);
 void brd_value_object_destroy(struct brd_value_object *object);
 
-struct brd_value_method {
-        struct brd_value_object *this;
-        struct brd_value_closure *fn;
-};
-
-void brd_value_method_init(struct brd_value_method *method, struct brd_value_object *this, struct brd_value_closure *fn);
-void brd_value_method_destroy(struct brd_value_method *method);
-
 void brd_value_debug(struct brd_value *value);
 int brd_value_is_string(struct brd_value *value);
 void brd_value_coerce_num(struct brd_value *value);
@@ -182,6 +180,7 @@ extern struct brd_value_string number_string;
 extern struct brd_value_string string_string;
 extern struct brd_value_string boolean_string;
 extern struct brd_value_string unit_string;
+extern struct brd_value_string method_string;
 extern struct brd_value_string list_string;
 extern struct brd_value_string closure_string;
 extern struct brd_value_string class_string;

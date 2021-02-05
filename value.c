@@ -277,22 +277,6 @@ brd_value_object_destroy(struct brd_value_object *object)
 }
 
 void
-brd_value_method_init(
-        struct brd_value_method *method,
-        struct brd_value_object *this,
-        struct brd_value_closure *fn)
-{
-        method->this = this;
-        method->fn = fn;
-}
-
-void
-brd_value_method_destroy(struct brd_value_method *method)
-{
-        (void)method;
-}
-
-void
 brd_value_debug(struct brd_value *value)
 {
         switch (value->vtype) {
@@ -310,6 +294,9 @@ brd_value_debug(struct brd_value *value)
                 break;
         case BRD_VAL_BUILTIN:
                 printf("<< builtin: %s >>", builtin_name[value->as.builtin]);
+                break;
+        case BRD_VAL_METHOD:
+                printf("<< method >>");
                 break;
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
@@ -371,6 +358,9 @@ brd_value_coerce_num(struct brd_value *value)
         case BRD_VAL_BUILTIN:
                 BARF("builtin functions can't be coerced to a number");
                 break;
+        case BRD_VAL_METHOD:
+                BARF("can't coerce a method into a number");
+                break;
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
@@ -422,6 +412,10 @@ brd_value_coerce_string(struct brd_value *value)
                 value->vtype = BRD_VAL_STRING;
                 value->as.string = &builtin_string[value->as.builtin];
                 return false;
+        case BRD_VAL_METHOD:
+                value->vtype = BRD_VAL_STRING;
+                value->as.string = &method_string;
+                break;
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
@@ -501,6 +495,8 @@ brd_value_truthify(struct brd_value *value)
                 return false;
         case BRD_VAL_BUILTIN:
                 return true;
+        case BRD_VAL_METHOD:
+                return true;
         case BRD_VAL_HEAP:
                 switch(value->as.heap->htype) {
                 case BRD_HEAP_STRING:
@@ -542,6 +538,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                 case BRD_VAL_BUILTIN:
                         BARF("can't compare functions");
                         break;
+                case BRD_VAL_METHOD:
+                        BARF("can't compare functions");
+                        break;
                 case BRD_VAL_HEAP:
                         switch (b->as.heap->htype) {
                         case BRD_HEAP_STRING:
@@ -579,6 +578,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                 case BRD_VAL_BUILTIN:
                         BARF("can't compare functions");
                         break;
+                case BRD_VAL_METHOD:
+                        BARF("can't compare functions");
+                        break;
                 case BRD_VAL_HEAP:
                         switch (b->as.heap->htype) {
                         case BRD_HEAP_STRING:
@@ -614,6 +616,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                 case BRD_VAL_BUILTIN:
                         BARF("can't compare functions");
                         break;
+                case BRD_VAL_METHOD:
+                        BARF("can't compare functions");
+                        break;
                 case BRD_VAL_HEAP:
                         switch (b->as.heap->htype) {
                         case BRD_HEAP_STRING:
@@ -634,6 +639,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                 }
                 break;
         case BRD_VAL_BUILTIN:
+                BARF("can't compare functions");
+                break;
+        case BRD_VAL_METHOD:
                 BARF("can't compare functions");
                 break;
         case BRD_VAL_HEAP:
@@ -657,6 +665,9 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         case BRD_VAL_UNIT:
                                 return a->as.heap->as.string->length;
                         case BRD_VAL_BUILTIN:
+                                BARF("can't compare functions");
+                                break;
+                        case BRD_VAL_METHOD:
                                 BARF("can't compare functions");
                                 break;
                         case BRD_VAL_HEAP:
@@ -772,6 +783,9 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                         break;
                 case BRD_VAL_BUILTIN:
                         printf("%s", builtin_name[value.as.builtin]);
+                        break;
+                case BRD_VAL_METHOD:
+                        printf("<< method >>");
                         break;
                 case BRD_VAL_HEAP:
                         switch (value.as.heap->htype) {
@@ -895,6 +909,9 @@ _builtin_typeof(struct brd_value *args, size_t num_args, struct brd_value *out)
                 break;
         case BRD_VAL_BUILTIN:
                 out->as.string = &builtin_string[args[0].as.builtin];
+                break;
+        case BRD_VAL_METHOD:
+                out->as.string = &method_string;
                 break;
         case BRD_VAL_HEAP:
                 switch (args[0].as.heap->htype) {
@@ -1022,6 +1039,7 @@ struct brd_value_string number_string = MK_BUILTIN_STRING("number");
 struct brd_value_string string_string = MK_BUILTIN_STRING("string");
 struct brd_value_string boolean_string = MK_BUILTIN_STRING("boolean");
 struct brd_value_string unit_string = MK_BUILTIN_STRING("unit");
+struct brd_value_string method_string = MK_BUILTIN_STRING("method");
 struct brd_value_string list_string = MK_BUILTIN_STRING("list");
 struct brd_value_string closure_string = MK_BUILTIN_STRING("closure");
 struct brd_value_string class_string = MK_BUILTIN_STRING("class");
