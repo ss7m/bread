@@ -8,6 +8,9 @@
  */
 #define BUCKET_SIZE 24
 
+#define brd_containing_heap(type, item) \
+        (struct brd_heap_entry *)((char *item) - offsetof(struct brd_heap_entry, type))
+
 struct brd_value;
 struct brd_value_closure;
 struct brd_value_list;
@@ -126,6 +129,14 @@ struct brd_value_object {
 
 void brd_value_object_init(struct brd_value_object *object, struct brd_value_class *class);
 void brd_value_object_destroy(struct brd_value_object *object);
+
+struct brd_value_method {
+        struct brd_value_object *this;
+        struct brd_value_closure *fn;
+};
+
+void brd_value_method_init(struct brd_value_method *method, struct brd_value_object *this, struct brd_value_closure *fn);
+void brd_value_method_destroy(struct brd_value_method *method);
 
 void brd_value_debug(struct brd_value *value);
 int brd_value_is_string(struct brd_value *value);

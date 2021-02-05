@@ -282,6 +282,22 @@ brd_value_object_destroy(struct brd_value_object *object)
 }
 
 void
+brd_value_method_init(
+        struct brd_value_method *method,
+        struct brd_value_object *this,
+        struct brd_value_closure *fn)
+{
+        method->this = this;
+        method->fn = fn;
+}
+
+void
+brd_value_method_destroy(struct brd_value_method *method)
+{
+        (void)method;
+}
+
+void
 brd_value_debug(struct brd_value *value)
 {
         switch (value->vtype) {
