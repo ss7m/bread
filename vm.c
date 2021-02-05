@@ -53,6 +53,8 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_PUSH: printf("BRD_VM_PUSH\n"); return;
         case BRD_VM_GET_IDX: printf("BRD_VM_GET_IDX\n"); return;
         case BRD_VM_SET_IDX: printf("BRD_VM_SET_IDX\n"); return;
+        case BRD_VM_GET_MEMBER: printf("BRD_VM_GET_MEMBER\n"); return;
+        case BRD_VM_SET_MEMBER: printf("BRD_VM_SET_MEMBER\n"); return;
         }
         printf("oops\n");
 }
@@ -166,6 +168,11 @@ brd_node_compile_lvalue(struct brd_node *node)
                 brd_node_compile(AS(index, node)->list);
                 brd_node_compile(AS(index, node)->idx);
                 ADD_OP(BRD_VM_SET_IDX);
+                break;
+        case BRD_NODE_MEMBER:
+                brd_node_compile(AS(member, node)->object);
+                ADD_OP(BRD_VM_SET_MEMBER);
+                ADD_STR(AS(member, node)->field);
                 break;
         default:
                 BARF("This shouldn't happen.");
@@ -354,6 +361,11 @@ mkbinop:
                 if (AS(while, node)->no_list) {
                         ADD_OP(BRD_VM_UNIT);
                 }
+                break;
+        case BRD_NODE_MEMBER:
+                brd_node_compile(AS(member, node)->object);
+                ADD_OP(BRD_VM_GET_MEMBER);
+                ADD_STR(AS(member, node)->field);
                 break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
@@ -702,7 +714,6 @@ brd_vm_run(void)
                 case BRD_VM_BUILTIN:
                         b = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
                         vm.frame[vm.fp].pc += sizeof(size_t);
-
                         if (b == BRD_GLOBAL_OBJECT) {
                                 value1 = object_class;
                         } else {
@@ -808,6 +819,40 @@ brd_vm_run(void)
                                 value2.as.heap->as.list,
                                 &value1
                         );
+                        break;
+                case BRD_VM_GET_MEMBER:
+                        READ_STRING_INTO(value1.as.string);
+                        id = value1.as.string->s;
+                        value1 = *brd_stack_pop(&vm.stack);
+                        if (value1.vtype != BRD_VAL_HEAP
+                                        || value1.as.heap->htype != BRD_HEAP_OBJECT) {
+                                BARF("can only access fields of objects");
+                        }
+                        valuep = brd_value_map_get(
+                                &value1.as.heap->as.object->fields,
+                                id
+                        );
+                        if (valuep == NULL) {
+                                value1.vtype = BRD_VAL_UNIT;
+                                brd_stack_push(&vm.stack, &value1);
+                        } else {
+                                brd_stack_push(&vm.stack, valuep);
+                        }
+                        break;
+                case BRD_VM_SET_MEMBER:
+                        READ_STRING_INTO(value1.as.string);
+                        id = value1.as.string->s;
+                        value1 = *brd_stack_pop(&vm.stack);
+                        value2 = *brd_stack_pop(&vm.stack);
+                        if (value1.vtype != BRD_VAL_HEAP
+                                        || value1.as.heap->htype != BRD_HEAP_OBJECT) {
+                                BARF("can only access fields of objects");
+                        }
+                        brd_value_map_set(
+                                &value1.as.heap->as.object->fields,
+                                id, &value2
+                        );
+                        brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_RETURN:
                         if (vm.fp == 0) {

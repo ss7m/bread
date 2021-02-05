@@ -17,8 +17,9 @@ expression =
     | $concatexp
 
 lvalue =
-    | $var
+    | $id
     | $lvalue [ $expression ]
+    | $lvalue . $id
 
 concatexp =
     | $concatexp .. $orexp
@@ -62,6 +63,7 @@ prefix =
 postfix =
     | $postfix ( $arglist )
     | $postfix [ $expression ]
+    | $postfix . $id
     | $base
 
 arglist =
