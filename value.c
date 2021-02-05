@@ -118,7 +118,7 @@ brd_heap_mark(struct brd_heap_entry *entry)
                 brd_value_map_mark(&entry->as.class->methods);
                 break;
         case BRD_HEAP_OBJECT:
-                /* FIXME: mark the containing class */
+                brd_heap_mark(brd_containing_heap(class, entry->as.object->class));
                 brd_value_map_mark(&entry->as.object->fields);
                 break;
         }
@@ -253,7 +253,6 @@ void
 brd_value_class_init(struct brd_value_class *class)
 {
         brd_value_map_init(&class->methods);
-        class->num_alive = 0;
 }
 
 void
@@ -267,17 +266,12 @@ void
 brd_value_object_init(struct brd_value_object *object, struct brd_value_class *class)
 {
         object->class = class;
-        object->class->num_alive++;
         brd_value_map_init(&object->fields);
 }
 
 void
 brd_value_object_destroy(struct brd_value_object *object)
 {
-        /* if we're in brd_vm_destroy, then the class has probably already been freed */
-        if (!in_vm_destruction_phase) {
-                object->class->num_alive--;
-        }
         brd_value_map_destroy(&object->fields);
 }
 

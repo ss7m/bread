@@ -9,7 +9,6 @@
 #define GROW 1.5
 
 struct brd_vm vm;
-int in_vm_destruction_phase = false;
 
 #ifdef DEBUG
 static void
@@ -387,8 +386,6 @@ mkbinop:
 void
 brd_vm_destroy(void)
 {
-        in_vm_destruction_phase = true;
-
         /* destroy globals */
         brd_heap_destroy(object_class.as.heap);
         free(object_class.as.heap);
@@ -887,10 +884,6 @@ brd_vm_gc(void)
         heap = vm.heap->next;
         while (heap != NULL) {
                 heap->marked = false;
-                /* keep classes alive when they have objects */
-                if (heap->htype == BRD_HEAP_CLASS && heap->as.class->num_alive > 0) {
-                        heap->marked = true;
-                }
                 heap = heap->next;
         }
 

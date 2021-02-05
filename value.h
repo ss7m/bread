@@ -8,8 +8,9 @@
  */
 #define BUCKET_SIZE 24
 
-#define brd_containing_heap(type, item) \
-        (struct brd_heap_entry *)((char *item) - offsetof(struct brd_heap_entry, type))
+// inspired by wl_container_of from wayland
+#define brd_containing_heap(type, item) ((struct brd_heap_entry *)\
+        (((char *)(item)) - offsetof(struct brd_heap_entry, as.type)))
 
 struct brd_value;
 struct brd_value_closure;
@@ -114,9 +115,6 @@ void brd_value_closure_destroy(struct brd_value_closure *closure);
 struct brd_value_class {
         struct brd_value_closure constructor;
         struct brd_value_map methods;
-        /* keeps track of how many instances there are */
-        /* used to keep it from getting GCed when objects still exist */
-        int num_alive;
 };
 
 void brd_value_class_init(struct brd_value_class *class);
