@@ -12,6 +12,12 @@
 #define brd_containing_heap(type, item) ((struct brd_heap_entry *)\
         (((char *)(item)) - offsetof(struct brd_heap_entry, as.type)))
 
+#define brd_containing_value(type, item) ((struct brd_value *)\
+        (((char *)(item)) - offsetof(struct brd_value, as.type)))
+
+#define brd_heap_value(type, item)\
+        brd_containing_value(heap, brd_containing_heap(type, item))
+
 struct brd_value;
 struct brd_value_closure;
 struct brd_value_list;
@@ -19,6 +25,7 @@ struct brd_value_map;
 struct brd_value_string;
 struct brd_value_class;
 struct brd_value_object;
+struct brd_value_method;
 
 enum brd_heap_type {
         BRD_HEAP_STRING,
@@ -63,7 +70,6 @@ struct brd_heap_entry {
 };
 
 void brd_heap_destroy(struct brd_heap_entry *entry);
-void brd_heap_mark(struct brd_heap_entry *entry);
 
 enum brd_value_type {
         BRD_VAL_NUM,
@@ -84,6 +90,8 @@ struct brd_value {
         } as;
         enum brd_value_type vtype;
 };
+
+void brd_value_gc_mark(struct brd_value *value);
 
 struct brd_value_map_list {
         char *key;

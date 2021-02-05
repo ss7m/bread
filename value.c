@@ -94,33 +94,36 @@ void brd_heap_destroy(struct brd_heap_entry *entry)
 }
 
 void
-brd_heap_mark(struct brd_heap_entry *entry)
+brd_value_gc_mark(struct brd_value *value)
 {
-        if (entry->marked) {
-                return;
-        }
-
-        entry->marked = true;
-        switch (entry->htype) {
-        case BRD_HEAP_STRING:
-                break;
-        case BRD_HEAP_LIST:
-                for (int i = 0; i < entry->as.list->length; i++) {
-                        if (entry->as.list->items[i].vtype == BRD_VAL_HEAP) {
-                                brd_heap_mark(entry->as.list->items[i].as.heap);
-                        }
+        if (value->vtype == BRD_VAL_HEAP) {
+                struct brd_heap_entry *entry = value->as.heap;
+                if (entry->marked) {
+                        return;
                 }
-                break;
-        case BRD_HEAP_CLOSURE:
-                brd_value_map_mark(&entry->as.closure->env);
-                break;
-        case BRD_HEAP_CLASS:
-                brd_value_map_mark(&entry->as.class->methods);
-                break;
-        case BRD_HEAP_OBJECT:
-                brd_heap_mark(brd_containing_heap(class, entry->as.object->class));
-                brd_value_map_mark(&entry->as.object->fields);
-                break;
+
+                entry->marked = true;
+                switch (entry->htype) {
+                case BRD_HEAP_STRING:
+                        break;
+                case BRD_HEAP_LIST:
+                        for (int i = 0; i < entry->as.list->length; i++) {
+                                brd_value_gc_mark(&entry->as.list->items[i]);
+                        }
+                        break;
+                case BRD_HEAP_CLOSURE:
+                        brd_value_map_mark(&entry->as.closure->env);
+                        break;
+                case BRD_HEAP_CLASS:
+                        brd_value_map_mark(&entry->as.class->methods);
+                        break;
+                case BRD_HEAP_OBJECT:
+                        brd_value_gc_mark(
+                                brd_heap_value(class, entry->as.object->class)
+                        );
+                        brd_value_map_mark(&entry->as.object->fields);
+                        break;
+                }
         }
 }
 
@@ -213,9 +216,7 @@ brd_value_map_mark(struct brd_value_map *map)
         for (int i = 0; i < BUCKET_SIZE; i++) {
                 struct brd_value_map_list *p = &map->bucket[i];
                 while (p != NULL) {
-                        if (p->val.vtype == BRD_VAL_HEAP) {
-                                brd_heap_mark(p->val.as.heap);
-                        }
+                        brd_value_gc_mark(&p->val);
                         p = p->next;
                 }
         }
