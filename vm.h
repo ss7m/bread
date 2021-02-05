@@ -64,6 +64,8 @@ enum brd_bytecode {
         BRD_VM_GET_FIELD,
         BRD_VM_SET_FIELD,
 
+        BRD_VM_ACC_OBJ,
+
         BRD_VM_LIST, /* initializes an empty list */
         /* this is poorly named, it's a list operation */
         BRD_VM_PUSH, /* x = pop(), peek().push(x) */

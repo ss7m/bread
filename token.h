@@ -63,6 +63,7 @@ enum brd_token {
         BRD_TOK_DO,
 
         BRD_TOK_FIELD,
+        BRD_TOK_ACC_OBJ,
 
         /* keywords */
         BRD_TOK_SET,

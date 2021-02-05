@@ -386,3 +386,24 @@ brd_node_field_new(struct brd_node *object, char *field)
         n->field = strdup(field);
         return (struct brd_node *)n;
 }
+
+static void
+brd_node_acc_obj_destroy(struct brd_node *n)
+{
+        struct brd_node_acc_obj *m = (struct brd_node_acc_obj *)n;
+        brd_node_destroy(m->object);
+        free(m->id);
+        _brd_node_destroy(n);
+}
+
+struct brd_node *
+brd_node_acc_obj_new(struct brd_node *object, char *id)
+{
+        struct brd_node_acc_obj *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_ACC_OBJ;
+        n->_node.line_number = line_number;
+        n->_node.destroy = brd_node_acc_obj_destroy;
+        n->object = object;
+        n->id = strdup(id);
+        return (struct brd_node *)n;
+}

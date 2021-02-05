@@ -124,6 +124,9 @@ brd_value_gc_mark(struct brd_value *value)
                         brd_value_map_mark(&entry->as.object->fields);
                         break;
                 }
+        } else if (value->vtype == BRD_VAL_METHOD) {
+                brd_value_gc_mark(brd_heap_value(object, value->as.method.this));
+                brd_value_gc_mark(brd_heap_value(closure, value->as.method.fn));
         }
 }
 

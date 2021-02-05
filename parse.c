@@ -453,6 +453,18 @@ brd_parse_postfix(struct brd_token_list *tokens)
                                 brd_token_list_pop_string(tokens)
                         );
                         break;
+                case BRD_TOK_ACC_OBJ:
+                        brd_token_list_pop_token(tokens);
+                        if (brd_token_list_pop_token(tokens) != BRD_TOK_VAR) {
+                                brd_node_destroy(node);
+                                error_message = "expected an identifier";
+                                return NULL;
+                        }
+                        node = brd_node_acc_obj_new(
+                                node,
+                                brd_token_list_pop_string(tokens)
+                        );
+                        break;
                 default:
                         return node;
                 }

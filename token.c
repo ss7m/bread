@@ -343,6 +343,16 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 string++;
                         }
                         break;
+                case ':':
+                        if (string[1] == ':') {
+                                brd_token_list_add_token(list, BRD_TOK_ACC_OBJ);
+                                string += 2;
+                        } else {
+                                error_message =
+                                        "':' is not a valid token, did you mean '::'?";
+                                return false;
+                        }
+                        break;
                 case '!':
                         if (string[1] == '=') {
                                 brd_token_list_add_token(list, BRD_TOK_NEQ);

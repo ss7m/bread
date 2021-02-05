@@ -54,6 +54,7 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_SET_IDX: printf("BRD_VM_SET_IDX\n"); return;
         case BRD_VM_GET_FIELD: printf("BRD_VM_GET_FIELD\n"); return;
         case BRD_VM_SET_FIELD: printf("BRD_VM_SET_FIELD\n"); return;
+        case BRD_VM_ACC_OBJ: printf("BRD_VM_ACC_OBJ\n"); return;
         }
         printf("oops\n");
 }
@@ -366,6 +367,11 @@ mkbinop:
                 ADD_OP(BRD_VM_GET_FIELD);
                 ADD_STR(AS(field, node)->field);
                 break;
+        case BRD_NODE_ACC_OBJ:
+                brd_node_compile(AS(acc_obj, node)->object);
+                ADD_OP(BRD_VM_ACC_OBJ);
+                ADD_STR(AS(acc_obj, node)->id);
+                break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
                         brd_node_compile(AS(program, node)->stmts[i]);
@@ -493,6 +499,14 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                         brd_value_map_set(&class->constructor.env, "this", &object);
                         brd_value_call_closure(&class->constructor, args, num_args);
                 }
+        } else if (f->vtype == BRD_VAL_METHOD) {
+                struct brd_value_method method = f->as.method;
+                brd_value_map_set(
+                        &method.fn->env,
+                        "this",
+                        brd_heap_value(object, method.this)
+                );
+                brd_value_call_closure(method.fn, args, num_args);
         } else {
                 BARF("attempted to call a non-callable");
         }
@@ -831,6 +845,31 @@ brd_vm_run(void)
                         if (valuep == NULL) {
                                 value1.vtype = BRD_VAL_UNIT;
                                 brd_stack_push(&vm.stack, &value1);
+                        } else {
+                                brd_stack_push(&vm.stack, valuep);
+                        }
+                        break;
+                case BRD_VM_ACC_OBJ:
+                        READ_STRING_INTO(value1.as.string);
+                        id = value1.as.string->s;
+                        value1 = *brd_stack_pop(&vm.stack);
+                        if (value1.vtype != BRD_VAL_HEAP
+                                        || value1.as.heap->htype != BRD_HEAP_OBJECT) {
+                                BARF("can only access fields of objects");
+                        }
+                        valuep = brd_value_map_get(
+                                &value1.as.heap->as.object->class->methods,
+                                id
+                        );
+                        if (valuep == NULL) {
+                                value1.vtype = BRD_VAL_UNIT;
+                                brd_stack_push(&vm.stack, &value1);
+                        } else if (valuep->vtype == BRD_VAL_HEAP
+                                        && valuep->as.heap->htype == BRD_HEAP_CLOSURE) {
+                                value2.vtype = BRD_VAL_METHOD;
+                                value2.as.method.this = value1.as.heap->as.object;
+                                value2.as.method.fn = valuep->as.heap->as.closure;
+                                brd_stack_push(&vm.stack, &value2);
                         } else {
                                 brd_stack_push(&vm.stack, valuep);
                         }

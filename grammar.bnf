@@ -64,6 +64,7 @@ postfix =
     | $postfix ( $arglist )
     | $postfix [ $expression ]
     | $postfix . $id
+    | $postfix :: $id
     | $base
 
 arglist =
