@@ -372,6 +372,9 @@ mkbinop:
                 ADD_OP(BRD_VM_ACC_OBJ);
                 ADD_STR(AS(acc_obj, node)->id);
                 break;
+        case BRD_NODE_SUBCLASS:
+                BARF("compile subclass declarations");
+                break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
                         brd_node_compile(AS(program, node)->stmts[i]);

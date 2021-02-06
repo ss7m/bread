@@ -309,7 +309,12 @@ brd_node_ifexpr_destroy(struct brd_node *n)
 }
 
 struct brd_node *
-brd_node_ifexpr_new(struct brd_node *cond, struct brd_node *body, struct brd_node_elif *elifs, size_t num_elifs, struct brd_node *els)
+brd_node_ifexpr_new(
+        struct brd_node *cond,
+        struct brd_node *body,
+        struct brd_node_elif *elifs,
+        size_t num_elifs,
+        struct brd_node *els)
 {
         struct brd_node_ifexpr *n = malloc(sizeof(*n));
         n->_node.ntype = BRD_NODE_IFEXPR;
@@ -405,5 +410,36 @@ brd_node_acc_obj_new(struct brd_node *object, char *id)
         n->_node.destroy = brd_node_acc_obj_destroy;
         n->object = object;
         n->id = strdup(id);
+        return (struct brd_node *)n;
+}
+
+static void
+brd_node_subclass_destroy(struct brd_node *n)
+{
+        struct brd_node_subclass *s = (struct brd_node_subclass *)n;
+        brd_node_destroy(s->super);
+        brd_node_destroy((struct brd_node *)s->constructor);
+        for (int i = 0; i < s->num_decs; i++) {
+                free(s->decs[i].id);
+                brd_node_destroy(s->decs[i].node);
+        }
+        free(s->decs);
+}
+
+struct brd_node *
+brd_node_subclass_new(
+        struct brd_node *super,
+        struct brd_node_closure *constructor,
+        struct brd_node_subclass_set *decs,
+        size_t num_decs)
+{
+        struct brd_node_subclass *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_SUBCLASS;
+        n->_node.line_number = line_number;
+        n->_node.destroy = brd_node_subclass_destroy;
+        n->super = super;
+        n->constructor = constructor;
+        n->decs = decs;
+        n->num_decs = num_decs;
         return (struct brd_node *)n;
 }
