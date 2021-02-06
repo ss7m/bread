@@ -27,7 +27,6 @@ enum brd_node_type {
         BRD_NODE_SUBCLASS,
 
         BRD_NODE_PROGRAM, /* the top level program */
-        BRD_NODE_MAX,
 };
 
 struct brd_node;

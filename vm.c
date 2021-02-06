@@ -382,8 +382,6 @@ mkbinop:
                 }
                 ADD_OP(BRD_VM_RETURN);
                 break;
-        case BRD_NODE_MAX:
-                BARF("This shouldn't happen.");
         }
 }
 
