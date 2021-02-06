@@ -10,6 +10,7 @@ highlight link breadComment Comment
 syntax keyword breadKeyword and or not set begin func
 syntax keyword breadKeyword if then else elif end
 syntax keyword breadKeyword while break continue for do
+syntax keyword breadKeyword subclass constructor
 highlight link breadKeyword Keyword
 
 syntax keyword breadBoolean true false

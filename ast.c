@@ -421,7 +421,7 @@ brd_node_subclass_destroy(struct brd_node *n)
         brd_node_destroy((struct brd_node *)s->constructor);
         for (int i = 0; i < s->num_decs; i++) {
                 free(s->decs[i].id);
-                brd_node_destroy(s->decs[i].node);
+                brd_node_destroy(s->decs[i].expression);
         }
         free(s->decs);
 }
@@ -429,7 +429,7 @@ brd_node_subclass_destroy(struct brd_node *n)
 struct brd_node *
 brd_node_subclass_new(
         struct brd_node *super,
-        struct brd_node_closure *constructor,
+        struct brd_node *constructor,
         struct brd_node_subclass_set *decs,
         size_t num_decs)
 {

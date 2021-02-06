@@ -42,7 +42,7 @@ brd_parse_and_compile_repl(char *code)
 
         brd_token_list_init(&tokens);
         if (!brd_token_list_tokenize(&tokens, code)) {
-                fprintf(stderr, "Error : %s%s\n", error_message, bad_character);
+                fprintf(stderr, "Error: %s%s\n", error_message, bad_character);
                 brd_token_list_destroy(&tokens);
                 return BRD_REPL_TOKEN;
         }

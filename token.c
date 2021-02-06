@@ -246,6 +246,10 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_DO);
                         } else if (strcmp(buffer, "func") == 0) {
                                 brd_token_list_add_token(list, BRD_TOK_FUNC);
+                        } else if (strcmp(buffer, "subclass") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_SUBCLASS);
+                        } else if (strcmp(buffer, "constructor") == 0) {
+                                brd_token_list_add_token(list, BRD_TOK_CONSTRUCTOR);
                         } else {
                                 brd_token_list_add_token(list, BRD_TOK_VAR);
                                 brd_token_list_add_string(list, buffer);

@@ -65,6 +65,9 @@ enum brd_token {
         BRD_TOK_FIELD,
         BRD_TOK_ACC_OBJ,
 
+        BRD_TOK_SUBCLASS,
+        BRD_TOK_CONSTRUCTOR,
+
         /* keywords */
         BRD_TOK_SET,
 };

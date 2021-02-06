@@ -30,10 +30,10 @@ x::update(100.5)
 @writeln(x::stdev())
 @writeln(x.sum)
 
-set RunningSumDebug = define RunningSum subclass
-  set update = func(num)
-    super::update(num)
-    @writeln(this::mean())
-    @writeln(this::stdev())
-  end
-end
+#set RunningSumDebug = define RunningSum subclass
+#  set update = func(num)
+#    super::update(num)
+#    @writeln(this::mean())
+#    @writeln(this::stdev())
+#  end
+#end

@@ -465,6 +465,13 @@ brd_parse_postfix(struct brd_token_list *tokens)
                                 brd_token_list_pop_string(tokens)
                         );
                         break;
+                case BRD_TOK_SUBCLASS:
+                        brd_token_list_pop_token(tokens);
+                        node = brd_parse_subclass(tokens, node);
+                        if (node == NULL) {
+                                return NULL;
+                        }
+                        break;
                 default:
                         return node;
                 }
@@ -472,6 +479,124 @@ brd_parse_postfix(struct brd_token_list *tokens)
 
 error_exit:
         free(node);
+        return NULL;
+}
+
+static int
+brd_parse_skip_newlines(struct brd_token_list *tokens)
+{
+        if (brd_token_list_peek(tokens) != BRD_TOK_NEWLINE) {
+                return false;
+        } else {
+                while (brd_token_list_peek(tokens) == BRD_TOK_NEWLINE) {
+                        brd_token_list_pop_token(tokens);
+                }
+        }
+        return true;
+}
+
+struct brd_node *
+brd_parse_subclass(struct brd_token_list *tokens, struct brd_node *class)
+{
+        /* subclass token has already been popped */
+        struct brd_node *constructor;
+        struct brd_node_subclass_set *decs;
+        size_t length, capacity;
+        int skip_copy;
+
+        skip_copy = skip_newlines;
+        skip_newlines = false;
+
+        if (!brd_parse_skip_newlines(tokens)) {
+                error_message = "expected a newline";
+                brd_node_destroy(class);
+                return NULL;
+        }
+
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_CONSTRUCTOR) {
+                error_message = "expected a constructor";
+                brd_node_destroy(class);
+                return NULL;
+        }
+
+        constructor = brd_parse_func(tokens);
+        if (constructor == NULL) {
+                brd_node_destroy(class);
+                return NULL;
+        } else if (!brd_parse_skip_newlines(tokens)) {
+                error_message = "expected a newline";
+                brd_node_destroy(constructor);
+                brd_node_destroy(class);
+                return NULL;
+        }
+
+        capacity = 4;
+        length = 0;
+        decs = malloc(sizeof(*decs) * capacity);
+
+        for (;;) {
+                char *id;
+                struct brd_node *expression;
+
+                if (brd_token_list_peek(tokens) != BRD_TOK_SET) {
+                        break;
+                } else {
+                        brd_token_list_pop_token(tokens);
+                }
+
+                if (brd_token_list_pop_token(tokens) != BRD_TOK_VAR) {
+                        error_message = "expected an identifier";
+                        goto error_exit;
+                } else {
+                        id = brd_token_list_pop_string(tokens);
+                }
+
+                if (brd_token_list_pop_token(tokens) != BRD_TOK_EQ) {
+                        error_message = "expected an = token";
+                        free(id);
+                        goto error_exit;
+                }
+
+                expression = brd_parse_expression(tokens);
+                if (expression == NULL) {
+                        goto error_exit;
+                } else if (!brd_parse_skip_newlines(tokens)) {
+                        free(id);
+                        brd_node_destroy(tokens);
+                        error_message = "expected a newline";
+                        goto error_exit;
+                }
+
+                if (length >= capacity) {
+                        capacity *= 1.5;
+                        decs = realloc(decs, sizeof(*decs) * capacity);
+                }
+                decs[length].id = id;
+                decs[length].expression = expression;
+                length++;
+        }
+
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_END) {
+                error_message = "expected a newline";
+                goto error_exit;
+        } else {
+                skip_newlines = skip_copy;
+                return brd_node_subclass_new(
+                        class,
+                        constructor,
+                        decs,
+                        length
+                );
+        }
+
+error_exit:
+        brd_node_destroy(constructor);
+        brd_node_destroy(class);
+        for (int i = 0; i < length; i++) {
+                free(decs[i].id);
+                brd_node_destroy(decs[i].expression);
+        }
+        free(decs);
         return NULL;
 }
 

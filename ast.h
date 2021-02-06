@@ -191,13 +191,13 @@ struct brd_node_acc_obj {
 
 struct brd_node_subclass_set {
         char *id;
-        struct brd_node *node;
+        struct brd_node *expression;
 };
 
 struct brd_node_subclass {
         struct brd_node _node;
         struct brd_node *super;
-        struct brd_node_closure *constructor;
+        struct brd_node *constructor;
         struct brd_node_subclass_set *decs;
         size_t num_decs;
 };
@@ -222,7 +222,7 @@ struct brd_node *brd_node_index_new(struct brd_node *list, struct brd_node *idx)
 struct brd_node *brd_node_while_new(int no_list, struct brd_node *cond, struct brd_node *body);
 struct brd_node *brd_node_field_new(struct brd_node *object, char *field);
 struct brd_node *brd_node_acc_obj_new(struct brd_node *object, char *id);
-struct brd_node *brd_node_subclass_new(struct brd_node *super, struct brd_node_closure *constructor, struct brd_node_subclass_set *decs, size_t num_decs);
+struct brd_node *brd_node_subclass_new(struct brd_node *super, struct brd_node *constructor, struct brd_node_subclass_set *decs, size_t num_decs);
 
 #define brd_node_destroy(n) (((struct brd_node *)n)->destroy((struct brd_node *)n))
 
