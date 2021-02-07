@@ -30,10 +30,25 @@ x::update(100)
 @writeln("stdev: ", x::stdev())
 @writeln("sum: ", x.sum)
 
-#set RunningSumDebug = define RunningSum subclass
-#  set update = func(num)
-#    super::update(num)
-#    @writeln(this::mean())
-#    @writeln(this::stdev())
-#  end
-#end
+@writeln()
+
+set y = RunningSum subclass
+  constructor()
+    set this.sum = 0
+    set this.sum_sq = 0
+    set this.n = 0
+    this
+  end
+
+  set debug = func()
+    @writeln("sum: ", this.sum)
+    @writeln("sum_sq: ", this.sum_sq)
+    @writeln("num: ", this.n)
+  end
+end()
+
+y::update(50)
+y::update(100)
+y::debug()
+@writeln("mean: ", y::mean())
+@writeln("stdev: ", y::stdev())

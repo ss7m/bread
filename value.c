@@ -125,7 +125,7 @@ brd_value_gc_mark(struct brd_value *value)
                         break;
                 case BRD_HEAP_OBJECT:
                         v = brd_heap_value(class, entry->as.object->class);
-                        brd_value_gc_mark(value);
+                        brd_value_gc_mark(&v);
                         brd_value_map_mark(&entry->as.object->fields);
                         break;
                 }
