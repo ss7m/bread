@@ -47,7 +47,7 @@ set y = RunningSum subclass
     @writeln("sum_sq: ", this.sum_sq)
     @writeln("num: ", this.n)
   end
-end()
+end() # note that we're constructing the object immediately
 
 y::update(50)
 y::update(100)

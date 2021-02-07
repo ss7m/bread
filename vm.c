@@ -972,9 +972,7 @@ brd_vm_gc(void)
 
         /* mark values in the stack */
         for (struct brd_value *p = vm.stack.values; p < vm.stack.sp; p++) {
-                if (p->vtype == BRD_VAL_HEAP) {
-                        p->as.heap->marked = true;
-                }
+                brd_value_gc_mark(p);
         }
 
         /* mark values held by variables */
@@ -990,6 +988,10 @@ brd_vm_gc(void)
                         prev = heap;
                         heap = next;
                         continue;
+                }
+
+                if (heap->htype == BRD_HEAP_CLASS) {
+                        printf("what?\n");
                 }
 
                 prev->next = next;
