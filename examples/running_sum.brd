@@ -25,10 +25,10 @@ end
 
 set x = RunningSum()
 x::update(50)
-x::update(100.5)
-@writeln(x::mean())
-@writeln(x::stdev())
-@writeln(x.sum)
+x::update(100)
+@writeln("mean: ", x::mean())
+@writeln("stdev: ", x::stdev())
+@writeln("sum: ", x.sum)
 
 #set RunningSumDebug = define RunningSum subclass
 #  set update = func(num)

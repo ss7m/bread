@@ -553,7 +553,6 @@ brd_parse_subclass(struct brd_token_list *tokens, struct brd_node *class)
 
                 if (brd_token_list_pop_token(tokens) != BRD_TOK_EQ) {
                         error_message = "expected an = token";
-                        free(id);
                         goto error_exit;
                 }
 
@@ -561,7 +560,6 @@ brd_parse_subclass(struct brd_token_list *tokens, struct brd_node *class)
                 if (expression == NULL) {
                         goto error_exit;
                 } else if (!brd_parse_skip_newlines(tokens)) {
-                        free(id);
                         brd_node_destroy(tokens);
                         error_message = "expected a newline";
                         goto error_exit;
@@ -571,7 +569,7 @@ brd_parse_subclass(struct brd_token_list *tokens, struct brd_node *class)
                         capacity *= 1.5;
                         decs = realloc(decs, sizeof(*decs) * capacity);
                 }
-                decs[length].id = id;
+                decs[length].id = strdup(id);
                 decs[length].expression = expression;
                 length++;
         }

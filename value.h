@@ -1,6 +1,11 @@
 #ifndef BRD_VALUE_H
 #define BRD_VALUE_H
 
+/*
+ * Structs with a double pointer field have that so that we can later
+ * retrieve the containing heap for GC purposes
+ */
+
 /* 
  * If I were smarter I'd make the bucket grow
  * But for the mean time that feels like a premature optimization
@@ -15,8 +20,10 @@
 #define brd_containing_value(type, item) ((struct brd_value *)\
         (((char *)(item)) - offsetof(struct brd_value, as.type)))
 
-#define brd_heap_value(type, item)\
-        brd_containing_value(heap, brd_containing_heap(type, item))
+#define brd_heap_value(type, item) (struct brd_value){\
+        .as.heap = brd_containing_heap(type, (item)),\
+        .vtype = BRD_VAL_HEAP\
+}
 
 struct brd_value;
 struct brd_value_closure;
@@ -81,8 +88,8 @@ enum brd_value_type {
 };
 
 struct brd_value_method {
-        struct brd_value_object *this;
-        struct brd_value_closure *fn;
+        struct brd_value_object **this;
+        struct brd_value_closure **fn;
 };
 
 struct brd_value {
@@ -127,19 +134,20 @@ void brd_value_closure_init(struct brd_value_closure *closure, char **args, size
 void brd_value_closure_destroy(struct brd_value_closure *closure);
 
 struct brd_value_class {
-        struct brd_value_closure constructor;
+        struct brd_value_closure **constructor;
         struct brd_value_map methods;
 };
 
 void brd_value_class_init(struct brd_value_class *class);
+void brd_value_class_subclass(struct brd_value_class *sub, struct brd_value_class *super, struct brd_value_closure **constructor);
 void brd_value_class_destroy(struct brd_value_class *class);
 
 struct brd_value_object {
-        struct brd_value_class *class;
+        struct brd_value_class **class;
         struct brd_value_map fields;
 };
 
-void brd_value_object_init(struct brd_value_object *object, struct brd_value_class *class);
+void brd_value_object_init(struct brd_value_object *object, struct brd_value_class **class);
 void brd_value_object_destroy(struct brd_value_object *object);
 
 void brd_value_debug(struct brd_value *value);

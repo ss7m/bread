@@ -424,6 +424,7 @@ brd_node_subclass_destroy(struct brd_node *n)
                 brd_node_destroy(s->decs[i].expression);
         }
         free(s->decs);
+        _brd_node_destroy(n);
 }
 
 struct brd_node *

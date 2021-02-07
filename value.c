@@ -96,6 +96,7 @@ void brd_heap_destroy(struct brd_heap_entry *entry)
 void
 brd_value_gc_mark(struct brd_value *value)
 {
+        struct brd_value v;
         if (value->vtype == BRD_VAL_HEAP) {
                 struct brd_heap_entry *entry = value->as.heap;
                 if (entry->marked) {
@@ -115,18 +116,24 @@ brd_value_gc_mark(struct brd_value *value)
                         brd_value_map_mark(&entry->as.closure->env);
                         break;
                 case BRD_HEAP_CLASS:
+                        /* @Object doesn't have an actual constructor */
+                        if (entry->as.class != object_class.as.heap->as.class) {
+                                v = brd_heap_value(closure, entry->as.class->constructor);
+                                brd_value_gc_mark(&v);
+                        }
                         brd_value_map_mark(&entry->as.class->methods);
                         break;
                 case BRD_HEAP_OBJECT:
-                        brd_value_gc_mark(
-                                brd_heap_value(class, entry->as.object->class)
-                        );
+                        v = brd_heap_value(class, entry->as.object->class);
+                        brd_value_gc_mark(value);
                         brd_value_map_mark(&entry->as.object->fields);
                         break;
                 }
         } else if (value->vtype == BRD_VAL_METHOD) {
-                brd_value_gc_mark(brd_heap_value(object, value->as.method.this));
-                brd_value_gc_mark(brd_heap_value(closure, value->as.method.fn));
+                v = brd_heap_value(object, value->as.method.this);
+                brd_value_gc_mark(&v);
+                v = brd_heap_value(closure, value->as.method.fn);
+                brd_value_gc_mark(&v);
         }
 }
 
@@ -260,14 +267,24 @@ brd_value_class_init(struct brd_value_class *class)
 }
 
 void
-brd_value_class_destroy(struct brd_value_class *class)
+brd_value_class_subclass(
+        struct brd_value_class *sub,
+        struct brd_value_class *super,
+        struct brd_value_closure **constructor)
 {
-        brd_value_map_destroy(&class->methods);
-        brd_value_closure_destroy(&class->constructor);
+        brd_value_class_init(sub);
+        brd_value_map_copy(&sub->methods, &super->methods);
+        sub->constructor = constructor;
 }
 
 void
-brd_value_object_init(struct brd_value_object *object, struct brd_value_class *class)
+brd_value_class_destroy(struct brd_value_class *class)
+{
+        brd_value_map_destroy(&class->methods);
+}
+
+void
+brd_value_object_init(struct brd_value_object *object, struct brd_value_class **class)
 {
         object->class = class;
         brd_value_map_init(&object->fields);

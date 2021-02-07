@@ -55,6 +55,8 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_GET_FIELD: printf("BRD_VM_GET_FIELD\n"); return;
         case BRD_VM_SET_FIELD: printf("BRD_VM_SET_FIELD\n"); return;
         case BRD_VM_ACC_OBJ: printf("BRD_VM_ACC_OBJ\n"); return;
+        case BRD_VM_SUBCLASS: printf("BRD_VM_SUBCLASS\n"); return;
+        case BRD_VM_SET_CLASS: printf("BRD_VM_SET_CLASS\n"); return;
         }
         printf("oops\n");
 }
@@ -73,6 +75,11 @@ brd_stack_push(struct brd_stack *stack, struct brd_value *value)
 struct brd_value *
 brd_stack_pop(struct brd_stack *stack)
 {
+#ifdef DEBUG
+        if (stack->sp - stack->values == 0) {
+                BARF("stack underflow error");
+        }
+#endif
         return --stack->sp;
 }
 
@@ -373,7 +380,14 @@ mkbinop:
                 ADD_STR(AS(acc_obj, node)->id);
                 break;
         case BRD_NODE_SUBCLASS:
-                BARF("compile subclass declarations");
+                brd_node_compile(AS(subclass, node)->super);
+                brd_node_compile(AS(subclass, node)->constructor);
+                ADD_OP(BRD_VM_SUBCLASS);
+                for (int i = 0; i < AS(subclass, node)->num_decs; i++) {
+                        brd_node_compile(AS(subclass, node)->decs[i].expression);
+                        ADD_OP(BRD_VM_SET_CLASS);
+                        ADD_STR(AS(subclass, node)->decs[i].id);
+                }
                 break;
         case BRD_NODE_PROGRAM:
                 for (int i = 0; i < AS(program, node)->num_stmts; i++) {
@@ -424,10 +438,6 @@ brd_vm_init(void)
         object_class.as.heap->htype = BRD_HEAP_CLASS;
         object_class.as.heap->as.class = malloc(sizeof(struct brd_value_class));
         brd_value_class_init(object_class.as.heap->as.class);
-        brd_value_closure_init(
-                &object_class.as.heap->as.class->constructor,
-                malloc(0), 0, 0
-        );
 
         vm.heap = malloc(sizeof(*vm.heap));
         vm.heap->next = NULL;
@@ -480,14 +490,16 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
         if (f->vtype == BRD_VAL_HEAP && f->as.heap->htype == BRD_HEAP_CLOSURE) {
                 brd_value_call_closure(f->as.heap->as.closure, args, num_args);
         } else if (f->vtype == BRD_VAL_HEAP && f->as.heap->htype == BRD_HEAP_CLASS) {
-                struct brd_value_class *class = f->as.heap->as.class;
                 struct brd_value object;
 
                 object.vtype = BRD_VAL_HEAP;
                 object.as.heap = malloc(sizeof(*object.as.heap));
                 object.as.heap->htype = BRD_HEAP_OBJECT;
                 object.as.heap->as.object = malloc(sizeof(struct brd_value_object));
-                brd_value_object_init(object.as.heap->as.object, class);
+                brd_value_object_init(
+                        object.as.heap->as.object,
+                        &f->as.heap->as.class
+                );
                 brd_vm_allocate(object.as.heap);
 
                 /*
@@ -497,17 +509,19 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                 if (f->as.heap->as.class == object_class.as.heap->as.class) {
                         brd_stack_push(&vm.stack, &object);
                 } else {
-                        brd_value_map_set(&class->constructor.env, "this", &object);
-                        brd_value_call_closure(&class->constructor, args, num_args);
+                        struct brd_value_class *class = f->as.heap->as.class;
+                        brd_value_map_set(&(**class->constructor).env, "this", &object);
+                        brd_value_call_closure(*class->constructor, args, num_args);
                 }
         } else if (f->vtype == BRD_VAL_METHOD) {
                 struct brd_value_method method = f->as.method;
+                struct brd_value this = brd_heap_value(object, method.this);
                 brd_value_map_set(
-                        &method.fn->env,
+                        &(**method.fn).env,
                         "this",
-                        brd_heap_value(object, method.this)
+                        &this
                 );
-                brd_value_call_closure(method.fn, args, num_args);
+                brd_value_call_closure(*method.fn, args, num_args);
         } else {
                 BARF("attempted to call a non-callable");
         }
@@ -859,7 +873,7 @@ brd_vm_run(void)
                                 BARF("can only access fields of objects");
                         }
                         valuep = brd_value_map_get(
-                                &value1.as.heap->as.object->class->methods,
+                                &(**value1.as.heap->as.object->class).methods,
                                 id
                         );
                         if (valuep == NULL) {
@@ -868,8 +882,8 @@ brd_vm_run(void)
                         } else if (valuep->vtype == BRD_VAL_HEAP
                                         && valuep->as.heap->htype == BRD_HEAP_CLOSURE) {
                                 value2.vtype = BRD_VAL_METHOD;
-                                value2.as.method.this = value1.as.heap->as.object;
-                                value2.as.method.fn = valuep->as.heap->as.closure;
+                                value2.as.method.this = &value1.as.heap->as.object;
+                                value2.as.method.fn = &valuep->as.heap->as.closure;
                                 brd_stack_push(&vm.stack, &value2);
                         } else {
                                 brd_stack_push(&vm.stack, valuep);
@@ -889,6 +903,35 @@ brd_vm_run(void)
                                 id, &value2
                         );
                         brd_stack_push(&vm.stack, &value2);
+                        break;
+                case BRD_VM_SUBCLASS:
+                        value1 = *brd_stack_pop(&vm.stack); /* constructor */
+                        value2 = *brd_stack_pop(&vm.stack); /* super */
+                        value3.vtype = BRD_VAL_HEAP;
+                        value3.as.heap = malloc(sizeof(*value3.as.heap));
+                        value3.as.heap->htype = BRD_HEAP_CLASS;
+                        value3.as.heap->as.class = malloc(sizeof(struct brd_value_class));
+                        brd_vm_allocate(value3.as.heap);
+                        if (value2.vtype != BRD_VAL_HEAP
+                                        || value2.as.heap->htype != BRD_HEAP_CLASS) {
+                                BARF("attempted to make a subclass of a non-class");
+                        }
+                        brd_value_class_subclass(
+                                value3.as.heap->as.class,
+                                value2.as.heap->as.class,
+                                &value1.as.heap->as.closure
+                        );
+                        brd_stack_push(&vm.stack, &value3);
+                        break;
+                case BRD_VM_SET_CLASS:
+                        READ_STRING_INTO(value1.as.string);
+                        id = value1.as.string->s;
+                        value1 = *brd_stack_pop(&vm.stack); /* method */
+                        value2 = *brd_stack_peek(&vm.stack); /* class */
+                        brd_value_map_set(
+                                &value2.as.heap->as.class->methods,
+                                id, &value1
+                        );
                         break;
                 case BRD_VM_RETURN:
                         if (vm.fp == 0) {

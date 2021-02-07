@@ -64,6 +64,9 @@ enum brd_bytecode {
         BRD_VM_GET_FIELD,
         BRD_VM_SET_FIELD,
 
+        BRD_VM_SUBCLASS,
+        BRD_VM_SET_CLASS,
+
         BRD_VM_ACC_OBJ,
 
         BRD_VM_LIST, /* initializes an empty list */
