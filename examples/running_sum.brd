@@ -1,5 +1,6 @@
 # TODO: how to do super?
 
+# everything is a subclass of @Object
 set RunningSum = @Object subclass
   # special syntax for constructor
   constructor()
@@ -32,6 +33,7 @@ x::update(100)
 
 @writeln()
 
+# creating an anonymous subclass
 set y = RunningSum subclass
   constructor()
     set this.sum = 0
