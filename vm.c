@@ -708,18 +708,21 @@ brd_vm_run(void)
                 case BRD_VM_TEST:
                         if (brd_value_truthify(brd_stack_peek(&vm.stack))) {
                                 brd_stack_pop(&vm.stack);
-                                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode) + sizeof(size_t);
+                                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode);
+                                vm.frame[vm.fp].pc += sizeof(size_t);
                         }
                         break;
                 case BRD_VM_TESTN:
                         if (!brd_value_truthify(brd_stack_peek(&vm.stack))) {
                                 brd_stack_pop(&vm.stack);
-                                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode) + sizeof(size_t);
+                                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode);
+                                vm.frame[vm.fp].pc += sizeof(size_t);
                         }
                         break;
                 case BRD_VM_TESTP:
                         if (brd_value_truthify(brd_stack_pop(&vm.stack))) {
-                                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode) + sizeof(size_t);
+                                vm.frame[vm.fp].pc += sizeof(enum brd_bytecode);
+                                vm.frame[vm.fp].pc += sizeof(size_t);
                         }
                         break;
                 case BRD_VM_SET_VAR:
@@ -813,7 +816,7 @@ brd_vm_run(void)
                 case BRD_VM_GET_IDX:
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_pop(&vm.stack);
-                        if (value1.vtype != BRD_VAL_NUM) {
+                        if (!IS_VAL(value1, BRD_VAL_NUM)) {
                                 BARF("attempted to index with a non-number");
                         }
                         if (brd_value_index(&value2, floorl(value1.as.num))) {
@@ -824,10 +827,9 @@ brd_vm_run(void)
                 case BRD_VM_SET_IDX:
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_pop(&vm.stack);
-                        if (value2.vtype != BRD_VAL_HEAP
-                                        || value2.as.heap->htype != BRD_HEAP_LIST) {
+                        if (!IS_HEAP(value2, BRD_HEAP_LIST)) {
                                 BARF("attempted to index a non-list");
-                        } else if (value1.vtype != BRD_VAL_NUM) {
+                        } else if (!IS_VAL(value1, BRD_VAL_NUM)) {
                                 BARF("attempted to index with a non-number");
                         }
                         value3 = *brd_stack_pop(&vm.stack);
@@ -850,8 +852,7 @@ brd_vm_run(void)
                         READ_STRING_INTO(value1.as.string);
                         id = value1.as.string->s;
                         value1 = *brd_stack_pop(&vm.stack);
-                        if (value1.vtype != BRD_VAL_HEAP
-                                        || value1.as.heap->htype != BRD_HEAP_OBJECT) {
+                        if (!IS_HEAP(value1, BRD_HEAP_OBJECT)) {
                                 BARF("can only access fields of objects");
                         }
                         valuep = brd_value_map_get(
@@ -869,8 +870,7 @@ brd_vm_run(void)
                         READ_STRING_INTO(value1.as.string);
                         id = value1.as.string->s;
                         value1 = *brd_stack_pop(&vm.stack);
-                        if (value1.vtype != BRD_VAL_HEAP
-                                        || value1.as.heap->htype != BRD_HEAP_OBJECT) {
+                        if (!IS_HEAP(value1, BRD_HEAP_OBJECT)) {
                                 BARF("can only access fields of objects");
                         }
                         valuep = brd_value_map_get(
@@ -894,8 +894,7 @@ brd_vm_run(void)
                         id = value1.as.string->s;
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_pop(&vm.stack);
-                        if (value1.vtype != BRD_VAL_HEAP
-                                        || value1.as.heap->htype != BRD_HEAP_OBJECT) {
+                        if (!IS_HEAP(value1, BRD_HEAP_OBJECT)) {
                                 BARF("can only access fields of objects");
                         }
                         brd_value_map_set(
@@ -912,8 +911,7 @@ brd_vm_run(void)
                         value3.as.heap->htype = BRD_HEAP_CLASS;
                         value3.as.heap->as.class = malloc(sizeof(struct brd_value_class));
                         brd_vm_allocate(value3.as.heap);
-                        if (value2.vtype != BRD_VAL_HEAP
-                                        || value2.as.heap->htype != BRD_HEAP_CLASS) {
+                        if (!IS_HEAP(value2, BRD_HEAP_CLASS)) {
                                 BARF("attempted to make a subclass of a non-class");
                         }
                         brd_value_class_subclass(
