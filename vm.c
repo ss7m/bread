@@ -438,6 +438,7 @@ brd_vm_init(void)
         object_class.as.heap->htype = BRD_HEAP_CLASS;
         object_class.as.heap->as.class = malloc(sizeof(struct brd_value_class));
         brd_value_class_init(object_class.as.heap->as.class);
+        object_class.as.heap->as.class->super = &object_class.as.heap->as.class;
 
         vm.heap = malloc(sizeof(*vm.heap));
         vm.heap->next = NULL;
@@ -918,7 +919,7 @@ brd_vm_run(void)
                         }
                         brd_value_class_subclass(
                                 value3.as.heap->as.class,
-                                value2.as.heap->as.class,
+                                &value2.as.heap->as.class,
                                 &value1.as.heap->as.closure
                         );
                         brd_stack_push(&vm.stack, &value3);
@@ -969,6 +970,7 @@ brd_vm_gc(void)
                 heap->marked = false;
                 heap = heap->next;
         }
+        object_class.as.heap->marked = true;
 
         /* mark values in the stack */
         for (struct brd_value *p = vm.stack.values; p < vm.stack.sp; p++) {

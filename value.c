@@ -116,11 +116,11 @@ brd_value_gc_mark(struct brd_value *value)
                         brd_value_map_mark(&entry->as.closure->env);
                         break;
                 case BRD_HEAP_CLASS:
-                        /* @Object doesn't have an actual constructor */
-                        if (entry->as.class != object_class.as.heap->as.class) {
-                                v = brd_heap_value(closure, entry->as.class->constructor);
-                                brd_value_gc_mark(&v);
-                        }
+                        /* @Object is marked before GCing, so this is fine */
+                        v = brd_heap_value(closure, entry->as.class->constructor);
+                        brd_value_gc_mark(&v);
+                        v = brd_heap_value(class, entry->as.class->super);
+                        brd_value_gc_mark(&v);
                         brd_value_map_mark(&entry->as.class->methods);
                         break;
                 case BRD_HEAP_OBJECT:
@@ -269,12 +269,13 @@ brd_value_class_init(struct brd_value_class *class)
 void
 brd_value_class_subclass(
         struct brd_value_class *sub,
-        struct brd_value_class *super,
+        struct brd_value_class **super,
         struct brd_value_closure **constructor)
 {
-        brd_value_class_init(sub);
-        brd_value_map_copy(&sub->methods, &super->methods);
+        sub->super = super;
         sub->constructor = constructor;
+        brd_value_class_init(sub);
+        brd_value_map_copy(&sub->methods, &(**super).methods);
 }
 
 void

@@ -1,4 +1,5 @@
 # TODO: how to do super?
+# TODO: multiple inheritance wouldn't be that hard to implement
 
 # everything is a subclass of @Object
 set RunningSum = subclass(@Object)

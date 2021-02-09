@@ -134,12 +134,13 @@ void brd_value_closure_init(struct brd_value_closure *closure, char **args, size
 void brd_value_closure_destroy(struct brd_value_closure *closure);
 
 struct brd_value_class {
+        struct brd_value_class **super;
         struct brd_value_closure **constructor;
         struct brd_value_map methods;
 };
 
 void brd_value_class_init(struct brd_value_class *class);
-void brd_value_class_subclass(struct brd_value_class *sub, struct brd_value_class *super, struct brd_value_closure **constructor);
+void brd_value_class_subclass(struct brd_value_class *sub, struct brd_value_class **super, struct brd_value_closure **constructor);
 void brd_value_class_destroy(struct brd_value_class *class);
 
 struct brd_value_object {
