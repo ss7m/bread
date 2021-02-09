@@ -351,14 +351,7 @@ brd_value_debug(struct brd_value *value)
 
 int brd_value_is_string(struct brd_value *value)
 {
-        switch (value->vtype) {
-        case BRD_VAL_STRING:
-                return true;
-        case BRD_VAL_HEAP:
-                return value->as.heap->htype == BRD_HEAP_STRING;
-        default:
-                return false;
-        }
+        return IS_VAL(*value, BRD_VAL_STRING) || IS_HEAP(*value, BRD_HEAP_STRING);
 }
 
 void
@@ -714,8 +707,7 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         }
                         break;
                 case BRD_HEAP_LIST:
-                        if (b->vtype == BRD_VAL_HEAP
-                                        && b->as.heap->htype == BRD_HEAP_LIST) {
+                        if (IS_HEAP(*b, BRD_HEAP_LIST)) {
                                 BARF("write this code");
                                 return -1;
                         } else {

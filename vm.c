@@ -488,9 +488,9 @@ brd_value_call_closure(struct brd_value_closure *closure, struct brd_value*args,
 static void
 brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
 {
-        if (f->vtype == BRD_VAL_HEAP && f->as.heap->htype == BRD_HEAP_CLOSURE) {
+        if (IS_HEAP(*f, BRD_HEAP_CLOSURE)) {
                 brd_value_call_closure(f->as.heap->as.closure, args, num_args);
-        } else if (f->vtype == BRD_VAL_HEAP && f->as.heap->htype == BRD_HEAP_CLASS) {
+        } else if (IS_HEAP(*f, BRD_HEAP_CLASS)) {
                 struct brd_value object;
 
                 object.vtype = BRD_VAL_HEAP;
@@ -514,7 +514,7 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                         brd_value_map_set(&(**class->constructor).env, "this", &object);
                         brd_value_call_closure(*class->constructor, args, num_args);
                 }
-        } else if (f->vtype == BRD_VAL_METHOD) {
+        } else if (IS_VAL(*f, BRD_VAL_METHOD)) {
                 struct brd_value_method method = f->as.method;
                 struct brd_value this = brd_heap_value(object, method.this);
                 brd_value_map_set(
@@ -753,7 +753,7 @@ brd_vm_run(void)
                         vm.frame[vm.fp].pc += sizeof(size_t);
                         value1 = *brd_stack_pop(&vm.stack);
                         vm.stack.sp -= num_args;
-                        if (value1.vtype == BRD_VAL_BUILTIN) {
+                        if (IS_VAL(value1, BRD_VAL_BUILTIN)) {
                                 int new = builtin_function[value1.as.builtin](
                                         vm.stack.sp,
                                         num_args,
@@ -880,8 +880,7 @@ brd_vm_run(void)
                         if (valuep == NULL) {
                                 value1.vtype = BRD_VAL_UNIT;
                                 brd_stack_push(&vm.stack, &value1);
-                        } else if (valuep->vtype == BRD_VAL_HEAP
-                                        && valuep->as.heap->htype == BRD_HEAP_CLOSURE) {
+                        } else if (IS_HEAP(*valuep, BRD_HEAP_CLOSURE)) {
                                 value2.vtype = BRD_VAL_METHOD;
                                 value2.as.method.this = &value1.as.heap->as.object;
                                 value2.as.method.fn = &valuep->as.heap->as.closure;
@@ -990,10 +989,6 @@ brd_vm_gc(void)
                         prev = heap;
                         heap = next;
                         continue;
-                }
-
-                if (heap->htype == BRD_HEAP_CLASS) {
-                        printf("what?\n");
                 }
 
                 prev->next = next;

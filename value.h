@@ -25,6 +25,9 @@
         .vtype = BRD_VAL_HEAP\
 }
 
+#define IS_VAL(v, type) ((v).vtype == type)
+#define IS_HEAP(v, type) (IS_VAL(v, BRD_VAL_HEAP) && (v).as.heap->htype == type)
+
 struct brd_value;
 struct brd_value_closure;
 struct brd_value_list;
