@@ -65,11 +65,7 @@ postfix =
     | $postfix [ $expression ]
     | $postfix . $id
     | $postfix :: $id
-    | $postfix $subclass
     | $base
-
-# I haven't documented all the required newlines here but it makes sense dw
-subclass = subclass constructor($aglist) $body end (set $id = $expression)* end
 
 arglist =
     | <empty>
@@ -89,6 +85,11 @@ base =
     | while $expression do $body end
     | func ( $fnArgList ) $body end
     | begin $body end
+    | $subclass
+
+# I haven't documented all the required newlines here but it makes sense dw
+subclass =
+    | subclass($expression) constructor($aglist) $body end (set $id = $expression)* end
 
 body =
     | $expression

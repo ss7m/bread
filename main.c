@@ -148,6 +148,7 @@ brd_run_file(char *file_name)
         code = brd_read_file(file_name);
         if (code == NULL) {
                 fprintf(stderr, "Unable to open file %s\n", file_name);
+                exit(EXIT_FAILURE);
         }
         brd_parse_and_compile(code);
         free(code);

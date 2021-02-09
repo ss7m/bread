@@ -1,7 +1,7 @@
 # TODO: how to do super?
 
 # everything is a subclass of @Object
-set RunningSum = @Object subclass
+set RunningSum = subclass(@Object)
   # special syntax for constructor
   constructor()
     set this.sum = 0
@@ -34,7 +34,7 @@ x::update(100)
 @writeln()
 
 # creating an anonymous subclass
-set y = RunningSum subclass
+set y = subclass(RunningSum)
   constructor()
     set this.sum = 0
     set this.sum_sq = 0
