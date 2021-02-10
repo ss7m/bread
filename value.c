@@ -52,6 +52,45 @@ brd_value_list_set(struct brd_value_list *list, size_t idx, struct brd_value *va
         list->items[idx] = *value;
 }
 
+char *
+brd_value_list_to_string(struct brd_value_list *list) {
+        size_t length;
+        char *string;
+        struct brd_value *list_strings = malloc(sizeof(*list_strings) * list->length);
+
+        length = 4; // "[ ]" and null byte
+
+        for (int i = 0; i < list->length; i++) {
+                list_strings[i] = *brd_value_list_get(list, i);
+                brd_value_coerce_string(&list_strings[i]);
+                length += 2 + AS_STRING(list_strings[i])->length;
+        }
+
+        string = malloc(length);
+        length = 0;
+        string[length++] = '[';
+        string[length++] = ' ';
+
+        for (int i = 0; i < list->length; i++) {
+                strcpy(string + length, AS_STRING(list_strings[i])->s);
+                length += AS_STRING(list_strings[i])->length;
+                if (i < list->length - 1) {
+                        string[length++] = ',';
+                }
+                string[length++] = ' ';
+                if (IS_VAL(list_strings[i], BRD_VAL_HEAP)) {
+                        brd_heap_destroy(list_strings[i].as.heap);
+                        free(list_strings[i].as.heap);
+                }
+        }
+
+        string[length++] = ']';
+        string[length] = '\0';
+        free(list_strings);
+
+        return string;
+}
+
 void
 brd_value_string_init(struct brd_value_string *string, char *s)
 {
@@ -435,7 +474,11 @@ brd_value_coerce_string(struct brd_value *value)
                 case BRD_HEAP_STRING:
                         return false;
                 case BRD_HEAP_LIST:
-                        BARF("write this");
+                        string = brd_value_list_to_string(value->as.heap->as.list);
+                        value->vtype = BRD_VAL_HEAP;
+                        value->as.heap = malloc(sizeof(struct brd_heap_entry));
+                        value->as.heap->htype = BRD_HEAP_STRING;
+                        value->as.heap->as.string = brd_value_string_new(string);
                         return true;
                 case BRD_HEAP_CLOSURE:
                         value->vtype = BRD_VAL_STRING;
@@ -741,13 +784,11 @@ brd_value_concat(struct brd_value *a, struct brd_value *b)
         free_a = brd_value_coerce_string(a);
         free_b = brd_value_coerce_string(b);
 
-        string_a = a->vtype == BRD_VAL_STRING ? a->as.string->s
-                : a->as.heap->as.string->s;
-        string_b = b->vtype == BRD_VAL_STRING ? b->as.string->s
-                : b->as.heap->as.string->s;
+        string_a = AS_STRING(*a)->s;
+        string_b = AS_STRING(*b)->s;
 
-        len_a = strlen(string_a);
-        len_b = strlen(string_b);
+        len_a = AS_STRING(*a)->length;
+        len_b = AS_STRING(*b)->length;
 
         new = malloc(sizeof(*new));
         new->htype = BRD_HEAP_STRING;
@@ -814,10 +855,11 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                                                 NULL
                                         );
                                         if (j < value.as.heap->as.list->length - 1) {
-                                                printf(", ");
+                                                printf(",");
                                         }
+                                        printf(" ");
                                 }
-                                printf(" ]");
+                                printf("]");
                                 break;
                         case BRD_HEAP_CLOSURE:
                                 printf("<< closure >>");
@@ -962,17 +1004,12 @@ _builtin_system(struct brd_value *args, size_t num_args, struct brd_value *out)
 
         len = 1;
         for (int i = 0; i < num_args; i++) {
-                len += args[i].vtype == BRD_VAL_STRING ? args[i].as.string->length
-                        : args[i].as.heap->as.string->length;
+                len += AS_STRING(args[i])->length;
         }
         cmd = malloc(sizeof(char) * len);
         cmd[0] = '\0';
         for (int i = 0; i < num_args; i++) {
-                strcat(
-                        cmd,
-                        args[i].vtype == BRD_VAL_STRING ? args[i].as.string->s
-                        : args[i].as.heap->as.string->s
-                );
+                strcat(cmd, AS_STRING(args[i])->s);
         }
 
         out->vtype = BRD_VAL_NUM;

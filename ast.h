@@ -211,6 +211,7 @@ struct brd_node *brd_node_num_lit_new(long double v);
 struct brd_node *brd_node_string_lit_new(char *s);
 struct brd_node *brd_node_bool_lit_new(int b);
 struct brd_node *brd_node_unit_lit_new(void);
+void brd_node_arglist_destroy(struct brd_node_arglist *args);
 struct brd_node_arglist *brd_node_arglist_new(struct brd_node **args, size_t num_args);
 struct brd_node *brd_node_list_lit_new(struct brd_node_arglist *items);
 struct brd_node *brd_node_funcall_new(struct brd_node *fn, struct brd_node_arglist *args);

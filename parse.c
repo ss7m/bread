@@ -422,6 +422,7 @@ brd_parse_postfix(struct brd_token_list *tokens)
                         if (args == NULL) {
                                 goto error_exit;
                         } else if (brd_token_list_pop_token(tokens) != BRD_TOK_RPAREN) {
+                                brd_node_arglist_destroy(args);
                                 error_message = "expected a right parenthesis";
                                 goto error_exit;
                         }
@@ -471,7 +472,7 @@ brd_parse_postfix(struct brd_token_list *tokens)
         }
 
 error_exit:
-        free(node);
+        brd_node_destroy(node);
         return NULL;
 }
 

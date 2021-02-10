@@ -167,7 +167,7 @@ brd_node_unit_lit_new(void)
         return (struct brd_node *)n;
 }
 
-static void
+void
 brd_node_arglist_destroy(struct brd_node_arglist *args)
 {
         for (int i = 0; i < args->num_args; i++) {
