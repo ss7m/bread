@@ -502,6 +502,10 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                         object.as.heap->as.object,
                         &f->as.heap->as.class
                 );
+                brd_value_map_set(
+                        &object.as.heap->as.object->fields,
+                        "this", &object
+                );
                 brd_vm_allocate(object.as.heap);
 
                 /*

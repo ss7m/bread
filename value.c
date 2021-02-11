@@ -328,15 +328,9 @@ brd_value_class_destroy(struct brd_value_class *class)
 void
 brd_value_object_init(struct brd_value_object *object, struct brd_value_class **class)
 {
-        struct brd_value dummy;
-
         object->class = class;
         brd_value_map_init(&object->fields);
-        dummy = brd_heap_value(object, object);
-        brd_value_map_set(&object->fields, "this", &dummy);
         object->is_super = false;
-        /* the value_map of an object keeps the original object alive */
-        /* this is mostly for super class shenanagins */
 }
 
 void
