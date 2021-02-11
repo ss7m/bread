@@ -27,6 +27,7 @@
 
 #define IS_VAL(v, type) ((v).vtype == type)
 #define IS_HEAP(v, type) (IS_VAL(v, BRD_VAL_HEAP) && (v).as.heap->htype == type)
+#define IS_STRING(v) (IS_VAL((v), BRD_VAL_STRING) || IS_HEAP((v), BRD_HEAP_STRING))
 #define AS_STRING(v) (IS_VAL((v), BRD_VAL_STRING) ? (v).as.string : (v).as.heap->as.string)
 
 struct brd_value;

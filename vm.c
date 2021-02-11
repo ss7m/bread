@@ -504,8 +504,8 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                 );
                 brd_value_map_set(
                         &object.as.heap->as.object->fields,
-                        "this", &object
-                );
+                        ".", &object
+                ); // an object keeps itself alive, needed for super classes
                 brd_vm_allocate(object.as.heap);
 
                 /*

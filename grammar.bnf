@@ -83,13 +83,15 @@ base =
     | @builtin
     | if $expression then $body (elif $body)* (else $body)? end
     | while $expression do $body end
-    | func ( $fnArgList ) $body end
+    | func ( $argList ) $body end
     | begin $body end
     | $subclass
 
-# I haven't documented all the required newlines here but it makes sense dw
 subclass =
-    | subclass($expression) constructor($aglist) $body end (set $id = $expression)* end
+    | subclass($expression)
+      $nl+ constructor($aglist) $body end $nl+
+      (set $id = $expression $nl+)*
+      end
 
 body =
     | $expression
