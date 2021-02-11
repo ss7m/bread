@@ -151,10 +151,12 @@ void brd_value_class_destroy(struct brd_value_class *class);
 struct brd_value_object {
         struct brd_value_class **class;
         struct brd_value_map fields;
+        int is_super;
 };
 
 void brd_value_object_init(struct brd_value_object *object, struct brd_value_class **class);
 void brd_value_object_destroy(struct brd_value_object *object);
+void brd_value_object_super(struct brd_value_object *this, struct brd_value_object *super);
 
 void brd_value_debug(struct brd_value *value);
 int brd_value_is_string(struct brd_value *value);

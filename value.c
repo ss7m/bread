@@ -126,7 +126,9 @@ void brd_heap_destroy(struct brd_heap_entry *entry)
                 free(entry->as.class);
                 break;
         case BRD_HEAP_OBJECT:
-                brd_value_object_destroy(entry->as.object);
+                if (!entry->as.object->is_super) {
+                        brd_value_object_destroy(entry->as.object);
+                }
                 free(entry->as.object);
                 break;
         }
@@ -326,8 +328,23 @@ brd_value_class_destroy(struct brd_value_class *class)
 void
 brd_value_object_init(struct brd_value_object *object, struct brd_value_class **class)
 {
+        struct brd_value dummy;
+
         object->class = class;
         brd_value_map_init(&object->fields);
+        dummy = brd_heap_value(object, object);
+        brd_value_map_set(&object->fields, "this", &dummy);
+        object->is_super = false;
+        /* the value_map of an object keeps the original object alive */
+        /* this is mostly for super class shenanagins */
+}
+
+void
+brd_value_object_super(struct brd_value_object *this, struct brd_value_object *super)
+{
+        super->class = (**this->class).super;
+        super->fields = this->fields;
+        super->is_super = true;
 }
 
 void

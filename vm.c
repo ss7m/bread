@@ -528,6 +528,42 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
         }
 }
 
+static void
+brd_value_acc_obj(struct brd_value *object, char *id)
+{
+        struct brd_value value;
+        if (!IS_HEAP(*object, BRD_HEAP_OBJECT)) {
+                BARF("can only :: on objects");
+        } else if (strcmp(id, "super") == 0) {
+                // FIXME: I don't like that super always allocates
+                value.vtype = BRD_VAL_HEAP;
+                value.as.heap = malloc(sizeof(*value.as.heap));
+                value.as.heap->htype = BRD_HEAP_OBJECT;
+                value.as.heap->as.object = malloc(sizeof(struct brd_value_object));
+                brd_vm_allocate(value.as.heap);
+                brd_value_object_super(
+                        object->as.heap->as.object,
+                        value.as.heap->as.object
+                );
+                brd_stack_push(&vm.stack, &value);
+        } else {
+                struct brd_value *vp = brd_value_map_get(
+                        &(**object->as.heap->as.object->class).methods, id
+                );
+                if (vp == NULL) {
+                        value.vtype = BRD_VAL_UNIT;
+                        brd_stack_push(&vm.stack, &value);
+                } else if (IS_HEAP(*vp, BRD_HEAP_CLOSURE)) {
+                        value.vtype = BRD_VAL_METHOD;
+                        value.as.method.this = &object->as.heap->as.object;
+                        value.as.method.fn = &vp->as.heap->as.closure;
+                        brd_stack_push(&vm.stack, &value);
+                } else {
+                        brd_stack_push(&vm.stack, vp);
+                }
+        }
+}
+
 void
 brd_vm_run(void)
 {
@@ -870,24 +906,7 @@ brd_vm_run(void)
                         READ_STRING_INTO(value1.as.string);
                         id = value1.as.string->s;
                         value1 = *brd_stack_pop(&vm.stack);
-                        if (!IS_HEAP(value1, BRD_HEAP_OBJECT)) {
-                                BARF("can only access fields of objects");
-                        }
-                        valuep = brd_value_map_get(
-                                &(**value1.as.heap->as.object->class).methods,
-                                id
-                        );
-                        if (valuep == NULL) {
-                                value1.vtype = BRD_VAL_UNIT;
-                                brd_stack_push(&vm.stack, &value1);
-                        } else if (IS_HEAP(*valuep, BRD_HEAP_CLOSURE)) {
-                                value2.vtype = BRD_VAL_METHOD;
-                                value2.as.method.this = &value1.as.heap->as.object;
-                                value2.as.method.fn = &valuep->as.heap->as.closure;
-                                brd_stack_push(&vm.stack, &value2);
-                        } else {
-                                brd_stack_push(&vm.stack, valuep);
-                        }
+                        brd_value_acc_obj(&value1, id);
                         break;
                 case BRD_VM_SET_FIELD:
                         READ_STRING_INTO(value1.as.string);

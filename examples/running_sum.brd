@@ -43,7 +43,8 @@ set y = subclass(RunningSum)
     this
   end
 
-  set debug = func()
+  set update = func(num)
+    this::super::update(num)
     @writeln("sum: ", this.sum)
     @writeln("sum_sq: ", this.sum_sq)
     @writeln("num: ", this.n)
@@ -51,7 +52,8 @@ set y = subclass(RunningSum)
 end() # note that we're constructing the object immediately
 
 y::update(50)
+@writeln()
 y::update(100)
-y::debug()
+@writeln()
 @writeln("mean: ", y::mean())
 @writeln("stdev: ", y::stdev())
