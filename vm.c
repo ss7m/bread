@@ -439,6 +439,7 @@ brd_vm_init(void)
         object_class.as.heap->as.class = malloc(sizeof(struct brd_value_class));
         brd_value_class_init(object_class.as.heap->as.class);
         object_class.as.heap->as.class->super = &object_class.as.heap->as.class;
+        object_class.as.heap->as.class->super = &object_class.as.heap->as.class;
 
         vm.heap = malloc(sizeof(*vm.heap));
         vm.heap->next = NULL;
