@@ -548,6 +548,9 @@ brd_value_acc_obj(struct brd_value *object, char *id)
                         value.as.heap->as.object
                 );
                 brd_stack_push(&vm.stack, &value);
+        } else if (strcmp(id, "class") == 0) {
+                value = brd_heap_value(class, object->as.heap->as.object->class);
+                brd_stack_push(&vm.stack, &value);
         } else {
                 struct brd_value *vp = brd_value_map_get(
                         &(**object->as.heap->as.object->class).methods, id
