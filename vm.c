@@ -489,7 +489,13 @@ brd_value_call_closure(struct brd_value_closure *closure, struct brd_value*args,
 static void
 brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
 {
-        if (IS_HEAP(*f, BRD_HEAP_CLOSURE)) {
+        if (IS_VAL(*f, BRD_VAL_BUILTIN)) {
+                struct brd_value out;
+                if (builtin_function[f->as.builtin](args, num_args, &out)) {
+                        brd_vm_allocate(out.as.heap);
+                }
+                brd_stack_push(&vm.stack, &out);
+        } else if (IS_HEAP(*f, BRD_HEAP_CLOSURE)) {
                 brd_value_call_closure(f->as.heap->as.closure, args, num_args);
         } else if (IS_HEAP(*f, BRD_HEAP_CLASS)) {
                 struct brd_value object;
@@ -631,38 +637,18 @@ brd_vm_run(void)
                         value1.vtype = BRD_VAL_UNIT;
                         brd_stack_push(&vm.stack, &value1);
                         break;
-                case BRD_VM_PLUS:
-                        value1 = *brd_stack_pop(&vm.stack);
-                        value2 = *brd_stack_pop(&vm.stack);
-                        brd_value_coerce_num(&value1);
-                        brd_value_coerce_num(&value2);
-                        value2.as.num += value1.as.num;
+#define M(op)\
+                        value1 = *brd_stack_pop(&vm.stack);\
+                        value2 = *brd_stack_pop(&vm.stack);\
+                        brd_value_coerce_num(&value1);\
+                        brd_value_coerce_num(&value2);\
+                        value2.as.num op value1.as.num;\
                         brd_stack_push(&vm.stack, &value2);
-                        break;
-                case BRD_VM_MINUS:
-                        value1 = *brd_stack_pop(&vm.stack);
-                        value2 = *brd_stack_pop(&vm.stack);
-                        brd_value_coerce_num(&value1);
-                        brd_value_coerce_num(&value2);
-                        value2.as.num -= value1.as.num;
-                        brd_stack_push(&vm.stack, &value2);
-                        break;
-                case BRD_VM_MUL:
-                        value1 = *brd_stack_pop(&vm.stack);
-                        value2 = *brd_stack_pop(&vm.stack);
-                        brd_value_coerce_num(&value1);
-                        brd_value_coerce_num(&value2);
-                        value2.as.num *= value1.as.num;
-                        brd_stack_push(&vm.stack, &value2);
-                        break;
-                case BRD_VM_DIV:
-                        value1 = *brd_stack_pop(&vm.stack);
-                        value2 = *brd_stack_pop(&vm.stack);
-                        brd_value_coerce_num(&value1);
-                        brd_value_coerce_num(&value2);
-                        value2.as.num /= value1.as.num;
-                        brd_stack_push(&vm.stack, &value2);
-                        break;
+                case BRD_VM_PLUS: M(+=); break;
+                case BRD_VM_MINUS: M(-=); break;
+                case BRD_VM_MUL: M(*=); break;
+                case BRD_VM_DIV: M(/=); break;
+#undef M
                 case BRD_VM_IDIV:
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_pop(&vm.stack);
@@ -783,19 +769,7 @@ brd_vm_run(void)
                         vm.frame[vm.fp].pc += sizeof(size_t);
                         value1 = *brd_stack_pop(&vm.stack);
                         vm.stack.sp -= num_args;
-                        if (IS_VAL(value1, BRD_VAL_BUILTIN)) {
-                                int new = builtin_function[value1.as.builtin](
-                                        vm.stack.sp,
-                                        num_args,
-                                        &value2
-                                );
-                                if (new) {
-                                        brd_vm_allocate(value2.as.heap);
-                                }
-                                brd_stack_push(&vm.stack, &value2);
-                        } else {
-                                brd_value_call(&value1, vm.stack.sp, num_args);
-                        }
+                        brd_value_call(&value1, vm.stack.sp, num_args);
                         break;
                 case BRD_VM_CLOSURE:
                         value1.vtype = BRD_VAL_HEAP;
