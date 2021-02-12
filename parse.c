@@ -78,8 +78,9 @@ brd_parse_expression_stmt(struct brd_token_list *tokens)
                         if (found_term) {
                                 return node;
                         } else {
-                                error_message = "expression statement with no \
-                                                 terminating newline";
+                                brd_node_destroy(node);
+                                error_message = "expression statement with no "
+                                                 "terminating newline";
                                 return NULL;
                         }
                 }
