@@ -409,12 +409,10 @@ brd_vm_destroy(void)
 {
         /* destroy globals */
         brd_heap_destroy(object_class.as.heap);
-        free(object_class.as.heap);
 
         while (vm.heap != NULL) {
                 struct brd_heap_entry *n = vm.heap->next;
                 brd_heap_destroy(vm.heap);
-                free(vm.heap);
                 vm.heap = n;
         }
 
@@ -451,6 +449,7 @@ brd_vm_init(void)
         vm.strings = malloc(sizeof(*vm.strings));
         vm.strings->string.s = malloc(1);
         vm.strings->string.s[0] = '\0';
+        vm.strings->string.length = 0;
         vm.strings->next = NULL;
 
         /* the initial instructions are for the @Object constructor */
@@ -975,7 +974,6 @@ brd_vm_gc(void)
 
                 prev->next = next;
                 brd_heap_destroy(heap);
-                free(heap);
                 heap = next;
         }
 }

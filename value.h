@@ -81,6 +81,7 @@ struct brd_heap_entry {
         enum brd_heap_type htype;
 };
 
+struct brd_heap_entry *brd_heap_new(enum brd_heap_type htype);
 void brd_heap_destroy(struct brd_heap_entry *entry);
 
 enum brd_value_type {

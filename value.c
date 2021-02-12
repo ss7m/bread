@@ -80,7 +80,6 @@ brd_value_list_to_string(struct brd_value_list *list) {
                 string[length++] = ' ';
                 if (IS_VAL(list_strings[i], BRD_VAL_HEAP)) {
                         brd_heap_destroy(list_strings[i].as.heap);
-                        free(list_strings[i].as.heap);
                 }
         }
 
@@ -104,6 +103,12 @@ brd_value_string_new(char *s)
         struct brd_value_string *string = malloc(sizeof(*string));
         brd_value_string_init(string, s);
         return string;
+}
+
+struct brd_heap_entry *
+brd_heap_new(enum brd_heap_type htype) {
+        (void)htype;
+        return NULL;
 }
 
 void brd_heap_destroy(struct brd_heap_entry *entry)
@@ -132,6 +137,7 @@ void brd_heap_destroy(struct brd_heap_entry *entry)
                 free(entry->as.object);
                 break;
         }
+        free(entry);
 }
 
 void
@@ -716,14 +722,10 @@ brd_value_concat(struct brd_value *a, struct brd_value *b)
         new->as.string = brd_value_string_new(string_new);
 
         if (free_a) {
-                free(a->as.heap->as.string->s);
-                free(a->as.heap->as.string);
-                free(a->as.heap);
+                brd_heap_destroy(a->as.heap);
         }
         if (free_b) {
-                free(b->as.heap->as.string->s);
-                free(b->as.heap->as.string);
-                free(b->as.heap);
+                brd_heap_destroy(b->as.heap);
         }
 
         a->vtype = BRD_VAL_HEAP;
@@ -935,9 +937,7 @@ _builtin_system(struct brd_value *args, size_t num_args, struct brd_value *out)
 
         for (int i = 0; i < num_args; i++) {
                 if (malloced[i]) {
-                        free(args[i].as.heap->as.string->s);
-                        free(args[i].as.heap->as.string);
-                        free(args[i].as.heap);
+                        brd_heap_destroy(args[i].as.heap);
                 }
         }
         free(malloced);
