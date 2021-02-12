@@ -583,205 +583,112 @@ brd_value_truthify(struct brd_value *value)
         return false;
 }
 
-int
+// https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+#define signum(a) ((0 < (a)) - ((a) < 0)) //why isn't this in math.h?
+struct brd_comparison
 brd_value_compare(struct brd_value *a, struct brd_value *b)
 {
-        /* I hate this function so much */
-        switch (a->vtype) {
-        case BRD_VAL_NUM:
-                brd_value_coerce_num(b);
-                return (int) (a->as.num - b->as.num);
-        case BRD_VAL_STRING:
-                switch (b->vtype) {
-                case BRD_VAL_NUM:
-                        brd_value_coerce_num(a);
-                        return (int) (a->as.num - b->as.num);
-                case BRD_VAL_STRING:
-                        return strcmp(a->as.string->s, b->as.string->s);
-                case BRD_VAL_BOOL:
-                        /* This is obviously a very good idea */
-                        return strcmp(a->as.string->s, b->as.boolean ? "true" : "false");
-                case BRD_VAL_UNIT:
-                        return a->as.string->length;
-                case BRD_VAL_BUILTIN:
-                        BARF("can't compare functions");
-                        break;
-                case BRD_VAL_METHOD:
-                        BARF("can't compare functions");
-                        break;
-                case BRD_VAL_HEAP:
-                        switch (b->as.heap->htype) {
-                        case BRD_HEAP_STRING:
-                                return strcmp(
-                                        a->as.string->s,
-                                        b->as.heap->as.string->s
-                                );
-                        case BRD_HEAP_LIST:
-                                BARF("can't compare a list and a string");
-                                return -1;
-                        case BRD_HEAP_CLOSURE:
-                                BARF("can't compare a closure and a string");
-                                return -1;
-                        case BRD_HEAP_CLASS:
-                                BARF("can't compare a class and a string");
-                                return -1;
-                        case BRD_HEAP_OBJECT:
-                                BARF("can't compare an object and a string");
-                                return -1;
-                        }
+        struct brd_comparison result;
+
+        if (IS_STRING(*a)) {
+                char *sa = AS_STRING(*a)->s;
+                if (IS_STRING(*b)) {
+                        result.cmp = signum(strcmp(sa, AS_STRING(*b)->s));
+                        result.is_ord = true;
+                } else if (IS_VAL(*b, BRD_VAL_NUM)) {
+                        long double da = strtold(sa, NULL);
+                        result.cmp = signum(da - b->as.num);
+                        result.is_ord = true;
+                } else if (IS_VAL(*b, BRD_VAL_BOOL)) {
+                        result.cmp = strcmp(sa, b->as.boolean ? "true" : "false") == 0;
+                        result.is_ord = false;
+                } else if (IS_VAL(*b, BRD_VAL_UNIT)) {
+                        result.cmp = signum(strcmp(sa, "unit"));
+                        result.is_ord = false;
+                } else {
+                        result.cmp = false;
+                        result.is_ord = false;
                 }
-                break;
-        case BRD_VAL_BOOL:
-                switch (b->vtype) {
-                case BRD_VAL_NUM:
-                        brd_value_coerce_num(a);
-                        return (int) (a->as.num - b->as.num);
-                case BRD_VAL_STRING:
-                        /* Again, this is the obvious thing to do there */
-                        return strcmp(a->as.boolean ? "true" : "false", b->as.string->s);
-                case BRD_VAL_BOOL:
-                        return a->as.boolean - b->as.boolean;
-                case BRD_VAL_UNIT:
-                        return a->as.boolean;
-                case BRD_VAL_BUILTIN:
-                        BARF("can't compare functions");
-                        break;
-                case BRD_VAL_METHOD:
-                        BARF("can't compare functions");
-                        break;
-                case BRD_VAL_HEAP:
-                        switch (b->as.heap->htype) {
-                        case BRD_HEAP_STRING:
-                                return strcmp(
-                                        a->as.boolean ? "true" : "false",
-                                        b->as.heap->as.string->s
-                                );
-                        case BRD_HEAP_LIST:
-                                BARF("can't compare a list and a boolean");
-                                return -1;
-                        case BRD_HEAP_CLOSURE:
-                                BARF("can't compare a closure and a boolean");
-                                return -1;
-                        case BRD_HEAP_CLASS:
-                                BARF("can't compare a class and a boolean");
-                                return -1;
-                        case BRD_HEAP_OBJECT:
-                                BARF("can't compare an object and a boolean");
-                                return -1;
-                        }
+        } else if (IS_VAL(*a, BRD_VAL_NUM)) {
+                long double da = a->as.num;
+                if (IS_STRING(*b)) {
+                        long double db = strtold(AS_STRING(*b)->s, NULL);
+                        result.cmp = signum(da - db);
+                        result.is_ord = true;
+                } else if (IS_VAL(*b, BRD_VAL_NUM)) {
+                        result.cmp = signum(da - b->as.num);
+                        result.is_ord = true;
+                } else if (IS_VAL(*b, BRD_VAL_BOOL)) {
+                        result.cmp = signum(da - b->as.boolean);
+                        result.is_ord = true;
+                } else if (IS_VAL(*b, BRD_VAL_UNIT)) {
+                        result.cmp = signum(da);
+                        result.is_ord = true;
+                } else {
+                        result.cmp = false;
+                        result.is_ord = false;
                 }
-                break;
-        case BRD_VAL_UNIT:
-                switch (b->vtype) {
-                case BRD_VAL_NUM:
-                        return -fabsl(b->as.num);
-                case BRD_VAL_STRING:
-                        return -b->as.string->length;
-                case BRD_VAL_BOOL:
-                        return -b->as.boolean;
-                case BRD_VAL_UNIT:
-                        return 0;
-                case BRD_VAL_BUILTIN:
-                        BARF("can't compare functions");
-                        break;
-                case BRD_VAL_METHOD:
-                        BARF("can't compare functions");
-                        break;
-                case BRD_VAL_HEAP:
-                        switch (b->as.heap->htype) {
-                        case BRD_HEAP_STRING:
-                                return -b->as.heap->as.string->length;
-                        case BRD_HEAP_LIST:
-                                BARF("can't compare a list and unit");
-                                return -1;
-                        case BRD_HEAP_CLOSURE:
-                                BARF("can't compare a closure and a unit");
-                                return -1;
-                        case BRD_HEAP_CLASS:
-                                BARF("can't compare a class and a unit");
-                                return -1;
-                        case BRD_HEAP_OBJECT:
-                                BARF("can't compare an object and a unit");
-                                return -1;
-                        }
+        } else if (IS_VAL(*a, BRD_VAL_BOOL)) {
+                int ba = a->as.boolean;
+                if (IS_STRING(*b)) {
+                        result.cmp =
+                                strcmp(ba ? "true" : "false", AS_STRING(*b)->s) == 0;
+                        result.is_ord = false;
+                } else if (IS_VAL(*b, BRD_VAL_NUM)) {
+                        result.cmp = signum(ba - b->as.num);
+                        result.is_ord = true;
+                } else if (IS_VAL(*b, BRD_VAL_BOOL)) {
+                        result.cmp = ba == b->as.boolean;
+                        result.is_ord = false;
+                } else if (IS_VAL(*b, BRD_VAL_UNIT)) {
+                        result.cmp = ba;
+                        result.is_ord = false;
+                } else {
+                        result.cmp = false;
+                        result.is_ord = false;
                 }
-                break;
-        case BRD_VAL_BUILTIN:
-                BARF("can't compare functions");
-                break;
-        case BRD_VAL_METHOD:
-                BARF("can't compare functions");
-                break;
-        case BRD_VAL_HEAP:
-                switch (a->as.heap->htype) {
-                case BRD_HEAP_STRING:
-                        switch (b->vtype) {
-                        case BRD_VAL_NUM:
-                                brd_value_coerce_num(a);
-                                return (int) (a->as.num - b->as.num);
-                        case BRD_VAL_STRING:
-                                return strcmp(
-                                        a->as.heap->as.string->s,
-                                        b->as.string->s
-                                );
-                        case BRD_VAL_BOOL:
-                                /* This is obviously a very good idea */
-                                return strcmp(
-                                        a->as.heap->as.string->s,
-                                        b->as.boolean ? "true" : "false"
-                                );
-                        case BRD_VAL_UNIT:
-                                return a->as.heap->as.string->length;
-                        case BRD_VAL_BUILTIN:
-                                BARF("can't compare functions");
-                                break;
-                        case BRD_VAL_METHOD:
-                                BARF("can't compare functions");
-                                break;
-                        case BRD_VAL_HEAP:
-                                switch (b->as.heap->htype) {
-                                case BRD_HEAP_STRING:
-                                        return strcmp(
-                                                a->as.heap->as.string->s,
-                                                b->as.heap->as.string->s
-                                        );
-                                case BRD_HEAP_LIST:
-                                        BARF("can't compare a list and a string");
-                                        return -1;
-                                case BRD_HEAP_CLOSURE:
-                                        BARF("can't compare a closure and a string");
-                                        return -1;
-                                case BRD_HEAP_CLASS:
-                                        BARF("can't compare a class and a string");
-                                        return -1;
-                                case BRD_HEAP_OBJECT:
-                                        BARF("can't compare an object and a string");
-                                        return -1;
-                                }
-                        }
-                        break;
-                case BRD_HEAP_LIST:
-                        if (IS_HEAP(*b, BRD_HEAP_LIST)) {
-                                BARF("write this code");
-                                return -1;
-                        } else {
-                                BARF("can only compare lists with lists");
-                                return -1;
-                        }
-                case BRD_HEAP_CLOSURE:
-                        BARF("can't compare closures");
-                        return -1;
-                case BRD_HEAP_CLASS:
-                        BARF("can't compare classes");
-                        return -1;
-                case BRD_HEAP_OBJECT:
-                        BARF("can't compare objects");
-                        return -1;
+        } else if (IS_VAL(*a, BRD_VAL_UNIT)) {
+                if (IS_STRING(*b)) {
+                        result.cmp = strcmp("unit", AS_STRING(*b)->s) == 0;
+                        result.is_ord = false;
+                } else if (IS_VAL(*b, BRD_VAL_NUM)) {
+                        result.cmp = signum(-b->as.num);
+                        result.is_ord = true;
+                } else if (IS_VAL(*b, BRD_VAL_BOOL)) {
+                        result.cmp = b->as.boolean;
+                        result.is_ord = false;
+                } else if (IS_VAL(*b, BRD_VAL_UNIT)) {
+                        result.cmp = 0;
+                        result.is_ord = true;
+                } else {
+                        result.cmp = false;
+                        result.is_ord = false;
                 }
+        } else if (IS_VAL(*a, BRD_VAL_METHOD)) {
+                struct brd_value_method ma = a->as.method;
+                if (IS_VAL(*b, BRD_VAL_METHOD)) {
+                        struct brd_value_method mb = b->as.method;
+                        result.cmp = ma.this == mb.this && ma.fn == mb.fn;
+                        result.is_ord = false;
+                } else {
+                        result.cmp = false;
+                        result.is_ord = false;
+                }
+        } else if (IS_VAL(*a, BRD_VAL_HEAP)) {
+                if (IS_VAL(*b, BRD_VAL_HEAP)) {
+                        result.cmp = a->as.heap == b->as.heap;
+                        result.is_ord = false;
+                } else {
+                        result.cmp = false;
+                        result.is_ord = false;
+                }
+        } else {
+                BARF("what?");
         }
-        BARF("what?");
-        return -1;
+
+        return result;
 }
+#undef signum
 
 void
 brd_value_concat(struct brd_value *a, struct brd_value *b)

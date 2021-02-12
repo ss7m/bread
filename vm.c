@@ -575,6 +575,7 @@ brd_vm_run(void)
         enum brd_bytecode op;
         enum brd_builtin b;
         struct brd_value value1, value2, value3, *valuep;
+        struct brd_comparison cmp;
         char *id;
         char **args;
         size_t jmp, num_args;
@@ -699,39 +700,24 @@ brd_vm_run(void)
                         brd_vm_allocate(value2.as.heap);
                         brd_stack_push(&vm.stack, &value2);
                         break;
-                case BRD_VM_LT:
-                        value1 = *brd_stack_pop(&vm.stack);
-                        value2 = *brd_stack_pop(&vm.stack);
-                        value2.as.boolean = brd_value_compare(&value2, &value1) < 0;
-                        value2.vtype = BRD_VAL_BOOL;
+#define M(op)\
+                        value1 = *brd_stack_pop(&vm.stack);\
+                        value2 = *brd_stack_pop(&vm.stack);\
+                        cmp = brd_value_compare(&value2, &value1);\
+                        brd_comparison_ord(cmp, op, value2.as.boolean);\
+                        value2.vtype = BRD_VAL_BOOL;\
                         brd_stack_push(&vm.stack, &value2);
-                        break;
-                case BRD_VM_LEQ:
-                        value1 = *brd_stack_pop(&vm.stack);
-                        value2 = *brd_stack_pop(&vm.stack);
-                        value2.as.boolean = brd_value_compare(&value2, &value1) <= 0;
-                        value2.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm.stack, &value2);
-                        break;
-                case BRD_VM_GT:
-                        value1 = *brd_stack_pop(&vm.stack);
-                        value2 = *brd_stack_pop(&vm.stack);
-                        value2.as.boolean = brd_value_compare(&value2, &value1) > 0;
-                        value2.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm.stack, &value2);
-                        break;
-                case BRD_VM_GEQ:
-                        value1 = *brd_stack_pop(&vm.stack);
-                        value2 = *brd_stack_pop(&vm.stack);
-                        value2.as.boolean = brd_value_compare(&value2, &value1) >= 0;
-                        value2.vtype = BRD_VAL_BOOL;
-                        brd_stack_push(&vm.stack, &value2);
-                        break;
+                case BRD_VM_LT: M(<); break;
+                case BRD_VM_LEQ: M(<=); break;
+                case BRD_VM_GT: M(>); break;
+                case BRD_VM_GEQ: M(>=); break;
+#undef M
                 case BRD_VM_EQ:
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_pop(&vm.stack);
-                        value2.as.boolean = brd_value_compare(&value2, &value1) == 0;
+                        cmp = brd_value_compare(&value2, &value1);
                         value2.vtype = BRD_VAL_BOOL;
+                        value2.as.boolean = cmp.is_ord ? cmp.cmp == 0 : cmp.cmp;
                         brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_NEGATE:

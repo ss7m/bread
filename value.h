@@ -159,13 +159,27 @@ void brd_value_object_init(struct brd_value_object *object, struct brd_value_cla
 void brd_value_object_destroy(struct brd_value_object *object);
 void brd_value_object_super(struct brd_value_object *this, struct brd_value_object *super);
 
+struct brd_comparison {
+        signed char cmp;
+        char is_ord;
+};
+
+#define brd_comparison_ord(cmp, op, out) do {\
+        printf("%d\n", cmp.is_ord);\
+        if (cmp.is_ord) {\
+                out = cmp.cmp op 0;\
+        } else {\
+                BARF("bad comparison operation");\
+        }\
+} while(0)
+
 void brd_value_debug(struct brd_value *value);
 int brd_value_is_string(struct brd_value *value);
 void brd_value_coerce_num(struct brd_value *value);
 int brd_value_coerce_string(struct brd_value *value);
 int brd_value_index(struct brd_value *value, size_t idx);
 int brd_value_truthify(struct brd_value *value);
-int brd_value_compare(struct brd_value *a, struct brd_value *b);
+struct brd_comparison brd_value_compare(struct brd_value *a, struct brd_value *b);
 void brd_value_concat(struct brd_value *a, struct brd_value *b);
 
 enum brd_builtin {
