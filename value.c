@@ -107,8 +107,28 @@ brd_value_string_new(char *s)
 
 struct brd_heap_entry *
 brd_heap_new(enum brd_heap_type htype) {
-        (void)htype;
-        return NULL;
+        struct brd_heap_entry *heap = malloc(sizeof(*heap));
+        heap->htype = htype;
+        
+        switch (htype) {
+        case BRD_HEAP_STRING:
+                heap->as.string = malloc(sizeof(struct brd_value_string));
+                break;
+        case BRD_HEAP_LIST:
+                heap->as.list = malloc(sizeof(struct brd_value_list));
+                break;
+        case BRD_HEAP_CLOSURE:
+                heap->as.closure = malloc(sizeof(struct brd_value_closure));
+                break;
+        case BRD_HEAP_CLASS:
+                heap->as.class = malloc(sizeof(struct brd_value_class));
+                break;
+        case BRD_HEAP_OBJECT:
+                heap->as.class = malloc(sizeof(struct brd_value_object));
+                break;
+        }
+
+        return heap;
 }
 
 void brd_heap_destroy(struct brd_heap_entry *entry)
@@ -464,9 +484,8 @@ brd_value_coerce_string(struct brd_value *value)
                 value->vtype = BRD_VAL_HEAP;
                 string = malloc(sizeof(char) * 50); /* that's enough, right? */
                 sprintf(string, "%Lg", value->as.num);
-                value->as.heap = malloc(sizeof(struct brd_heap_entry));
-                value->as.heap->htype = BRD_HEAP_STRING;
-                value->as.heap->as.string = brd_value_string_new(string);
+                value->as.heap = brd_heap_new(BRD_HEAP_STRING);
+                brd_value_string_init(value->as.heap->as.string, string);
                 return true;
         case BRD_VAL_STRING:
                 return false;
@@ -493,9 +512,8 @@ brd_value_coerce_string(struct brd_value *value)
                 case BRD_HEAP_LIST:
                         string = brd_value_list_to_string(value->as.heap->as.list);
                         value->vtype = BRD_VAL_HEAP;
-                        value->as.heap = malloc(sizeof(struct brd_heap_entry));
-                        value->as.heap->htype = BRD_HEAP_STRING;
-                        value->as.heap->as.string = brd_value_string_new(string);
+                        value->as.heap = brd_heap_new(BRD_HEAP_STRING);
+                        brd_value_string_init(value->as.heap->as.string, string);
                         return true;
                 case BRD_HEAP_CLOSURE:
                         value->vtype = BRD_VAL_STRING;
@@ -549,9 +567,8 @@ index_string:
         c[0] = string[idx];
         c[1] = '\0';
         value->vtype = BRD_VAL_HEAP;
-        value->as.heap = malloc(sizeof(struct brd_heap_entry));
-        value->as.heap->htype = BRD_HEAP_STRING;
-        value->as.heap->as.string = brd_value_string_new(c);
+        value->as.heap = brd_heap_new(BRD_HEAP_STRING);
+        brd_value_string_init(value->as.heap->as.string, c);
         return true;
 }
 
@@ -817,13 +834,12 @@ _builtin_readln(struct brd_value *args, size_t num_args, struct brd_value *out)
         }
 
         out->vtype = BRD_VAL_HEAP;
-        out->as.heap = malloc(sizeof(struct brd_heap_entry));
-        out->as.heap->htype = BRD_HEAP_STRING;
+        out->as.heap = brd_heap_new(BRD_HEAP_STRING);
 
         str = NULL;
         n = getline(&str, &n, stdin);
         str[n-1] = '\0'; /* remove newline */
-        out->as.heap->as.string = brd_value_string_new(str);
+        brd_value_string_init(out->as.heap->as.string, str);
         return true;
 }
 

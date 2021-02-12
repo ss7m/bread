@@ -432,9 +432,7 @@ brd_vm_init(void)
 {
         /* initialize gloabls */
         object_class.vtype = BRD_VAL_HEAP;
-        object_class.as.heap = malloc(sizeof(*object_class.as.heap));
-        object_class.as.heap->htype = BRD_HEAP_CLASS;
-        object_class.as.heap->as.class = malloc(sizeof(struct brd_value_class));
+        object_class.as.heap = brd_heap_new(BRD_HEAP_CLASS);
         brd_value_class_init(object_class.as.heap->as.class);
         object_class.as.heap->as.class->super = &object_class.as.heap->as.class;
         object_class.as.heap->as.class->super = &object_class.as.heap->as.class;
@@ -500,9 +498,7 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                 struct brd_value object;
 
                 object.vtype = BRD_VAL_HEAP;
-                object.as.heap = malloc(sizeof(*object.as.heap));
-                object.as.heap->htype = BRD_HEAP_OBJECT;
-                object.as.heap->as.object = malloc(sizeof(struct brd_value_object));
+                object.as.heap = brd_heap_new(BRD_HEAP_OBJECT);
                 brd_value_object_init(
                         object.as.heap->as.object,
                         &f->as.heap->as.class
@@ -547,9 +543,7 @@ brd_value_acc_obj(struct brd_value *object, char *id)
         } else if (strcmp(id, "super") == 0) {
                 // FIXME: I don't like that super always allocates
                 value.vtype = BRD_VAL_HEAP;
-                value.as.heap = malloc(sizeof(*value.as.heap));
-                value.as.heap->htype = BRD_HEAP_OBJECT;
-                value.as.heap->as.object = malloc(sizeof(struct brd_value_object));
+                value.as.heap = brd_heap_new(BRD_HEAP_OBJECT);
                 brd_vm_allocate(value.as.heap);
                 brd_value_object_super(
                         object->as.heap->as.object,
@@ -772,11 +766,8 @@ brd_vm_run(void)
                         break;
                 case BRD_VM_CLOSURE:
                         value1.vtype = BRD_VAL_HEAP;
-                        value1.as.heap = malloc(sizeof(struct brd_heap_entry));
+                        value1.as.heap = brd_heap_new(BRD_HEAP_CLOSURE);
                         brd_vm_allocate(value1.as.heap);
-                        value1.as.heap->htype = BRD_HEAP_CLOSURE;
-                        value1.as.heap->as.closure =
-                                malloc(sizeof(struct brd_value_closure));
                         num_args = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
                         vm.frame[vm.fp].pc += sizeof(size_t);
                         args = malloc(sizeof(char *) * num_args);
@@ -804,11 +795,7 @@ brd_vm_run(void)
                         break;
                 case BRD_VM_LIST:
                         value1.vtype = BRD_VAL_HEAP;
-                        value1.as.heap = malloc(sizeof(*value1.as.heap));
-                        value1.as.heap->htype = BRD_HEAP_LIST;
-                        value1.as.heap->as.list = malloc(
-                                sizeof(struct brd_value_list)
-                        );
+                        value1.as.heap = brd_heap_new(BRD_HEAP_LIST);
                         brd_value_list_init(value1.as.heap->as.list);
                         brd_vm_allocate(value1.as.heap);
                         brd_stack_push(&vm.stack, &value1);
@@ -890,9 +877,7 @@ brd_vm_run(void)
                         value1 = *brd_stack_pop(&vm.stack); /* constructor */
                         value2 = *brd_stack_pop(&vm.stack); /* super */
                         value3.vtype = BRD_VAL_HEAP;
-                        value3.as.heap = malloc(sizeof(*value3.as.heap));
-                        value3.as.heap->htype = BRD_HEAP_CLASS;
-                        value3.as.heap->as.class = malloc(sizeof(struct brd_value_class));
+                        value3.as.heap = brd_heap_new(BRD_HEAP_CLASS);
                         brd_vm_allocate(value3.as.heap);
                         if (!IS_HEAP(value2, BRD_HEAP_CLASS)) {
                                 BARF("attempted to make a subclass of a non-class");
