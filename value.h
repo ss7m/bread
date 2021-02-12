@@ -166,7 +166,6 @@ struct brd_comparison {
 };
 
 #define brd_comparison_ord(cmp, op, out) do {\
-        printf("%d\n", cmp.is_ord);\
         if (cmp.is_ord) {\
                 out = cmp.cmp op 0;\
         } else {\

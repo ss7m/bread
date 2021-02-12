@@ -437,11 +437,9 @@ brd_vm_init(void)
         object_class.as.heap->as.class->super = &object_class.as.heap->as.class;
         object_class.as.heap->as.class->super = &object_class.as.heap->as.class;
 
-        vm.heap = malloc(sizeof(*vm.heap));
+        vm.heap = brd_heap_new(BRD_HEAP_STRING);
+        brd_value_string_init(vm.heap->as.string, strdup(""));
         vm.heap->next = NULL;
-        vm.heap->htype = BRD_HEAP_STRING;
-        vm.heap->as.string = malloc(sizeof(*vm.heap->as.string));
-        vm.heap->as.string->s = malloc(1);
         vm.stack.sp = vm.stack.values;
 
         vm.strings = malloc(sizeof(*vm.strings));
