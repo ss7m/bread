@@ -99,7 +99,7 @@ struct brd_value_method {
         struct brd_value_closure **fn;
 };
 
-struct brd_value {
+struct brd_value { // TODO: nan boxing ???
         union {
                 long double num;
                 struct brd_value_string *string;

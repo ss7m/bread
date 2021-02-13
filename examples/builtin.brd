@@ -1,3 +1,17 @@
+set Tester = subclass(@Object)
+  constructor(msg, fn)
+    set this.num = 1
+    set this.msg = msg
+    set this.fn = fn
+    this
+  end
+
+  set test = func(val)
+    @writeln(this.msg, " ", this.num, ": ", this.fn(val))
+    set this.num = this.num + 1
+  end
+end
+
 @write("write\n")
 @writeln("writeln")
 @write("enter some text: ")
@@ -8,16 +22,36 @@ set response = @readln()
 @writeln("your response was: ", response)
 @writeln("your response is ", @length(response), " characters long")
 @writeln("the word \"cow\" is ", @length("cow"), " characters long")
-@writeln("the list [1, 2, 3, 4, 5] is ", @length([1, 2, 3, 4, 5]), " entries long")
+@writeln("the list ", [1,2,3,4,5], " is ", @length([1, 2, 3, 4, 5]), " entries long")
 
 @writeln()
 
-@writeln("typeof test 1: ", @typeof(17.2))
-@writeln("typeof test 2: ", @typeof(true))
-@writeln("typeof test 3: ", @typeof("hi"))
-@writeln("typeof test 4: ", @typeof([8, "", "" .. "", unit]))
-@writeln("typeof test 5: ", @typeof("h" .. "i"))
-@writeln("typeof test 6: ", @typeof(unit))
+set typeof = Tester("typeof test", @typeof)
+
+typeof::test(17.2)
+typeof::test(true)
+typeof::test("hi")
+typeof::test([8, "", "" .. "", unit])
+typeof::test(response)
+typeof::test(unit)
+typeof::test(Tester)
+typeof::test(typeof)
+typeof::test(typeof::test)
+typeof::test(@string)
+
+@writeln()
+set string = Tester("string test", @string)
+
+string::test(17.2)
+string::test(true)
+string::test("hi")
+string::test([8, [1,2], unit])
+string::test(response)
+string::test(unit)
+string::test(Tester)
+string::test(typeof)
+string::test(typeof::test)
+string::test(@string)
 
 @writeln()
 

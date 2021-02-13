@@ -29,7 +29,7 @@ function! GetBreadIndent()
     if midx == -1
         let midx = match(prevline, '(\s*$')
         if midx == -1
-          let midx = match(prevline, '\<func\>\s*(\|\<constructor\>\s*(')
+          let midx = match(prevline, '\(\<func\|\<constructor\|\<subclass\)\s*(')
         endif
     endif
 

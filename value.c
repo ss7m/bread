@@ -504,7 +504,7 @@ brd_value_coerce_string(struct brd_value *value)
         case BRD_VAL_METHOD:
                 value->vtype = BRD_VAL_STRING;
                 value->as.string = &method_string;
-                break;
+                return false;
         case BRD_VAL_HEAP:
                 switch (value->as.heap->htype) {
                 case BRD_HEAP_STRING:
@@ -525,7 +525,7 @@ brd_value_coerce_string(struct brd_value *value)
                         return false;
                 case BRD_HEAP_OBJECT:
                         value->vtype = BRD_VAL_STRING;
-                        value->as.string = &class_string;
+                        value->as.string = &object_string;
                         return false;
                 }
                 break;
