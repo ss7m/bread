@@ -1,4 +1,4 @@
-set basename = func(string)
+set basename_idx = func(string)
   set found = false
   set idx = 0
   set i = @length(string) - 1
@@ -15,12 +15,10 @@ set basename = func(string)
 end
 
 set file_name = @readln()
-set idx = basename(file_name)
 set base = ""
 
-while* idx < @length(file_name) do
-  set base = base .. file_name[idx]
-  set idx = idx + 1
+for* i = basename_idx(file_name), @length(file_name) do
+  set base = base .. file_name[i]
 end
 
 @writeln(base)
