@@ -1,0 +1,15 @@
+set table = for i = 0, 15 do
+  # if there's no "else", the value of the expression will be "unit"
+  # when otherwise the else branch would be reached
+  if i % 3 = 0 then
+    "fizz"
+  elif i % 5 = 0 then
+    "buzz"
+  end
+end
+set table[0] = "fizzbuzz"
+
+for* i = 1, 101 do
+  # unit is falsey, non-empty strings are truthy
+  @writeln(table[i % 15] or i)
+end

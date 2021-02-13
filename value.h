@@ -99,7 +99,8 @@ struct brd_value_method {
         struct brd_value_closure **fn;
 };
 
-struct brd_value { // TODO: nan boxing ???
+struct brd_value {
+        // can't nan box because sizeof(method) == sizeof(long double)
         union {
                 long double num;
                 struct brd_value_string *string;
@@ -109,6 +110,7 @@ struct brd_value { // TODO: nan boxing ???
                 struct brd_heap_entry *heap;
         } as;
         enum brd_value_type vtype;
+        // not loving that we're wasting 15 bytes here
 };
 
 void brd_value_gc_mark(struct brd_value *value);

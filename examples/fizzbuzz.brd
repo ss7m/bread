@@ -1,7 +1,7 @@
 # normally loops build a list
 # the star operator here prevents this, and instead the value of the expression
 # is just "unit"
-for* x = 1, 46 do
+for* x = 1, 101 do
   set three = x % 3 = 0
   set five  = x % 5 = 0
 
