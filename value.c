@@ -38,18 +38,15 @@ brd_value_list_push(struct brd_value_list *list, struct brd_value *value)
         list->items[list->length++] = *value;
 }
 
-struct brd_value *
-brd_value_list_get(struct brd_value_list *list, size_t idx)
-{
-        idx = idx % list->length;
-        return &list->items[idx];
-}
-
 void
 brd_value_list_set(struct brd_value_list *list, size_t idx, struct brd_value *value)
 {
-        idx = idx % list->length;
-        list->items[idx] = *value;
+        if (list->length == 0) {
+                brd_value_list_push(list, value);
+        } else {
+                idx = idx % list->length;
+                list->items[idx] = *value;
+        }
 }
 
 char *
@@ -61,7 +58,7 @@ brd_value_list_to_string(struct brd_value_list *list) {
         length = 4; // "[ ]" and null byte
 
         for (int i = 0; i < list->length; i++) {
-                list_strings[i] = *brd_value_list_get(list, i);
+                list_strings[i] = list->items[i];
                 brd_value_coerce_string(&list_strings[i]);
                 length += 2 + AS_STRING(list_strings[i])->length;
         }
@@ -407,10 +404,11 @@ brd_value_debug(struct brd_value *value)
                                         &value->as.heap->as.list->items[i]
                                 );
                                 if (i < value->as.heap->as.list->length - 1) {
-                                        printf(", ");
+                                        printf(",");
                                 }
+                                printf(" ");
                         }
-                        printf(" ]");
+                        printf("]");
                         break;
                 case BRD_HEAP_CLOSURE:
                         printf("<< closure >>");
@@ -537,39 +535,34 @@ brd_value_coerce_string(struct brd_value *value)
 int
 brd_value_index(struct brd_value *value, size_t idx)
 {
-        const char *string;
-        char *c;
-
-        switch (value->vtype) {
-        case BRD_VAL_STRING:
-                string = value->as.string->s;
-                goto index_string;
-        case BRD_VAL_HEAP:
-                switch (value->as.heap->htype) {
-                case BRD_HEAP_STRING:
-                        string = value->as.heap->as.string->s;
-                        goto index_string;
-                case BRD_HEAP_LIST:
-                        *value = *brd_value_list_get(value->as.heap->as.list, idx);
+        if IS_STRING(*value) {
+                struct brd_value_string *string = AS_STRING(*value);
+                char *c;
+                if (string->length == 0) {
+                        value->vtype = BRD_VAL_UNIT;
                         return false;
-                default:
-                        BARF("attempted to index a non-indexable");
-                        return -1;
                 }
-        default:
+
+                c = malloc(2);
+                c[0] = string->s[idx % string->length];
+                c[1] = '\0';
+                value->vtype = BRD_VAL_HEAP;
+                value->as.heap = brd_heap_new(BRD_HEAP_STRING);
+                brd_value_string_init(value->as.heap->as.string, c);
+                return true;
+        } else if (IS_HEAP(*value, BRD_HEAP_LIST)) {
+                struct brd_value_list *list = value->as.heap->as.list;
+                if (list->length == 0) {
+                        value->vtype = BRD_VAL_UNIT;
+                        return false;
+                } else {
+                        *value = list->items[idx % list->length];
+                        return false;
+                }
+        } else {
                 BARF("attempted to index a non-indexable");
                 return -1;
         }
-
-index_string:
-        idx = idx % strlen(string);
-        c = malloc(sizeof(char) * 2);
-        c[0] = string[idx];
-        c[1] = '\0';
-        value->vtype = BRD_VAL_HEAP;
-        value->as.heap = brd_heap_new(BRD_HEAP_STRING);
-        brd_value_string_init(value->as.heap->as.string, c);
-        return true;
 }
 
 int

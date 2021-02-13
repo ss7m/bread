@@ -53,7 +53,6 @@ struct brd_value_list {
 
 void brd_value_list_init(struct brd_value_list *list);
 void brd_value_list_push(struct brd_value_list *list, struct brd_value *value);
-struct brd_value *brd_value_list_get(struct brd_value_list *list, size_t idx);
 void brd_value_list_set(struct brd_value_list *list, size_t idx, struct brd_value *value);
 char *brd_value_list_to_string(struct brd_value_list *list);
 
