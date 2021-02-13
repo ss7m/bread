@@ -22,4 +22,7 @@ set x = while i < 10 do
 end
 @writeln(x)
 
+set y = for i = 0, @length(x) do 2 * x[i] end
+@writeln(y)
+
 @writeln("indexing a string: ", "hello"[1])

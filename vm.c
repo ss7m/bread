@@ -360,6 +360,10 @@ mkbinop:
                 } else {
                         ADD_OP(BRD_VM_POP);
                 }
+                if (AS(while, node)->inc != NULL) {
+                        brd_node_compile(AS(while, node)->inc);
+                        ADD_OP(BRD_VM_POP);
+                }
                 ADD_OP(BRD_VM_JMPB);
                 jmp = vm.bc_length - temp;
                 ADD_SIZET(jmp);

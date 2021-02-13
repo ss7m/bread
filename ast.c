@@ -355,11 +355,14 @@ brd_node_while_destroy(struct brd_node *n)
         struct brd_node_while *w = (struct brd_node_while *)n;
         brd_node_destroy(w->cond);
         brd_node_destroy(w->body);
+        if (w->inc != NULL) {
+                brd_node_destroy(w->inc);
+        }
         _brd_node_destroy(n);
 }
 
 struct brd_node *
-brd_node_while_new(int no_list, struct brd_node *cond, struct brd_node *body)
+brd_node_while_new(int no_list, struct brd_node *cond, struct brd_node *body, struct brd_node *inc)
 {
         struct brd_node_while *n = malloc(sizeof(*n));
         n->_node.ntype = BRD_NODE_WHILE;
@@ -368,6 +371,7 @@ brd_node_while_new(int no_list, struct brd_node *cond, struct brd_node *body)
         n->no_list = no_list;
         n->cond = cond;
         n->body = body;
+        n->inc = inc;
         return (struct brd_node *)n;
 }
 

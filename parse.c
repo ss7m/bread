@@ -562,6 +562,9 @@ brd_parse_base(struct brd_token_list *tokens)
         case BRD_TOK_WHILE:
                 brd_token_list_pop_token(tokens);
                 return brd_parse_while(tokens); /* could be null */
+        case BRD_TOK_FOR:
+                brd_token_list_pop_token(tokens);
+                return brd_parse_for(tokens);
         case BRD_TOK_FUNC:
                 brd_token_list_pop_token(tokens);
                 return brd_parse_func(tokens); /* could be null */
@@ -843,10 +846,10 @@ brd_parse_elif(struct brd_token_list *tokens, struct brd_node_elif *elif)
         }
 }
 
-/* the while token has already been consumed */
 struct brd_node *
 brd_parse_while(struct brd_token_list *tokens)
 {
+        /* the while token has already been consumed */
         struct brd_node *cond, *body;
         int skip_copy = skip_newlines, no_list;
 
@@ -880,8 +883,94 @@ brd_parse_while(struct brd_token_list *tokens)
                 return NULL;
         }
 
-        return brd_node_while_new(no_list, cond, body);
+        return brd_node_while_new(no_list, cond, body, NULL);
 }
+
+struct brd_node *
+brd_parse_for(struct brd_token_list *tokens)
+{
+        /* the for token has already been consumed */
+        char *var;
+        struct brd_node *exp1, *exp2, *exp3, *body, **stmts;
+        int skip_copy = skip_newlines, no_list;
+
+        skip_newlines = true;
+        if (brd_token_list_peek(tokens) == BRD_TOK_MUL) {
+                brd_token_list_pop_token(tokens);
+                no_list = true;
+        } else {
+                no_list = false;
+        }
+
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_VAR) {
+                error_message = "expected an identifier";
+                return NULL;
+        }
+        var = brd_token_list_pop_string(tokens);
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_EQ) {
+                error_message = "expected an \"=\"";
+                return NULL;
+        }
+        exp1 = brd_parse_expression(tokens);
+        if (exp1 == NULL) {
+                return NULL;
+        } else if (brd_token_list_pop_token(tokens)!= BRD_TOK_COMMA) {
+                error_message = "expected a comma";
+                goto error_exit1;
+        }
+        exp2 = brd_parse_expression(tokens);
+        if (exp2 == NULL) {
+                goto error_exit1;
+        } else if(brd_token_list_peek(tokens) == BRD_TOK_COMMA) {
+                brd_token_list_pop_token(tokens);
+                exp3 = brd_parse_expression(tokens);
+                if (exp3 == NULL) {
+                        goto error_exit2;
+                }
+        } else {
+                exp3 = brd_node_num_lit_new(1);
+        }
+
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_DO) {
+                error_message = "expected a do token";
+                goto error_exit3;
+        }
+
+        skip_newlines = skip_copy;
+        body = brd_parse_body(tokens);
+        if(body == NULL) {
+                goto error_exit3;
+        }
+
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_END) {
+                error_message = "expected an end token";
+                goto error_exit4;
+        }
+
+        stmts = malloc(sizeof(*stmts) * 2);
+        stmts[0] = brd_node_assign_new(brd_node_var_new(var), exp1);
+        stmts[1] = brd_node_while_new(
+                no_list,
+                brd_node_binop_new(BRD_LT, brd_node_var_new(var), exp2),
+                body,
+                brd_node_assign_new(
+                        brd_node_var_new(var),
+                        brd_node_binop_new(BRD_PLUS, brd_node_var_new(var), exp3)
+                )
+        );
+        return brd_node_body_new(stmts, 2);
+
+error_exit4:
+        brd_node_destroy(body);
+error_exit3:
+        brd_node_destroy(exp3);
+error_exit2:
+        brd_node_destroy(exp2);
+error_exit1:
+        brd_node_destroy(exp1);
+        return NULL;
+}
+
 struct brd_node *
 brd_parse_subclass(struct brd_token_list *tokens)
 {

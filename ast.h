@@ -174,7 +174,9 @@ struct brd_node_while {
         struct brd_node _node;
         struct brd_node *cond;
         struct brd_node *body;
+        struct brd_node *inc;
         int no_list;
+        // inc can be null
 };
 
 struct brd_node_field {
@@ -220,7 +222,7 @@ struct brd_node *brd_node_builtin_new(char *builtin);
 struct brd_node *brd_node_body_new(struct brd_node **stmts, size_t num_stmts);
 struct brd_node *brd_node_ifexpr_new(struct brd_node *cond, struct brd_node *body, struct brd_node_elif *elifs, size_t num_elifs, struct brd_node *els);
 struct brd_node *brd_node_index_new(struct brd_node *list, struct brd_node *idx);
-struct brd_node *brd_node_while_new(int no_list, struct brd_node *cond, struct brd_node *body);
+struct brd_node *brd_node_while_new(int no_list, struct brd_node *cond, struct brd_node *body, struct brd_node *inc);
 struct brd_node *brd_node_field_new(struct brd_node *object, char *field);
 struct brd_node *brd_node_acc_obj_new(struct brd_node *object, char *id);
 struct brd_node *brd_node_subclass_new(struct brd_node *super, struct brd_node *constructor, struct brd_node_subclass_set *decs, size_t num_decs);

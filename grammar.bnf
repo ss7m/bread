@@ -83,6 +83,7 @@ base =
     | @builtin
     | if $expression then $body (elif $body)* (else $body)? end
     | while $expression do $body end
+    | for $var = $expression , $expression (, $expression)? do $body end
     | func ( $argList ) $body end
     | begin $body end
     | $subclass
