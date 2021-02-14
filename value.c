@@ -16,12 +16,18 @@ hash(char *str)
         return hash;
 }
 
+static void
+brd_value_list_init_with_capacity(struct brd_value_list *list, size_t capacity)
+{
+        list->capacity = capacity;
+        list->length = 0;
+        list->items = malloc(sizeof(struct brd_value) * list->capacity);
+}
+
 void
 brd_value_list_init(struct brd_value_list *list)
 {
-        list->capacity = 4;
-        list->length = 0;
-        list->items = malloc(sizeof(struct brd_value) * list->capacity);
+        brd_value_list_init_with_capacity(list, 4);
 }
 
 void
@@ -1010,18 +1016,20 @@ _builtin_insert(struct brd_value *args, size_t num_args, struct brd_value *out)
                 }
                 brd_value_list_push(list, &args[1]);
         } else {
-                struct brd_value *items = malloc(sizeof(*items) * (list->length + 1));
+                struct brd_value_list new;
+                brd_value_list_init_with_capacity(&new, list->length + 1);
+
                 for (int i = 0; i < idx; i++) {
-                        items[i] = list->items[i];
+                        new.items[i] = list->items[i];
                 }
-                items[idx] = args[1];
+                new.items[idx] = args[1];
                 for (int i = idx + 1; i < list->length + 1; i++) {
-                        items[i] = list->items[i - 1];
+                        new.items[i] = list->items[i - 1];
                 }
 
+                new.length = list->length + 1;
                 free(list->items);
-                list->items = items;
-                list->length++;
+                *list = new;
         }
 
         out->vtype = BRD_VAL_UNIT;
