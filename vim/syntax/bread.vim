@@ -20,7 +20,7 @@ syntax keyword breadSpecial unit self this super class
 highlight link breadSpecial Special
 
 syntax match breadBuiltin "\v\@[_a-zA-Z0-9]+"
-highlight link breadBuiltin Identifier
+highlight link breadBuiltin Operator
 
 " integer number
 syn match breadNumber "\<\d\+\>"

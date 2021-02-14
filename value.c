@@ -533,7 +533,7 @@ brd_value_coerce_string(struct brd_value *value)
 }
 
 int
-brd_value_index(struct brd_value *value, size_t idx)
+brd_value_index(struct brd_value *value, intmax_t idx)
 {
         if IS_STRING(*value) {
                 struct brd_value_string *string = AS_STRING(*value);
@@ -965,6 +965,69 @@ _builtin_string(struct brd_value *args, size_t num_args, struct brd_value *out)
         return brd_value_coerce_string(out);
 }
 
+static int
+_builtin_push(struct brd_value *args, size_t num_args, struct brd_value *out)
+{
+        struct brd_value_list *list;
+        if (num_args == 0) {
+                BARF("@push should be given at least one argument");
+        } else if (!IS_HEAP(args[0], BRD_HEAP_LIST)) {
+                BARF("first argument to @push should be a list");
+        }
+
+        list = args[0].as.heap->as.list;
+        for (int i = 1; i < num_args; i++) {
+                brd_value_list_push(list, &args[i]);
+        }
+
+        out->vtype = BRD_VAL_UNIT;
+        return false;
+}
+
+static int
+_builtin_insert(struct brd_value *args, size_t num_args, struct brd_value *out)
+{
+        struct brd_value_list *list;
+        intmax_t idx;
+
+        if (num_args != 3) {
+                BARF("@insert accepts exactly 3 arguments");
+        } else if (!IS_HEAP(args[0], BRD_HEAP_LIST)) {
+                BARF("first argument to @insert should be a list");
+        }
+
+        list = args[0].as.heap->as.list;
+
+        brd_value_coerce_num(&args[2]);
+        idx = floorl(args[2].as.num);
+
+        if (list->length <= idx) {
+                struct brd_value unit;
+                unit.vtype = BRD_VAL_UNIT;
+
+                for (int i = list->length; i < idx; i++) {
+                        brd_value_list_push(list, &unit);
+                }
+                brd_value_list_push(list, &args[1]);
+        } else {
+                struct brd_value *items = malloc(sizeof(*items) * (list->length + 1));
+                for (int i = 0; i < idx; i++) {
+                        items[i] = list->items[i];
+                }
+                items[idx] = args[1];
+                for (int i = idx + 1; i < list->length + 1; i++) {
+                        items[i] = list->items[i - 1];
+                }
+
+                free(list->items);
+                list->items = items;
+                list->length++;
+        }
+
+        out->vtype = BRD_VAL_UNIT;
+        return false;
+}
+
 enum brd_builtin brd_lookup_builtin(char *builtin)
 {
         for (int i = 0; i < BRD_NUM_BUILTIN; i++) {
@@ -988,6 +1051,8 @@ const builtin_fn_dec builtin_function[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_TYPEOF] = _builtin_typeof,
         [BRD_BUILTIN_SYSTEM] = _builtin_system,
         [BRD_BUILTIN_STRING] = _builtin_string,
+        [BRD_BUILTIN_PUSH] = _builtin_push,
+        [BRD_BUILTIN_INSERT] = _builtin_insert,
 };
 
 const char *builtin_name[BRD_NUM_BUILTIN] = {
@@ -998,6 +1063,8 @@ const char *builtin_name[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_TYPEOF] = "typeof",
         [BRD_BUILTIN_SYSTEM] = "system",
         [BRD_BUILTIN_STRING] = "string",
+        [BRD_BUILTIN_PUSH] = "push",
+        [BRD_BUILTIN_INSERT] = "insert",
 };
 
 #define MK_BUILTIN_STRING(str) { str, sizeof(str) - 1 }
@@ -1010,6 +1077,8 @@ struct brd_value_string builtin_string[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_TYPEOF]  = MK_BUILTIN_STRING("@typeof"),
         [BRD_BUILTIN_SYSTEM]  = MK_BUILTIN_STRING("@system"),
         [BRD_BUILTIN_STRING]  = MK_BUILTIN_STRING("@string"),
+        [BRD_BUILTIN_PUSH] = MK_BUILTIN_STRING("@push"),
+        [BRD_BUILTIN_INSERT] = MK_BUILTIN_STRING("@insert"),
 };
 
 struct brd_value_string number_string = MK_BUILTIN_STRING("number");

@@ -827,7 +827,7 @@ brd_vm_run(void)
                         value3 = *brd_stack_pop(&vm.stack);
                         brd_value_list_set(
                                 value2.as.heap->as.list,
-                                (size_t) floorl(value1.as.num),
+                                floorl(value1.as.num),
                                 &value3
                         );
                         brd_stack_push(&vm.stack, &value3);
