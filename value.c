@@ -715,33 +715,56 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
 void
 brd_value_concat(struct brd_value *a, struct brd_value *b)
 {
-        /* new string put into a */
-        int free_a, free_b;
-        char *string_a, *string_b, *string_new;
-        size_t len_a, len_b;
         struct brd_heap_entry *new;
-        
-        free_a = brd_value_coerce_string(a);
-        free_b = brd_value_coerce_string(b);
+        if (IS_HEAP(*a, BRD_HEAP_LIST)) {
+                struct brd_value_list *list_a = a->as.heap->as.list;
 
-        string_a = AS_STRING(*a)->s;
-        string_b = AS_STRING(*b)->s;
+                new = brd_heap_new(BRD_HEAP_LIST);
+                if (IS_HEAP(*b, BRD_HEAP_LIST)) {
+                        struct brd_value_list *list_b = b->as.heap->as.list;
 
-        len_a = AS_STRING(*a)->length;
-        len_b = AS_STRING(*b)->length;
+                        brd_value_list_init_with_capacity(
+                                new->as.list, list_a->length + list_b->length
+                        );
+                        new->as.list->length = list_a->length + list_b->length;
 
-        new = malloc(sizeof(*new));
-        new->htype = BRD_HEAP_STRING;
-        string_new = malloc((len_a + len_b + 1) * sizeof(char));
-        strcpy(string_new, string_a);
-        strcat(string_new, string_b);
-        new->as.string = brd_value_string_new(string_new);
+                        for (int i = 0; i < list_a->length; i++) {
+                                new->as.list->items[i] = list_a->items[i];
+                        }
+                        for (int i = 0; i < list_b->length; i++) {
+                                new->as.list->items[i + list_a->length]
+                                        = list_b->items[i];
+                        }
+                } else {
+                        brd_value_list_init_with_capacity(
+                                new->as.list, list_a->length + 1
+                        );
+                        new->as.list->length = list_a->length + 1;
+                        
+                        for (int i = 0; i < list_a->length; i++) {
+                                new->as.list->items[i] = list_a->items[i];
+                        }
+                        new->as.list->items[list_a->length] = *b;
+                }
+        } else {
+                int free_a, free_b;
+                char *new_string;
 
-        if (free_a) {
-                brd_heap_destroy(a->as.heap);
-        }
-        if (free_b) {
-                brd_heap_destroy(b->as.heap);
+                free_a = brd_value_coerce_string(a);
+                free_b = brd_value_coerce_string(b);
+                new = brd_heap_new(BRD_HEAP_STRING);
+                
+                new_string = malloc(AS_STRING(*a)->length + AS_STRING(*b)->length + 1);
+                strcpy(new_string, AS_STRING(*a)->s);
+                strcpy(new_string + AS_STRING(*a)->length, AS_STRING(*b)->s);
+                brd_value_string_init(new->as.string, new_string);
+
+                if (free_a) {
+                        brd_heap_destroy(a->as.heap);
+                }
+                if (free_b) {
+                        brd_heap_destroy(b->as.heap);
+                }
         }
 
         a->vtype = BRD_VAL_HEAP;
