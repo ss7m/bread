@@ -11,5 +11,6 @@ set table[0] = "fizzbuzz"
 
 for* i = 1, 101 do
   # unit is falsey, non-empty strings are truthy
-  @writeln(table[i % 15] or i)
+  # list indexing is module the length of the list
+  @writeln(table[i] or i)
 end
