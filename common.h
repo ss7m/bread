@@ -23,7 +23,7 @@ extern char bad_character[2];
 
 #ifdef DEBUG
 #define BARFA(fmt, ...) do { \
-        fprintf(stderr, "Error: " fmt "\n", ##__VA_ARGS__); \
+        fprintf(stderr, "Error: " fmt "\n", __VA_ARGS__); \
         fprintf(stderr, "\tat line %d\n", __LINE__); \
         fprintf(stderr, "\tin function %s\n", __func__); \
         fprintf(stderr, "\tin file %s\n", __FILE__); \
@@ -31,7 +31,7 @@ extern char bad_character[2];
 } while (0)
 #else
 #define BARFA(fmt, ...) do { \
-        fprintf(stderr, "Error: " fmt "\n", ##__VA_ARGS__); \
+        fprintf(stderr, "Error: " fmt "\n", __VA_ARGS__); \
         exit(EXIT_FAILURE); \
 } while (0)
 #endif
