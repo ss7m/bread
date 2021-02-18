@@ -645,11 +645,11 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                         result.cmp = signum(da - b->as.num);
                         result.is_ord = true;
                 } else if (IS_VAL(*b, BRD_VAL_BOOL)) {
-                        result.cmp = strcmp(sa, b->as.boolean ? "true" : "false") == 0;
-                        result.is_ord = false;
+                        result.cmp = strcmp(sa, b->as.boolean ? "true" : "false");
+                        result.is_ord = true;
                 } else if (IS_VAL(*b, BRD_VAL_UNIT)) {
                         result.cmp = signum(strcmp(sa, "unit"));
-                        result.is_ord = false;
+                        result.is_ord = true;
                 } else {
                         result.cmp = false;
                         result.is_ord = false;
@@ -676,9 +676,8 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
         } else if (IS_VAL(*a, BRD_VAL_BOOL)) {
                 int ba = a->as.boolean;
                 if (IS_STRING(*b)) {
-                        result.cmp =
-                                strcmp(ba ? "true" : "false", AS_STRING(*b)->s) == 0;
-                        result.is_ord = false;
+                        result.cmp = strcmp(ba ? "true" : "false", AS_STRING(*b)->s);
+                        result.is_ord = true;
                 } else if (IS_VAL(*b, BRD_VAL_NUM)) {
                         result.cmp = signum(ba - b->as.num);
                         result.is_ord = true;
@@ -694,8 +693,8 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                 }
         } else if (IS_VAL(*a, BRD_VAL_UNIT)) {
                 if (IS_STRING(*b)) {
-                        result.cmp = strcmp("unit", AS_STRING(*b)->s) == 0;
-                        result.is_ord = false;
+                        result.cmp = strcmp("unit", AS_STRING(*b)->s);
+                        result.is_ord = true;
                 } else if (IS_VAL(*b, BRD_VAL_NUM)) {
                         result.cmp = signum(-b->as.num);
                         result.is_ord = true;

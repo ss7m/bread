@@ -173,7 +173,7 @@ int brd_comparison_eq(struct brd_comparison cmp);
         if (cmp.is_ord) {\
                 out = cmp.cmp op 0;\
         } else {\
-                BARF("bad comparison operation");\
+                out = false;\
         }\
 } while(0)
 
