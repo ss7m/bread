@@ -6,8 +6,7 @@ languages.
 
 # Types
 
-While dynamically typed, every value in `bread` has a type. The type of an expression
-can be determined at runtime with the `@typeof` builtin function.
+`bread` is a dynamically typed language, with a small number of distinct types.
 
 ## number
 
@@ -97,7 +96,8 @@ Objects are instances of a class and have fields and methods. All fields
 of an object are mutable, while the methods are immutable (since classes are
 immutable). if `Foo` is a class, then an object of the class `Foo` can
 be instantiated with `Foo(args...)`, and these arguments are given to the constructor
-of `Foo`.
+of `Foo`. While all objects are of the same type, it is possible to check what class
+an object is an instance of (the syntax for this will be shown later).
 
 Objects cannot be coerced into a number. When coerced into a string, an object
 becomes the string `"object"`. All objects are truthy.
