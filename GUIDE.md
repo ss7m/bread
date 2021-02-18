@@ -114,7 +114,7 @@ becomes the string `"method"`. All methods are truthy.
 
 Here we discuss the syntax and semantics of some expressions not defined above.
 
-## Arithmetic
+## Arithmetic Operators
 
 When using an arithmetic operator, all operands are coerced into numbers before
 performing the arithmetic.
@@ -124,7 +124,7 @@ has the integer division operator `//` and the exponentiation operator `^`.
 The syntax of `//` is the same as `/`. Exponentiation is right associative
 and binds tighter than every other binary operator.
 
-## Boolean operations
+## Boolean Operators
 
 The three boolean operations in `bread` are `and`, `or`, and `not`. If the first
 operand of `and` is truthy, then the second operand is evaluated and returned.
@@ -152,3 +152,13 @@ coerce it to a string and check for equality.
 As for comparison, for strings and numbers comparison works as expected.
 For other types, comparison operators will return false. For operands of different
 types, the same rule set as above is used.
+
+## Concatenation Operator
+
+The `..` operator is used to concatenate strings and lists. If both operands
+are lists, the concatenation of the lists is returned (neither of the operands
+are mutated). If the left operand is a list and the right operand is not a list,
+then the result of appending the right onto the left is returned (again, neither
+operand is mutated). Otherwise, both operands are coerced into strings and the
+concatenation is returned. Concatenation is left associative, and every other
+binary operator binds tighter than concatenation.

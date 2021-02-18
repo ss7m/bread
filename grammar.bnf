@@ -45,7 +45,7 @@ addexp =
     | $addexp $addop $mulexp
     | $mulexp
 
-mulop = * | /
+mulop = * | / | %
 
 mulexp =
     | $mulexp $mulop $powexp
