@@ -66,27 +66,46 @@ are truthy.
 
 ## list
 
+A list is in fact an array of non-homogeneous elements. List literals
+are comma separated expressions surrounded by a pair of square brackets.
+
 Lists cannot be coerced into a number. When coerced into a string, a list
 becomes a string representation of the list. All non-empty lists are truthy.
 
 ## closure
+
+`bread` has first class functions in the form of closures which capture
+their environment when initialized. Closures are immutable, and are initialized
+with the function definition syntax discussed below. If `foo` is a closure,
+then `foo` can be called with the syntax `foo(args...)`.
 
 Closures cannot be coerced into a number. When coerced into a string, a closure
 becomes the string `"closure"`. All closures are truthy.
 
 ## class
 
-TODO write this
+Classes are first class values in `bread`. The only class which `bread` initially
+provides is the `@Object` class, and all other classes must be defined as a subclass
+of `@Object`, using subclass definition syntax discussed below.
 
 Classes cannot be coerced into a number. When coerced into a string, a class
 becomes the string `"class"`. All classes are truthy.
 
 ## object
 
+Objects are instances of a class and have fields and methods. All fields
+of an object are mutable, while the methods are immutable (since classes are
+immutable). if `Foo` is a class, then an object of the class `Foo` can
+be instantiated with `Foo(args...)`, and these arguments are given to the constructor
+of `Foo`.
+
 Objects cannot be coerced into a number. When coerced into a string, an object
 becomes the string `"object"`. All objects are truthy.
 
 ## method
+
+Methods are closures which also carry a reference to some object. They behave
+the same way as closures aside from their type.
 
 Methods cannot be coerced into a number. When coerced into a string, a method
 becomes the string `"method"`. All methods are truthy.
@@ -102,6 +121,8 @@ performing the arithmetic.
 `bread` has the regular arithmetic operators `+, -, *, /, %` with the (hopefully)
 expected semantics, associativity, and precedence. Additionally, `bread`
 has the integer division operator `//` and the exponentiation operator `^`.
+The syntax of `//` is the same as `/`. Exponentiation is right associative
+and binds tighter than every other binary operator.
 
 ## Boolean operations
 
@@ -111,3 +132,23 @@ Otherwise the first operand is returned. Is the first operand of `or` is truthy,
 then the first operand is returned. Otherwise the second operand is evaluated
 and returned. If the operand of `not` is truthy, `false` is returned, otherwise
 `true` is returned.
+
+## Comparison Operators
+
+The comparison operators in `bread` are `<, <=, =, !=, >, >=`. 
+Equality for strings, numbers, booleans, lists, and units works as expected
+(there is no epsilon threshold or comparing numbers, so floating point errors
+are possible here). Closures, objects, and classes are checked for equality
+by reference. Two methods are equal if they contain a reference to the same
+object and the same closure. As for checking values of different type for equality,
+the following rule set is used:
+
+1. If one of the operands is a number, then try and coerce the other operands to
+a number. If it can, check for equality, If it cannot, return `false`.
+2. If one of the operands is a string and the other is a boolean, string, or unit,
+coerce it to a string and check for equality.
+3. If neither of the above hold, return `false`.
+
+As for comparison, for strings and numbers comparison works as expected.
+For other types, comparison operators will return false. For operands of different
+types, the same rule set as above is used.
