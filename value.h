@@ -55,6 +55,7 @@ void brd_value_list_init(struct brd_value_list *list);
 void brd_value_list_push(struct brd_value_list *list, struct brd_value *value);
 void brd_value_list_set(struct brd_value_list *list, size_t idx, struct brd_value *value);
 char *brd_value_list_to_string(struct brd_value_list *list);
+int brd_value_list_equals(struct brd_value_list *a, struct brd_value_list *b);
 
 struct brd_value_string {
         char *s;
@@ -165,6 +166,8 @@ struct brd_comparison {
         signed char cmp;
         char is_ord;
 };
+
+int brd_comparison_eq(struct brd_comparison cmp);
 
 #define brd_comparison_ord(cmp, op, out) do {\
         if (cmp.is_ord) {\

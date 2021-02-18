@@ -29,7 +29,7 @@ brd_token_list_destroy(struct brd_token_list *list)
 }
 
 
-/* does not respect skip_newlines */
+/* will skip past newlines if skip_newlines == true */
 enum brd_token
 brd_token_list_peek(struct brd_token_list *list)
 {

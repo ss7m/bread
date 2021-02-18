@@ -93,6 +93,23 @@ brd_value_list_to_string(struct brd_value_list *list) {
         return string;
 }
 
+int
+brd_value_list_equals(struct brd_value_list *a, struct brd_value_list *b)
+{
+        struct brd_comparison cmp;
+        if (a->length != b->length) {
+                return false;
+        }
+
+        for (int i = 0; i < a->length; i++) {
+                cmp = brd_value_compare(&a->items[i], &b->items[i]);
+                if (!brd_comparison_eq(cmp)) {
+                        return false;
+                }
+        }
+        return true;
+}
+
 void
 brd_value_string_init(struct brd_value_string *string, char *s)
 {
@@ -374,6 +391,12 @@ void
 brd_value_object_destroy(struct brd_value_object *object)
 {
         brd_value_map_destroy(&object->fields);
+}
+
+int
+brd_comparison_eq(struct brd_comparison cmp)
+{
+        return cmp.is_ord ? cmp.cmp == 0 : cmp.cmp;
 }
 
 void
@@ -691,6 +714,16 @@ brd_value_compare(struct brd_value *a, struct brd_value *b)
                 if (IS_VAL(*b, BRD_VAL_METHOD)) {
                         struct brd_value_method mb = b->as.method;
                         result.cmp = ma.this == mb.this && ma.fn == mb.fn;
+                        result.is_ord = false;
+                } else {
+                        result.cmp = false;
+                        result.is_ord = false;
+                }
+        } else if (IS_HEAP(*a, BRD_HEAP_LIST)) {
+                struct brd_value_list *la = a->as.heap->as.list;
+                if (IS_HEAP(*b, BRD_HEAP_LIST)) {
+                        struct brd_value_list *lb = b->as.heap->as.list;
+                        result.cmp = brd_value_list_equals(la, lb);
                         result.is_ord = false;
                 } else {
                         result.cmp = false;

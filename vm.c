@@ -701,7 +701,7 @@ brd_vm_run(void)
                         value2 = *brd_stack_pop(&vm.stack);
                         cmp = brd_value_compare(&value2, &value1);
                         value2.vtype = BRD_VAL_BOOL;
-                        value2.as.boolean = cmp.is_ord ? cmp.cmp == 0 : cmp.cmp;
+                        value2.as.boolean = brd_comparison_eq(cmp);
                         brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_NEGATE:
