@@ -110,9 +110,14 @@ the same way as closures aside from their type.
 Methods cannot be coerced into a number. When coerced into a string, a method
 becomes the string `"method"`. All methods are truthy.
 
+Write something about how variables work.
+
 # Expressions
 
 Here we discuss the syntax and semantics of some expressions not defined above.
+As `bread` is an expression based language, more things are expressions in
+`bread` than in many other imperative programming languages. All expressions
+are evaluated from left to right.
 
 ## Arithmetic Operators
 
@@ -162,3 +167,86 @@ then the result of appending the right onto the left is returned (again, neither
 operand is mutated). Otherwise, both operands are coerced into strings and the
 concatenation is returned. Concatenation is left associative, and every other
 binary operator binds tighter than concatenation.
+
+## Begin/End expressions
+
+Begin/End expressions allow you to group several statements into a single expression.
+The value of a Begin/End expression is the value of the last statement.
+For example the following expression:
+
+```
+begin
+  @writeln("Hello, World!")
+  5
+end + 10
+```
+
+will print `Hello, World!` and evaluate to `15`. If there is only a single statement,
+then the expression can be written in a single line: `begin 10 end` has value 10.
+This isn't particularly useful for begin/end expressions, but the 3 following
+expressions work in a similar way.
+
+## If Expressions
+
+Conditionals in `bread` take the form of if expressions. Here is an example
+of an if expression:
+
+```
+if true then
+  @writeln("true!")
+  17
+elif false then
+  @writeln("false!")
+  "nineteen"
+else
+  @writeln("neither true nor false??")
+  false
+end
+```
+
+The value of an if expression is the value of the last statement in whatever branch
+is taken. The previous example would have value `17`. If there is no `else` clause
+and no branch is taken, then the value of the expression is `unit`. If expressions
+can be written in a single; the expression `if 3 < 2 then "a" else "b" end`
+evaluates to the string `"b"`.
+
+## For/While Expressions
+
+`bread` has two types of loops: for expressions and while expressions.
+The value of a loop is a list where each entry is the value of the body on the loop
+on each iteration. For example, the following loop:
+
+```
+for i = 0,5 do
+  @writeln(i)
+  i < 3
+end
+```
+
+would evaluate to the list `[true, true, true, false, false]`, and print
+numbers 0 through 4. Loops can also be written inline:
+
+```
+set i = 0
+set list = while i < 5 do set i = i + 1 end
+```
+
+In that example, the variable `list` would have value `[1,2,3,4,5]`.
+If the list is not needed, the `for` or `while` can be appended with an asterisk,
+in which case the value of the loop is `unit`.
+
+## Function Definitions
+
+## Subclass Definitions
+
+## Indexing
+
+## Object Syntax
+
+## Set Expressions
+
+Set expressions are used to set some value. Set expressions take the form
+`set LVALUE = EXPRESSION`, where `LVALUE` is the name of a variable, an index
+into an lvalue, or accessing the field of an lvalue. Indexing is only valid on lists,
+and accessing fields is only valid on objects. The value of a set expression
+is the value of the expression on the right hand side of the equals sign.
