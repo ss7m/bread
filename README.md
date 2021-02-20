@@ -34,8 +34,8 @@ To start a REPL, just run `bread` with no arguments.
 ## Acknowledgements
 
 [Crafting Interpreters](https://craftinginterpreters.com/) for reference/inspiration
-in implementing various parts of the interpreter, especially the virtual
-machine and garbage collector.
+in implementing various parts of the interpreter, in particular calling convention
+for closures and the garbage collector.
 
 The [Lua](https://www.lua.org/) programming language, for inspiration on syntax
-and in the virtual machine.
+and some of the bytecode operations for the virtual machine.
