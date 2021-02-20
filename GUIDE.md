@@ -118,6 +118,8 @@ Here we discuss the syntax and semantics of some expressions not defined above.
 As `bread` is an expression based language, more things are expressions in
 `bread` than in many other imperative programming languages. All expressions
 are evaluated from left to right.
+Single line comments in bread begin with the `#` symbol, and there are no
+multi line comments.
 
 ## Arithmetic Operators
 
@@ -170,7 +172,31 @@ binary operator binds tighter than concatenation.
 
 ## Indexing
 
+Lists and strings can be indexed with square brackets. The value inside the brackets
+must be a number. If the number has a decimal part, it will be truncated before
+indexing. If the index is greater than the length of the string/list, indexing
+is performed modulo the length. If the index is less than 0, then indexing is performed
+off of the end of the string/list. In this way, `"Hello"[4]`, `"Hello"[9]`,
+`"Hello"[-1]`, and `"Hello"[-6]` all return the string `"o"`. If the string/list
+has length 0, then any indexing will return `unit`.
+
 ## Object Syntax
+
+Objects have two important operations---accessing fields and accessing methods.
+Fields can be accessed and set with the dot operator.
+
+```
+set obj = @Object()
+set obj.num = 17
+@writeln(obj.num)
+```
+
+If the accessed field does not exist, `unit` is returned. Methods of an object
+can be accessed with the `::` operator. These are immutable, since classes
+are immutable. Moreover, there are two special words that can be placed
+on the right hand side of `::`. If `x` is an object, then `x::class` is the
+class of which `x` is an instance, and `x::super` is `x` as an instance of
+the superclass.
 
 ## Set Expressions
 
@@ -267,3 +293,30 @@ end
 will print the number `20`.
 
 ## Subclass Definitions
+
+When defining a subclass, one provides a superclass, a constructor, and any number
+(possibly zero) of method definitions. In the constructor and the bodies of methods,
+the variable `this` will refer to either the object being constructed or the
+object which called the method. `bread` provides the initial class `@Object`,
+and every class will be a subclass of this class.
+
+```
+set Greeter = subclass(@Object)
+  constructor(message)
+    set this.message = message
+    this
+  end
+
+  set greet = func()
+    @writeln("Hello, ", this.message)
+  end
+end
+
+set greeter = Greeter("Dave")
+greeter::greet() # prints: "Hello, Dave"
+```
+
+Note how the constructor returns the `this` object --- this is necessary, and I
+haven't decided whether this was a good design decision or not.
+Unlike functions, conditionals, and loops, subclass definitions cannot be written
+in a single line.
