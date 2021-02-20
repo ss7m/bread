@@ -45,7 +45,7 @@ prep:
 debug: $(DBGEXE)
 
 $(DBGEXE): $(DBGOBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(DBGCFLAGS) $^ -o $(DBGEXE)
+	$(CC) $(CFLAGS) $(DBGCFLAGS) $^ -o $(DBGEXE) $(LDFLAGS) 
 
 $(DBGDIR)/%.o: %.c $(HDRS)
 	$(CC) -c $(CFLAGS) $(DBGCFLAGS) $< -o $@
@@ -57,7 +57,7 @@ $(DBGDIR)/%.o: %.c $(HDRS)
 release: $(RELEXE)
 
 $(RELEXE): $(RELOBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(RELCFLAGS) $^ -o $(RELEXE)
+	$(CC) $(CFLAGS)  $(RELCFLAGS) $^ -o $(RELEXE) $(LDFLAGS)
 	strip $(RELEXE)
 
 $(RELDIR)/%.o: %.c $(HDRS)
