@@ -168,6 +168,18 @@ operand is mutated). Otherwise, both operands are coerced into strings and the
 concatenation is returned. Concatenation is left associative, and every other
 binary operator binds tighter than concatenation.
 
+## Indexing
+
+## Object Syntax
+
+## Set Expressions
+
+Set expressions are used to set some value. Set expressions take the form
+`set LVALUE = EXPRESSION`, where `LVALUE` is the name of a variable, an index
+into an lvalue, or accessing the field of an lvalue. Indexing is only valid on lists,
+and accessing fields is only valid on objects. The value of a set expression
+is the value of the expression on the right hand side of the equals sign.
+
 ## Begin/End expressions
 
 Begin/End expressions allow you to group several statements into a single expression.
@@ -235,18 +247,23 @@ In that example, the variable `list` would have value `[1,2,3,4,5]`.
 If the list is not needed, the `for` or `while` can be appended with an asterisk,
 in which case the value of the loop is `unit`.
 
-## Function Definitions
+## Closure Definitions
+
+Closures are defined with the `func` keyword. The value returned by a closure
+is the value of the last statement in the function body (there is no `return`
+keyword). Closures capture the environment in which they are defined.
+The following program:
+
+```
+set add = func(a)
+  func(b)
+    a + b
+  end
+end
+
+@writeln(add(14)(6))
+```
+
+will print the number `20`.
 
 ## Subclass Definitions
-
-## Indexing
-
-## Object Syntax
-
-## Set Expressions
-
-Set expressions are used to set some value. Set expressions take the form
-`set LVALUE = EXPRESSION`, where `LVALUE` is the name of a variable, an index
-into an lvalue, or accessing the field of an lvalue. Indexing is only valid on lists,
-and accessing fields is only valid on objects. The value of a set expression
-is the value of the expression on the right hand side of the equals sign.
