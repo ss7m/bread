@@ -2,8 +2,9 @@
 
 `bread` is an expression based, garbage collected, object oriented, dynamically typed
 scripting language with first class closures,
-and a garbage-collected interpreter for that language. The design
-goals for `bread` are as follows:
+and a garbage-collected interpreter for that language (see GUIDE.md for more
+information on using `bread`).
+The design goals for `bread` are as follows:
 
 * Get a good grade on my final project in my programming languages class
 
