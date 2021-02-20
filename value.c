@@ -561,19 +561,36 @@ brd_value_coerce_string(struct brd_value *value)
         return -1;
 }
 
+static intmax_t
+brd_value_index_clamp(intmax_t idx, size_t length)
+{
+        if (length == 0) {
+                return idx;
+        }
+        while (idx > 0 && idx > length) {
+                idx -= length;
+        }
+        while (idx < 0) {
+                idx += length;
+        }
+        return idx;
+}
+
 int
 brd_value_index(struct brd_value *value, intmax_t idx)
 {
         if IS_STRING(*value) {
                 struct brd_value_string *string = AS_STRING(*value);
                 char *c;
+
+                idx = brd_value_index_clamp(idx, string->length);
                 if (string->length == 0) {
                         value->vtype = BRD_VAL_UNIT;
                         return false;
                 }
 
                 c = malloc(2);
-                c[0] = string->s[idx % string->length];
+                c[0] = string->s[idx];
                 c[1] = '\0';
                 value->vtype = BRD_VAL_HEAP;
                 value->as.heap = brd_heap_new(BRD_HEAP_STRING);
@@ -581,11 +598,12 @@ brd_value_index(struct brd_value *value, intmax_t idx)
                 return true;
         } else if (IS_HEAP(*value, BRD_HEAP_LIST)) {
                 struct brd_value_list *list = value->as.heap->as.list;
+                idx = brd_value_index_clamp(idx, list->length);
                 if (list->length == 0) {
                         value->vtype = BRD_VAL_UNIT;
                         return false;
                 } else {
-                        *value = list->items[idx % list->length];
+                        *value = list->items[idx];
                         return false;
                 }
         } else {
