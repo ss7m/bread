@@ -1064,7 +1064,8 @@ static int
 _builtin_insert(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
         struct brd_value_list *list;
-        intmax_t idx;
+        size_t idx;
+        long double num;
 
         if (num_args != 3) {
                 BARF("@insert accepts exactly 3 arguments");
@@ -1075,13 +1076,17 @@ _builtin_insert(struct brd_value *args, size_t num_args, struct brd_value *out)
         list = args[0].as.heap->as.list;
 
         brd_value_coerce_num(&args[2]);
-        idx = floorl(args[2].as.num);
+        num = floorl(args[2].as.num);
+        if (num < 0) {
+                BARF("index for @insert cannot be negative");
+        }
+        idx = num;
 
-        if ((intmax_t)list->length <= idx) {
+        if (list->length <= idx) {
                 struct brd_value unit;
                 unit.vtype = BRD_VAL_UNIT;
 
-                for (int i = list->length; i < idx; i++) {
+                for (size_t i = list->length; i < idx; i++) {
                         brd_value_list_push(list, &unit);
                 }
                 brd_value_list_push(list, &args[1]);
@@ -1089,7 +1094,7 @@ _builtin_insert(struct brd_value *args, size_t num_args, struct brd_value *out)
                 struct brd_value_list new;
                 brd_value_list_init_with_capacity(&new, list->length + 1);
 
-                for (int i = 0; i < idx; i++) {
+                for (size_t i = 0; i < idx; i++) {
                         new.items[i] = list->items[i];
                 }
                 new.items[idx] = args[1];
