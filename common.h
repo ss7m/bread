@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <ctype.h>
+#include <math.h>
 
 /* 
  * global variables for the parser

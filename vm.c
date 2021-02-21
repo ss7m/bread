@@ -3,8 +3,6 @@
 #include "value.h"
 #include "vm.h"
 
-#include <math.h>
-
 #define LIST_SIZE 32
 #define GROW 1.5
 

@@ -1,8 +1,6 @@
 #include "common.h"
 #include "value.h"
 
-#include <math.h>
-
 /* http://www.cse.yorku.ca/~oz/hash.html djb2 hash algorithm */
 static unsigned long
 hash(char *str)
