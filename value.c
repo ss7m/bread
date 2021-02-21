@@ -566,14 +566,11 @@ brd_value_index_clamp(intmax_t idx, size_t length)
 {
         if (length == 0) {
                 return idx;
+        } else if (idx >= 0) {
+                return idx % length;
+        } else {
+                return length - (-idx) % length;
         }
-        while (idx > 0 && idx > length) {
-                idx -= length;
-        }
-        while (idx < 0) {
-                idx += length;
-        }
-        return idx;
 }
 
 int
