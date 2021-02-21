@@ -650,9 +650,7 @@ brd_vm_run(void)
                         value2 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
-                        value2.as.num = floorl(
-                                value2.as.num / value1.as.num
-                        );
+                        value2.as.num = floorl(value2.as.num / value1.as.num);
                         brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_MOD:
@@ -669,10 +667,7 @@ brd_vm_run(void)
                         value2 = *brd_stack_pop(&vm.stack);
                         brd_value_coerce_num(&value1);
                         brd_value_coerce_num(&value2);
-                        value2.as.num = powl(
-                                value2.as.num,
-                                value1.as.num
-                        );
+                        value2.as.num = powl(value2.as.num, value1.as.num);
                         brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_CONCAT:

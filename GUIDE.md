@@ -290,7 +290,7 @@ end
 @writeln(add(14)(6))
 ```
 
-will print the number `20`.
+will print the number `20`. Use the identifier `self` to define a recursive closure.
 
 ## Subclass Definitions
 
