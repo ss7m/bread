@@ -42,7 +42,7 @@ prep:
 # Debug rules
 #
 .PHONY: debug
-debug: $(DBGEXE)
+debug: prep $(DBGEXE)
 
 $(DBGEXE): $(DBGOBJS)
 	$(CC) $(CFLAGS) $(DBGCFLAGS) $^ -o $(DBGEXE) $(LDFLAGS) 
@@ -54,7 +54,7 @@ $(DBGDIR)/%.o: %.c $(HDRS)
 # Release rules
 #
 .PHONY: release
-release: $(RELEXE)
+release: prep $(RELEXE)
 
 $(RELEXE): $(RELOBJS)
 	$(CC) $(CFLAGS)  $(RELCFLAGS) $^ -o $(RELEXE) $(LDFLAGS)
