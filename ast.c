@@ -15,7 +15,7 @@ static void
 brd_node_program_destroy(struct brd_node *n)
 {
         struct brd_node_program *p = (struct brd_node_program *)n;
-        for (int i = 0; i < p->num_stmts; i++) {
+        for (size_t i = 0; i < p->num_stmts; i++) {
                 brd_node_destroy(p->stmts[i]);
         }
         free(p->stmts);
@@ -170,7 +170,7 @@ brd_node_unit_lit_new(void)
 void
 brd_node_arglist_destroy(struct brd_node_arglist *args)
 {
-        for (int i = 0; i < args->num_args; i++) {
+        for (size_t i = 0; i < args->num_args; i++) {
                 brd_node_destroy(args->args[i]);
         }
         free(args->args);
@@ -228,7 +228,7 @@ static void
 brd_node_closure_destroy(struct brd_node *n)
 {
         struct brd_node_closure *c = (struct brd_node_closure *)n;
-        for (int i = 0; i < c->num_args; i++) {
+        for (size_t i = 0; i < c->num_args; i++) {
                 free(c->args[i]);
         }
         free(c->args);
@@ -272,7 +272,7 @@ static void
 brd_node_body_destroy(struct brd_node *n)
 {
         struct brd_node_body *b = (struct brd_node_body *)n;
-        for (int i = 0; i < b->num_stmts; i++) {
+        for (size_t i = 0; i < b->num_stmts; i++) {
                 brd_node_destroy(b->stmts[i]);
         }
         free(b->stmts);
@@ -297,7 +297,7 @@ brd_node_ifexpr_destroy(struct brd_node *n)
         struct brd_node_ifexpr *b = (struct brd_node_ifexpr *)n;
         brd_node_destroy(b->cond);
         brd_node_destroy(b->body);
-        for (int i = 0; i < b->num_elifs; i++) {
+        for (size_t i = 0; i < b->num_elifs; i++) {
                 brd_node_destroy(b->elifs[i].cond);
                 brd_node_destroy(b->elifs[i].body);
         }
@@ -423,7 +423,7 @@ brd_node_subclass_destroy(struct brd_node *n)
         struct brd_node_subclass *s = (struct brd_node_subclass *)n;
         brd_node_destroy(s->super);
         brd_node_destroy((struct brd_node *)s->constructor);
-        for (int i = 0; i < s->num_decs; i++) {
+        for (size_t i = 0; i < s->num_decs; i++) {
                 free(s->decs[i].id);
                 brd_node_destroy(s->decs[i].expression);
         }

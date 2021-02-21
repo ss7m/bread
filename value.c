@@ -63,7 +63,7 @@ brd_value_list_to_string(struct brd_value_list *list) {
 
         length = 4; // "[ ]" and null byte
 
-        for (int i = 0; i < list->length; i++) {
+        for (size_t i = 0; i < list->length; i++) {
                 list_strings[i] = list->items[i];
                 brd_value_coerce_string(&list_strings[i]);
                 length += 2 + AS_STRING(list_strings[i])->length;
@@ -74,7 +74,7 @@ brd_value_list_to_string(struct brd_value_list *list) {
         string[length++] = '[';
         string[length++] = ' ';
 
-        for (int i = 0; i < list->length; i++) {
+        for (size_t i = 0; i < list->length; i++) {
                 strcpy(string + length, AS_STRING(list_strings[i])->s);
                 length += AS_STRING(list_strings[i])->length;
                 if (i < list->length - 1) {
@@ -101,7 +101,7 @@ brd_value_list_equals(struct brd_value_list *a, struct brd_value_list *b)
                 return false;
         }
 
-        for (int i = 0; i < a->length; i++) {
+        for (size_t i = 0; i < a->length; i++) {
                 cmp = brd_value_compare(&a->items[i], &b->items[i]);
                 if (!brd_comparison_eq(cmp)) {
                         return false;
@@ -195,7 +195,7 @@ brd_value_gc_mark(struct brd_value *value)
                 case BRD_HEAP_STRING:
                         break;
                 case BRD_HEAP_LIST:
-                        for (int i = 0; i < entry->as.list->length; i++) {
+                        for (size_t i = 0; i < entry->as.list->length; i++) {
                                 brd_value_gc_mark(&entry->as.list->items[i]);
                         }
                         break;
@@ -335,7 +335,7 @@ brd_value_closure_init(struct brd_value_closure *closure, char **args, size_t nu
          * more efficient
          */
         val.vtype = BRD_VAL_UNIT;
-        for (int i = 0; i < num_args; i++) {
+        for (size_t i = 0; i < num_args; i++) {
                 brd_value_map_set(&closure->env, args[i], &val);
         }
 }
@@ -428,7 +428,7 @@ brd_value_debug(struct brd_value *value)
                         break;
                 case BRD_HEAP_LIST:
                         printf("[ ");
-                        for (int i = 0; i < value->as.heap->as.list->length; i++) {
+                        for (size_t i = 0; i < value->as.heap->as.list->length; i++) {
                                 brd_value_debug(
                                         &value->as.heap->as.list->items[i]
                                 );
@@ -775,10 +775,10 @@ brd_value_concat(struct brd_value *a, struct brd_value *b)
                         );
                         new->as.list->length = list_a->length + list_b->length;
 
-                        for (int i = 0; i < list_a->length; i++) {
+                        for (size_t i = 0; i < list_a->length; i++) {
                                 new->as.list->items[i] = list_a->items[i];
                         }
-                        for (int i = 0; i < list_b->length; i++) {
+                        for (size_t i = 0; i < list_b->length; i++) {
                                 new->as.list->items[i + list_a->length]
                                         = list_b->items[i];
                         }
@@ -788,7 +788,7 @@ brd_value_concat(struct brd_value *a, struct brd_value *b)
                         );
                         new->as.list->length = list_a->length + 1;
                         
-                        for (int i = 0; i < list_a->length; i++) {
+                        for (size_t i = 0; i < list_a->length; i++) {
                                 new->as.list->items[i] = list_a->items[i];
                         }
                         new->as.list->items[list_a->length] = *b;
@@ -825,7 +825,7 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                 out->vtype = BRD_VAL_UNIT;
         }
 
-        for (int i = 0; i < num_args; i++) {
+        for (size_t i = 0; i < num_args; i++) {
                 struct brd_value value = args[i];
 
                 switch (value.vtype) {
@@ -854,7 +854,7 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                                 break;
                         case BRD_HEAP_LIST:
                                 printf("[ ");
-                                for (int j = 0; j < value.as.heap->as.list->length; j++) {
+                                for (size_t j = 0; j < value.as.heap->as.list->length; j++) {
                                         _builtin_write(
                                                 &value.as.heap->as.list->items[j],
                                                 1,
@@ -1003,24 +1003,24 @@ _builtin_system(struct brd_value *args, size_t num_args, struct brd_value *out)
         char *cmd;
         int *malloced = malloc(sizeof(int) * num_args);
 
-        for(int i = 0; i < num_args; i++) {
+        for(size_t i = 0; i < num_args; i++) {
                 malloced[i] = brd_value_coerce_string(&args[i]);
         }
 
         len = 1;
-        for (int i = 0; i < num_args; i++) {
+        for (size_t i = 0; i < num_args; i++) {
                 len += AS_STRING(args[i])->length;
         }
         cmd = malloc(sizeof(char) * len);
         cmd[0] = '\0';
-        for (int i = 0; i < num_args; i++) {
+        for (size_t i = 0; i < num_args; i++) {
                 strcat(cmd, AS_STRING(args[i])->s);
         }
 
         out->vtype = BRD_VAL_NUM;
         out->as.num = system(cmd);
 
-        for (int i = 0; i < num_args; i++) {
+        for (size_t i = 0; i < num_args; i++) {
                 if (malloced[i]) {
                         brd_heap_destroy(args[i].as.heap);
                 }
@@ -1052,7 +1052,7 @@ _builtin_push(struct brd_value *args, size_t num_args, struct brd_value *out)
         }
 
         list = args[0].as.heap->as.list;
-        for (int i = 1; i < num_args; i++) {
+        for (size_t i = 1; i < num_args; i++) {
                 brd_value_list_push(list, &args[i]);
         }
 
@@ -1077,7 +1077,7 @@ _builtin_insert(struct brd_value *args, size_t num_args, struct brd_value *out)
         brd_value_coerce_num(&args[2]);
         idx = floorl(args[2].as.num);
 
-        if (list->length <= idx) {
+        if ((intmax_t)list->length <= idx) {
                 struct brd_value unit;
                 unit.vtype = BRD_VAL_UNIT;
 
@@ -1093,7 +1093,7 @@ _builtin_insert(struct brd_value *args, size_t num_args, struct brd_value *out)
                         new.items[i] = list->items[i];
                 }
                 new.items[idx] = args[1];
-                for (int i = idx + 1; i < list->length + 1; i++) {
+                for (size_t i = idx + 1; i < list->length + 1; i++) {
                         new.items[i] = list->items[i - 1];
                 }
 

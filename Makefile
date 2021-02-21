@@ -4,7 +4,7 @@ LIBS=
 
 CFLAGS=-Wall -Wextra -std=c99 -pedantic -fshort-enums -Werror \
 	   -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes \
-	   -Wdeclaration-after-statement -Wno-sign-compare -Wstrict-prototypes \
+	   -Wdeclaration-after-statement -Wstrict-prototypes \
 	   -Wold-style-definition -Wvla \
 	   $(foreach p,$(LIBS),$(shell pkg-config --cflags $(p)))
 

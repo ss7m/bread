@@ -90,7 +90,7 @@ brd_token_list_pop_string(struct brd_token_list *list)
 void
 brd_token_list_add_token(struct brd_token_list *list, enum brd_token tok)
 {
-        if (sizeof(tok) + list->end - list->data >= list->capacity) {
+        if (sizeof(tok) + list->end - list->data >= (intmax_t)list->capacity) {
                 brd_token_list_grow(list);
         }
 
@@ -101,7 +101,7 @@ brd_token_list_add_token(struct brd_token_list *list, enum brd_token tok)
 void
 brd_token_list_add_num(struct brd_token_list *list, long double num)
 {
-        if (sizeof(num) + list->end - list->data >= list->capacity) {
+        if (sizeof(num) + list->end - list->data >= (intmax_t)list->capacity) {
                 brd_token_list_grow(list);
         }
 
@@ -117,7 +117,7 @@ brd_token_list_add_string(struct brd_token_list *list, const char *string)
          * Not sure if this is a good idea but I'm doing it
          */
         size_t len = strlen(string) + 1;
-        while (len + list->end - list->data >= list->capacity) {
+        while (len + list->end - list->data >= (intmax_t)list->capacity) {
                 brd_token_list_grow(list);
         }
 

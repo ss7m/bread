@@ -259,13 +259,13 @@ mkbinop:
                 break;
         case BRD_NODE_LIST_LIT:
                 ADD_OP(BRD_VM_LIST);
-                for (int i = 0; i < AS(list_lit, node)->items->num_args; i++) {
+                for (size_t i = 0; i < AS(list_lit, node)->items->num_args; i++) {
                         brd_node_compile(AS(list_lit, node)->items->args[i]);
                         ADD_OP(BRD_VM_PUSH);
                 }
                 break;
         case BRD_NODE_FUNCALL:
-                for (int i = 0; i < AS(funcall, node)->args->num_args; i++) {
+                for (size_t i = 0; i < AS(funcall, node)->args->num_args; i++) {
                         brd_node_compile(AS(funcall, node)->args->args[i]);
                 }
                 brd_node_compile(AS(funcall, node)->fn);
@@ -275,7 +275,7 @@ mkbinop:
         case BRD_NODE_CLOSURE:
                 ADD_OP(BRD_VM_CLOSURE);
                 ADD_SIZET(AS(closure, node)->num_args);
-                for (int i = 0; i < AS(closure, node)->num_args; i++) {
+                for (size_t i = 0; i < AS(closure, node)->num_args; i++) {
                         ADD_STR(AS(closure, node)->args[i]);
                 }
                 ADD_OP(BRD_VM_JMP);
@@ -291,7 +291,7 @@ mkbinop:
                 ADD_SIZET(brd_lookup_builtin(AS(builtin, node)->builtin));
                 break;
         case BRD_NODE_BODY:
-                for (int i = 0; i < AS(body, node)->num_stmts; i++) {
+                for (size_t i = 0; i < AS(body, node)->num_stmts; i++) {
                         brd_node_compile(AS(body, node)->stmts[i]);
                         if (i < AS(body, node)->num_stmts - 1) {
                                 ADD_OP(BRD_VM_POP);
@@ -317,7 +317,7 @@ mkbinop:
                 jmp = vm.bc_length - temp;
                 *(size_t *)(vm.bytecode + temp) = jmp;
 
-                for (int i = 0; i < AS(ifexpr, node)->num_elifs; i++) {
+                for (size_t i = 0; i < AS(ifexpr, node)->num_elifs; i++) {
                         brd_node_compile(AS(ifexpr, node)->elifs[i].cond);
                         ADD_OP(BRD_VM_TESTP);
                         ADD_OP(BRD_VM_JMP);
@@ -337,7 +337,7 @@ mkbinop:
                         ADD_OP(BRD_VM_UNIT);
                 }
 
-                for (int i = 0; i < AS(ifexpr, node)->num_elifs + 1; i++) {
+                for (size_t i = 0; i < AS(ifexpr, node)->num_elifs + 1; i++) {
                         jmp = vm.bc_length - ifexpr_temps[i];
                         *(size_t *)(vm.bytecode + ifexpr_temps[i]) = jmp;
                 }
@@ -387,14 +387,14 @@ mkbinop:
                 brd_node_compile(AS(subclass, node)->super);
                 brd_node_compile(AS(subclass, node)->constructor);
                 ADD_OP(BRD_VM_SUBCLASS);
-                for (int i = 0; i < AS(subclass, node)->num_decs; i++) {
+                for (size_t i = 0; i < AS(subclass, node)->num_decs; i++) {
                         brd_node_compile(AS(subclass, node)->decs[i].expression);
                         ADD_OP(BRD_VM_SET_CLASS);
                         ADD_STR(AS(subclass, node)->decs[i].id);
                 }
                 break;
         case BRD_NODE_PROGRAM:
-                for (int i = 0; i < AS(program, node)->num_stmts; i++) {
+                for (size_t i = 0; i < AS(program, node)->num_stmts; i++) {
                         brd_node_compile(AS(program, node)->stmts[i]);
                         ADD_OP(BRD_VM_POP);
                 }
@@ -476,7 +476,7 @@ brd_value_call_closure(struct brd_value_closure *closure, struct brd_value*args,
         vm.frame[vm.fp].pc = closure->pc;
         vm.frame[vm.fp].vars = closure->env;
 
-        for (int i = 0; i < num_args; i++) {
+        for (size_t i = 0; i < num_args; i++) {
                 brd_value_map_set(
                         &vm.frame[vm.fp].vars,
                         closure->args[i],
@@ -776,7 +776,7 @@ brd_vm_run(void)
                         num_args = *(size_t *)(vm.bytecode + vm.frame[vm.fp].pc);
                         vm.frame[vm.fp].pc += sizeof(size_t);
                         args = malloc(sizeof(char *) * num_args);
-                        for (int i = 0; i < num_args; i++) {
+                        for (size_t i = 0; i < num_args; i++) {
                                 READ_STRING_INTO(value2.as.string);
                                 args[i] = value2.as.string->s;
                         }
@@ -948,7 +948,7 @@ brd_vm_gc(void)
         }
 
         /* mark values held by variables */
-        for (int i = 0; i <= vm.fp; i++) {
+        for (size_t i = 0; i <= vm.fp; i++) {
                 brd_value_map_mark(&vm.frame[i].vars);
         }
 

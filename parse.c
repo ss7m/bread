@@ -41,7 +41,7 @@ brd_parse_program(struct brd_token_list *tokens)
         }
 
         if (!found_eof) {
-                for (int i = 0; i < length; i++) {
+                for (size_t i = 0; i < length; i++) {
                         brd_node_destroy(stmts[i]);
                 }
                 free(stmts);
@@ -631,7 +631,7 @@ brd_parse_func(struct brd_token_list *tokens)
         }
 
 error_exit:
-        for (int i = 0; i < length; i++) {
+        for (size_t i = 0; i < length; i++) {
                 free(args[i]);
         }
         free(args);
@@ -808,7 +808,7 @@ error_exit:
         if (els != NULL) {
                 brd_node_destroy(els);
         }
-        for (int i = 0; i < length; i++) {
+        for (size_t i = 0; i < length; i++) {
                 brd_node_destroy(elifs[i].cond);
                 brd_node_destroy(elifs[i].body);
         }
@@ -1077,7 +1077,7 @@ brd_parse_subclass(struct brd_token_list *tokens)
 error_exit:
         brd_node_destroy(constructor);
         brd_node_destroy(class);
-        for (int i = 0; i < length; i++) {
+        for (size_t i = 0; i < length; i++) {
                 free(decs[i].id);
                 brd_node_destroy(decs[i].expression);
         }
