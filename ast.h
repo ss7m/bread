@@ -31,9 +31,9 @@ enum brd_node_type {
 
 struct brd_node;
 typedef void (*brd_node_fn)(struct brd_node *);
+typedef struct brd_node * (*brd_node_fn2)(struct brd_node *);
 
 struct brd_node {
-        brd_node_fn destroy;
         int line_number;
         enum brd_node_type ntype;
 };
@@ -51,6 +51,8 @@ struct brd_node_assign {
 
 enum brd_binop {
         /* arith */
+        // NOTE: do not put anything between plus and concat
+        // must match with token.h here
         BRD_PLUS = 0,
         BRD_MINUS,
         BRD_MUL,
@@ -58,6 +60,7 @@ enum brd_binop {
         BRD_IDIV,
         BRD_MOD,
         BRD_POW,
+        BRD_CONCAT,
 
         /* comp */
         BRD_LT,
@@ -70,7 +73,6 @@ enum brd_binop {
         BRD_AND,
         BRD_OR,
 
-        BRD_CONCAT,
 };
 
 struct brd_node_binop {
@@ -227,6 +229,6 @@ struct brd_node *brd_node_field_new(struct brd_node *object, char *field);
 struct brd_node *brd_node_acc_obj_new(struct brd_node *object, char *id);
 struct brd_node *brd_node_subclass_new(struct brd_node *super, struct brd_node *constructor, struct brd_node_subclass_set *decs, size_t num_decs);
 
-#define brd_node_destroy(n) (((struct brd_node *)n)->destroy((struct brd_node *)n))
+void brd_node_destroy(struct brd_node *node);
 
 #endif

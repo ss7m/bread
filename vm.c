@@ -475,11 +475,7 @@ brd_value_call_closure(struct brd_value_closure *closure, struct brd_value*args,
         vm.frame[vm.fp].vars = closure->env;
 
         for (size_t i = 0; i < num_args; i++) {
-                brd_value_map_set(
-                        &vm.frame[vm.fp].vars,
-                        closure->args[i],
-                        &args[i]
-                );
+                brd_value_map_set(&vm.frame[vm.fp].vars, closure->args[i], &args[i]);
         }
 }
 
@@ -499,14 +495,9 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
 
                 object.vtype = BRD_VAL_HEAP;
                 object.as.heap = brd_heap_new(BRD_HEAP_OBJECT);
-                brd_value_object_init(
-                        object.as.heap->as.object,
-                        &f->as.heap->as.class
-                );
-                brd_value_map_set(
-                        &object.as.heap->as.object->fields,
-                        ".", &object
-                ); // an object keeps itself alive, needed for super classes
+                brd_value_object_init(object.as.heap->as.object, &f->as.heap->as.class);
+                brd_value_map_set(&object.as.heap->as.object->fields, ".", &object);
+                // an object keeps itself alive, needed for super classes
                 brd_vm_allocate(object.as.heap);
 
                 /*
@@ -523,11 +514,7 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
         } else if (IS_VAL(*f, BRD_VAL_METHOD)) {
                 struct brd_value_method method = f->as.method;
                 struct brd_value this = brd_heap_value(object, method.this);
-                brd_value_map_set(
-                        &(**method.fn).env,
-                        "this",
-                        &this
-                );
+                brd_value_map_set(&(**method.fn).env, "this", &this);
                 brd_value_call_closure(*method.fn, args, num_args);
         } else {
                 BARF("attempted to call a non-callable");
@@ -828,10 +815,7 @@ brd_vm_run(void)
                 case BRD_VM_PUSH:
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_peek(&vm.stack);
-                        brd_value_list_push(
-                                value2.as.heap->as.list,
-                                &value1
-                        );
+                        brd_value_list_push(value2.as.heap->as.list, &value1);
                         break;
                 case BRD_VM_GET_FIELD:
                         READ_STRING_INTO(value1.as.string);
@@ -841,8 +825,7 @@ brd_vm_run(void)
                                 BARF("can only access fields of objects");
                         }
                         valuep = brd_value_map_get(
-                                &value1.as.heap->as.object->fields,
-                                id
+                                &value1.as.heap->as.object->fields, id
                         );
                         if (valuep == NULL) {
                                 value1.vtype = BRD_VAL_UNIT;
