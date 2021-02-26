@@ -230,5 +230,6 @@ struct brd_node *brd_node_acc_obj_new(struct brd_node *object, char *id);
 struct brd_node *brd_node_subclass_new(struct brd_node *super, struct brd_node *constructor, struct brd_node_subclass_set *decs, size_t num_decs);
 
 void brd_node_destroy(struct brd_node *node);
+struct brd_node *brd_node_copy(struct brd_node *node);
 
 #endif

@@ -21,6 +21,8 @@ enum brd_token {
         BRD_TOK_EOF,
 
         /* arithmetic */
+        // NOTE: do not put anything between plus and concat
+        // must match with ast.h here
         BRD_TOK_PLUS,
         BRD_TOK_MINUS,
         BRD_TOK_MUL,
@@ -28,7 +30,6 @@ enum brd_token {
         BRD_TOK_IDIV,
         BRD_TOK_MOD,
         BRD_TOK_POW,
-
         BRD_TOK_CONCAT,
 
         /* comp */

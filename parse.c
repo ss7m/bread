@@ -92,6 +92,7 @@ brd_parse_expression(struct brd_token_list *tokens)
 {
         struct brd_node *l, *r;
         int skip_copy = skip_newlines;
+        enum brd_token tok;
 
         switch (brd_token_list_peek(tokens)) {
         case BRD_TOK_SET:
@@ -99,15 +100,29 @@ brd_parse_expression(struct brd_token_list *tokens)
                 skip_newlines = true;
                 if ((l = brd_parse_lvalue(tokens)) == NULL) {
                         return NULL;
-                } else if (brd_token_list_pop_token(tokens) != BRD_TOK_EQ) {
+                }
+
+                tok = brd_token_list_peek(tokens);
+                if (tok >= BRD_TOK_PLUS && tok <= BRD_TOK_CONCAT) {
+                        brd_token_list_pop_token(tokens);
+                }
+                if (brd_token_list_pop_token(tokens) != BRD_TOK_EQ) {
                         brd_node_destroy(l);
                         error_message = "expected an equals sign";
                         return NULL;
-                } else if ((r = brd_parse_expression(tokens)) == NULL) {
+                }
+
+                skip_newlines = skip_copy;
+                r = brd_parse_expression(tokens);
+                if (r == NULL) {
                         brd_node_destroy(l);
                         return NULL;
+                }
+
+                if (tok >= BRD_TOK_PLUS && tok <= BRD_TOK_CONCAT) {
+                        BARF("need to add a brd_node_copy method");
+                        return NULL;
                 } else {
-                        skip_newlines = skip_copy;
                         return brd_node_assign_new(l, r);
                 }
         default:
@@ -1047,7 +1062,7 @@ brd_parse_subclass(struct brd_token_list *tokens)
                 if (expression == NULL) {
                         goto error_exit;
                 } else if (!brd_parse_skip_newlines(tokens)) {
-                        brd_node_destroy(tokens);
+                        brd_node_destroy(expression);
                         error_message = "expected a newline";
                         goto error_exit;
                 }
