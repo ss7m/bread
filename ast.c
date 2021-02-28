@@ -1,6 +1,17 @@
 #include "common.h"
 #include "ast.h"
 
+static struct brd_node *
+brd_node_program_copy(struct brd_node *n)
+{
+        struct brd_node_program *p = (struct brd_node_program *)n;
+        struct brd_node **stmts = malloc(sizeof(struct brd_node *) * p->num_stmts);
+        for (size_t i = 0; i < p->num_stmts; i++) {
+                stmts[i] = brd_node_copy(p->stmts[i]);
+        }
+        return brd_node_program_new(stmts, p->num_stmts);
+}
+
 static void
 brd_node_program_destroy(struct brd_node *n)
 {
@@ -23,6 +34,16 @@ brd_node_program_new(struct brd_node **stmts, size_t num_stmts)
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_assign_copy(struct brd_node *n)
+{
+        struct brd_node_assign *a = (struct brd_node_assign *)n;
+        return brd_node_assign_new(
+                brd_node_copy(a->l),
+                brd_node_copy(a->r)
+        );
+}
+
 static void
 brd_node_assign_destroy(struct brd_node *n)
 {
@@ -41,6 +62,17 @@ brd_node_assign_new(struct brd_node *l, struct brd_node *r)
         n->r = r;
 
         return (struct brd_node *)n;
+}
+
+static struct brd_node *
+brd_node_binop_copy(struct brd_node *n)
+{
+        struct brd_node_binop *b = (struct brd_node_binop *)n;
+        return brd_node_binop_new(
+                b->btype,
+                brd_node_copy(b->l),
+                brd_node_copy(b->r)
+        );
 }
 
 static void
@@ -64,6 +96,13 @@ brd_node_binop_new(enum brd_binop btype, struct brd_node *l, struct brd_node *r)
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_unary_copy(struct brd_node *n)
+{
+        struct brd_node_unary *u = (struct brd_node_unary *)n;
+        return brd_node_unary_new(u->utype, brd_node_copy(u->u));
+}
+
 static void
 brd_node_unary_destroy(struct brd_node *n)
 {
@@ -79,6 +118,12 @@ brd_node_unary_new(enum brd_unary utype, struct brd_node *u)
         n->utype = utype;
         n->u = u;
         return (struct brd_node *)n;
+}
+
+static struct brd_node *
+brd_node_var_copy(struct brd_node *n)
+{
+        return brd_node_var_new(strdup(((struct brd_node_var *) n)->id));
 }
 
 static void
@@ -97,6 +142,12 @@ brd_node_var_new(char *id)
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_num_lit_copy(struct brd_node *n)
+{
+        return brd_node_num_lit_new(((struct brd_node_num_lit *) n)->v);
+}
+
 static void
 brd_node_num_lit_destroy(struct brd_node *n)
 {
@@ -111,6 +162,12 @@ brd_node_num_lit_new(long double v)
         n->_node.line_number = line_number;
         n->v = v;
         return (struct brd_node *)n;
+}
+
+static struct brd_node *
+brd_node_string_lit_copy(struct brd_node *n)
+{
+        return brd_node_string_lit_new(strdup(((struct brd_node_string_lit *) n)->s));
 }
 
 static void
@@ -129,6 +186,12 @@ brd_node_string_lit_new(char *s)
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_bool_lit_copy(struct brd_node *n)
+{
+        return brd_node_bool_lit_new(((struct brd_node_bool_lit *) n)->b);
+}
+
 static void
 brd_node_bool_lit_destroy(struct brd_node *n)
 {
@@ -145,6 +208,13 @@ brd_node_bool_lit_new(int b)
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_unit_lit_copy(struct brd_node *n)
+{
+        (void)n;
+        return brd_node_unit_lit_new();
+}
+
 static void
 brd_node_unit_lit_destroy(struct brd_node *n)
 {
@@ -158,6 +228,16 @@ brd_node_unit_lit_new(void)
         n->_node.ntype = BRD_NODE_UNIT_LIT;
         n->_node.line_number = line_number;
         return (struct brd_node *)n;
+}
+
+static struct brd_node_arglist *
+brd_node_arglist_copy(struct brd_node_arglist *a)
+{
+        struct brd_node **args = malloc(sizeof(struct brd_node *) * a->num_args);
+        for (size_t i = 0; i < a->num_args; i++) {
+                args[i] = brd_node_copy(a->args[i]);
+        }
+        return brd_node_arglist_new(args, a->num_args);
 }
 
 void
@@ -179,19 +259,38 @@ brd_node_arglist_new(struct brd_node **args, size_t num_args)
         return n;
 }
 
+static struct brd_node *
+brd_node_list_lit_copy(struct brd_node *n)
+{
+        return brd_node_list_lit_new(
+                brd_node_arglist_copy(((struct brd_node_list_lit *) n)->items)
+        );
+}
+
 static void
 brd_node_list_lit_destroy(struct brd_node *n)
 {
         brd_node_arglist_destroy(((struct brd_node_list_lit *)n)->items);
 }
 
-struct brd_node *brd_node_list_lit_new(struct brd_node_arglist *items)
+struct brd_node *
+brd_node_list_lit_new(struct brd_node_arglist *items)
 {
         struct brd_node_list_lit *n = malloc(sizeof(*n));
         n->_node.ntype = BRD_NODE_LIST_LIT;
         n->_node.line_number = line_number;
         n->items = items;
         return (struct brd_node *)n;
+}
+
+static struct brd_node *
+brd_node_funcall_copy(struct brd_node *n)
+{
+        struct brd_node_funcall *f = (struct brd_node_funcall *)n;
+        return brd_node_funcall_new(
+                brd_node_copy(f->fn),
+                brd_node_arglist_copy(f->args)
+        );
 }
 
 static void
@@ -211,6 +310,17 @@ brd_node_funcall_new(struct brd_node *fn, struct brd_node_arglist *args)
         n->fn = fn;
         n->args = args;
         return (struct brd_node *)n;
+}
+
+static struct brd_node *
+brd_node_closure_copy(struct brd_node *n)
+{
+        struct brd_node_closure *c = (struct brd_node_closure *)n;
+        char **args = malloc(sizeof(char *) * c->num_args);
+        for (size_t i = 0; i < c->num_args; i++) {
+                args[i] = strdup(c->args[i]);
+        }
+        return brd_node_closure_new(args, c->num_args, brd_node_copy(c->body));
 }
 
 static void
@@ -236,6 +346,12 @@ brd_node_closure_new(char **args, size_t num_args, struct brd_node *body)
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_builtin_copy(struct brd_node *n)
+{
+        return brd_node_builtin_new(strdup(((struct brd_node_builtin *) n)->builtin));
+}
+
 static void
 brd_node_builtin_destroy(struct brd_node *n)
 {
@@ -251,6 +367,17 @@ brd_node_builtin_new(char *builtin)
         n->_node.line_number = line_number;
         n->builtin = strdup(builtin);
         return (struct brd_node *)n;
+}
+
+static struct brd_node *
+brd_node_body_copy(struct brd_node *n)
+{
+        struct brd_node_body *b = (struct brd_node_body *)n;
+        struct brd_node **stmts = malloc(sizeof(struct brd_node*) * b->num_stmts);
+        for (size_t i = 0; i < b->num_stmts; i++) {
+                stmts[i] = brd_node_copy(b->stmts[i]);
+        }
+        return brd_node_body_new(stmts, b->num_stmts);
 }
 
 static void
@@ -272,6 +399,24 @@ brd_node_body_new(struct brd_node **stmts, size_t num_stmts)
         n->stmts = stmts;
         n->num_stmts = num_stmts;
         return (struct brd_node *)n;
+}
+
+static struct brd_node *
+brd_node_ifexpr_copy(struct brd_node *n)
+{
+        struct brd_node_ifexpr *b = (struct brd_node_ifexpr *)n;
+        struct brd_node_elif *elifs =
+                malloc(sizeof(struct brd_node_elif) * b->num_elifs);
+        for (size_t i = 0; i < b->num_elifs; i++) {
+                elifs[i].cond = brd_node_copy(b->elifs[i].cond);
+                elifs[i].body = brd_node_copy(b->elifs[i].body);
+        }
+        return brd_node_ifexpr_new(
+                brd_node_copy(b->cond),
+                brd_node_copy(b->body),
+                elifs, b->num_elifs,
+                b->els ? brd_node_copy(b->els) : NULL
+        );
 }
 
 static void
@@ -309,6 +454,13 @@ brd_node_ifexpr_new(
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_index_copy(struct brd_node *n)
+{
+        struct brd_node_index *i = (struct brd_node_index *)n;
+        return brd_node_index_new(brd_node_copy(i->list), brd_node_copy(i->idx));
+}
+
 static void
 brd_node_index_destroy(struct brd_node *n)
 {
@@ -326,6 +478,18 @@ brd_node_index_new(struct brd_node *list, struct brd_node *idx)
         n->list = list;
         n->idx = idx;
         return (struct brd_node *)n;
+}
+
+static struct brd_node *
+brd_node_while_copy(struct brd_node *n)
+{
+        struct brd_node_while *w = (struct brd_node_while *)n;
+        return brd_node_while_new(
+                w->no_list,
+                brd_node_copy(w->cond),
+                brd_node_copy(w->body),
+                w->inc ? brd_node_copy(w->inc) : NULL
+        );
 }
 
 static void
@@ -352,6 +516,16 @@ brd_node_while_new(int no_list, struct brd_node *cond, struct brd_node *body, st
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_field_copy(struct brd_node *n)
+{
+        struct brd_node_field *m = (struct brd_node_field *)n;
+        return brd_node_field_new(
+                brd_node_copy(m->object),
+                strdup(m->field)
+        );
+}
+
 static void
 brd_node_field_destroy(struct brd_node *n)
 {
@@ -371,6 +545,16 @@ brd_node_field_new(struct brd_node *object, char *field)
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_acc_obj_copy(struct brd_node *n)
+{
+        struct brd_node_acc_obj *m = (struct brd_node_acc_obj *)n;
+        return brd_node_acc_obj_new(
+                brd_node_copy(m->object),
+                strdup(m->id)
+        );
+}
+
 static void
 brd_node_acc_obj_destroy(struct brd_node *n)
 {
@@ -388,6 +572,23 @@ brd_node_acc_obj_new(struct brd_node *object, char *id)
         n->object = object;
         n->id = strdup(id);
         return (struct brd_node *)n;
+}
+
+static struct brd_node *
+brd_node_subclass_copy(struct brd_node *n)
+{
+        struct brd_node_subclass *s = (struct brd_node_subclass *)n;
+        struct brd_node_subclass_set *decs =
+                malloc(sizeof(struct brd_node_subclass_set) * s->num_decs);
+        for (size_t i = 0; i < s->num_decs; i++) {
+                decs[i].id = strdup(s->decs[i].id);
+                decs[i].expression = brd_node_copy(s->decs[i].expression);
+        }
+        return brd_node_subclass_new(
+                brd_node_copy(s->super),
+                brd_node_copy(s->constructor),
+                decs, s->num_decs
+        );
 }
 
 static void
@@ -420,7 +621,8 @@ brd_node_subclass_new(
         return (struct brd_node *)n;
 }
 
-void brd_node_destroy(struct brd_node *node)
+void
+brd_node_destroy(struct brd_node *node)
 {
         switch(node->ntype) {
         case BRD_NODE_ASSIGN: brd_node_assign_destroy(node); break;
@@ -447,3 +649,31 @@ void brd_node_destroy(struct brd_node *node)
         free(node);
 }
 
+struct brd_node *
+brd_node_copy(struct brd_node *node)
+{
+        switch(node->ntype) {
+        case BRD_NODE_ASSIGN: return brd_node_assign_copy(node);
+        case BRD_NODE_BINOP: return brd_node_binop_copy(node);
+        case BRD_NODE_UNARY: return brd_node_unary_copy(node);
+        case BRD_NODE_VAR: return brd_node_var_copy(node);
+        case BRD_NODE_NUM_LIT: return brd_node_num_lit_copy(node);
+        case BRD_NODE_STRING_LIT: return brd_node_string_lit_copy(node);
+        case BRD_NODE_BOOL_LIT: return brd_node_bool_lit_copy(node);
+        case BRD_NODE_UNIT_LIT: return brd_node_unit_lit_copy(node);
+        case BRD_NODE_LIST_LIT: return brd_node_list_lit_copy(node);
+        case BRD_NODE_FUNCALL: return brd_node_funcall_copy(node);
+        case BRD_NODE_CLOSURE: return brd_node_closure_copy(node);
+        case BRD_NODE_BUILTIN: return brd_node_builtin_copy(node);
+        case BRD_NODE_BODY: return brd_node_body_copy(node);
+        case BRD_NODE_IFEXPR: return brd_node_ifexpr_copy(node);
+        case BRD_NODE_INDEX: return brd_node_index_copy(node);
+        case BRD_NODE_WHILE: return brd_node_while_copy(node);
+        case BRD_NODE_FIELD: return brd_node_field_copy(node);
+        case BRD_NODE_ACC_OBJ: return brd_node_acc_obj_copy(node);
+        case BRD_NODE_SUBCLASS: return brd_node_subclass_copy(node);
+        case BRD_NODE_PROGRAM: return brd_node_program_copy(node);
+        }
+        BARF("what?");
+        return NULL;
+}
