@@ -123,7 +123,7 @@ brd_node_unary_new(enum brd_unary utype, struct brd_node *u)
 static struct brd_node *
 brd_node_var_copy(struct brd_node *n)
 {
-        return brd_node_var_new(strdup(((struct brd_node_var *) n)->id));
+        return brd_node_var_new(((struct brd_node_var *) n)->id);
 }
 
 static void
@@ -167,7 +167,7 @@ brd_node_num_lit_new(long double v)
 static struct brd_node *
 brd_node_string_lit_copy(struct brd_node *n)
 {
-        return brd_node_string_lit_new(strdup(((struct brd_node_string_lit *) n)->s));
+        return brd_node_string_lit_new(((struct brd_node_string_lit *) n)->s);
 }
 
 static void
@@ -349,7 +349,7 @@ brd_node_closure_new(char **args, size_t num_args, struct brd_node *body)
 static struct brd_node *
 brd_node_builtin_copy(struct brd_node *n)
 {
-        return brd_node_builtin_new(strdup(((struct brd_node_builtin *) n)->builtin));
+        return brd_node_builtin_new(((struct brd_node_builtin *) n)->builtin);
 }
 
 static void
@@ -520,10 +520,7 @@ static struct brd_node *
 brd_node_field_copy(struct brd_node *n)
 {
         struct brd_node_field *m = (struct brd_node_field *)n;
-        return brd_node_field_new(
-                brd_node_copy(m->object),
-                strdup(m->field)
-        );
+        return brd_node_field_new(brd_node_copy(m->object), m->field);
 }
 
 static void
@@ -549,10 +546,7 @@ static struct brd_node *
 brd_node_acc_obj_copy(struct brd_node *n)
 {
         struct brd_node_acc_obj *m = (struct brd_node_acc_obj *)n;
-        return brd_node_acc_obj_new(
-                brd_node_copy(m->object),
-                strdup(m->id)
-        );
+        return brd_node_acc_obj_new(brd_node_copy(m->object), m->id);
 }
 
 static void

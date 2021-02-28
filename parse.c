@@ -120,8 +120,10 @@ brd_parse_expression(struct brd_token_list *tokens)
                 }
 
                 if (tok >= BRD_TOK_PLUS && tok <= BRD_TOK_CONCAT) {
-                        BARF("need to add a brd_node_copy method");
-                        return NULL;
+                        return brd_node_assign_new(
+                                brd_node_copy(l),
+                                brd_node_binop_new(tok - BRD_TOK_PLUS, l, r)
+                        );
                 } else {
                         return brd_node_assign_new(l, r);
                 }
