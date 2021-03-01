@@ -893,7 +893,8 @@ _builtin_writeln(struct brd_value *args, size_t num_args, struct brd_value *out)
 static int
 _builtin_readln(struct brd_value *args, size_t num_args, struct brd_value *out)
 {
-        size_t n = 0;
+        ssize_t n;
+        size_t i;
         char *str;
 
         (void)args;
@@ -901,14 +902,19 @@ _builtin_readln(struct brd_value *args, size_t num_args, struct brd_value *out)
                 BARF("readln accepts no arguments");
         }
 
-        out->vtype = BRD_VAL_HEAP;
-        out->as.heap = brd_heap_new(BRD_HEAP_STRING);
 
         str = NULL;
-        n = getline(&str, &n, stdin);
-        str[n-1] = '\0'; /* remove newline */
-        brd_value_string_init(out->as.heap->as.string, str);
-        return true;
+        if ((n = getline(&str, &i, stdin)) == -1) {
+                free(str);
+                out->vtype = BRD_VAL_UNIT;
+                return false;
+        } else {
+                out->vtype = BRD_VAL_HEAP;
+                out->as.heap = brd_heap_new(BRD_HEAP_STRING);
+                str[n-1] = '\0'; /* remove newline */
+                brd_value_string_init(out->as.heap->as.string, str);
+                return true;
+        }
 }
 
 static int
