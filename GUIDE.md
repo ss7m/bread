@@ -52,7 +52,7 @@ Bread provides the following builtin functions:
 
 * `@write(args...)` prints the arguments to stdout.
 * `@writeln(args...)` prints the arguments to stdout with an additional newline.
-* `@readln()` takes no arguments and reads a line from stdin.
+* `@readln()` takes no arguments and reads a line from stdin (if stdin is closed, `unit` is returned)
 * `@length(arg)` reports the length of a string or list
 * `@typeof(arg)` reports the type of its argument
 * `@system(args...)` runs a shell command, and returns the exit code of the command
