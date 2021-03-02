@@ -12,9 +12,9 @@ set RunningSum = subclass(@Object)
   end
 
   set update = func(num)
-    set this.sum = this.sum + num
-    set this.sum_sq = this.sum_sq + num^2
-    set this.n = this.n + 1
+    set this.sum += num
+    set this.sum_sq += num^2
+    set this.n += 1
     unit
   end
 

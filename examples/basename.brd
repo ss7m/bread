@@ -8,7 +8,7 @@ set basename_idx = func(string)
       set idx = i + 1
       set found = true
     end
-    set i = i - 1
+    set i -= 1
   end
 
   idx

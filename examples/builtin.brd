@@ -8,7 +8,7 @@ set Tester = subclass(@Object)
 
   set test = func(val)
     @writeln(this.msg, " ", this.num, ": ", this.fn(val))
-    set this.num = this.num + 1
+    set this.num += 1
   end
 end
 
