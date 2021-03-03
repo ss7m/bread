@@ -36,6 +36,11 @@ brd_token_list_peek(struct brd_token_list *list)
         enum brd_token tok;
         brd_token_t *data = list->data;
 
+        if (list->data >= list->end) {
+                return BRD_TOK_EOF;
+        }
+
+
         if (skip_newlines) {
                 do {
                         tok = *(enum brd_token *)data;
@@ -52,6 +57,10 @@ enum brd_token
 brd_token_list_pop_token(struct brd_token_list *list)
 {
         enum brd_token tok;
+
+        if (list->data >= list->end) {
+                return BRD_TOK_EOF;
+        }
 
         if (skip_newlines) {
                 line_number -= 1;
