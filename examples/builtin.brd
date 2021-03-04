@@ -24,6 +24,10 @@ set response = @readln()
 @writeln("the word \"cow\" is ", @length("cow"), " characters long")
 @writeln("the list ", [1,2,3,4,5], " is ", @length([1, 2, 3, 4, 5]), " entries long")
 
+set is_callable = func(a)
+  @typeof(a) = "method" or @typeof(a) = "closure" or @typeof(a)[0] = "@"
+end
+
 @writeln()
 
 set typeof = Tester("typeof test", @typeof)
@@ -38,6 +42,7 @@ typeof::test(Tester)
 typeof::test(typeof)
 typeof::test(typeof::test)
 typeof::test(@string)
+typeof::test(is_callable)
 
 @writeln()
 set string = Tester("string test", @string)
@@ -52,6 +57,22 @@ string::test(Tester)
 string::test(typeof)
 string::test(typeof::test)
 string::test(@string)
+string::test(is_callable)
+
+@writeln()
+set callable = Tester("callable test", is_callable)
+
+callable::test(17.2)
+callable::test(true)
+callable::test("hi")
+callable::test([8, [1,2], unit])
+callable::test(response)
+callable::test(unit)
+callable::test(Tester)
+callable::test(typeof)
+callable::test(typeof::test)
+callable::test(@string)
+callable::test(is_callable)
 
 @writeln()
 
@@ -60,4 +81,10 @@ if @system("sleep ", 2) = 0 then
   @writeln("sleep succesful")
 else
   @writeln("sleep failed")
+end
+
+if @system("false") = 0 then
+  @writeln("false succesful")
+else
+  @writeln("false failed")
 end
