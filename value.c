@@ -59,12 +59,13 @@ brd_value_list_to_string(struct brd_value_list *list) {
         size_t length;
         char *string;
         struct brd_value *list_strings = malloc(sizeof(*list_strings) * list->length);
+        int *new_string = malloc(sizeof(int) * list->length);
 
         length = 4; // "[ ]" and null byte
 
         for (size_t i = 0; i < list->length; i++) {
                 list_strings[i] = list->items[i];
-                brd_value_coerce_string(&list_strings[i]);
+                new_string[i] = brd_value_coerce_string(&list_strings[i]);
                 length += 2 + AS_STRING(list_strings[i])->length;
         }
 
@@ -80,7 +81,7 @@ brd_value_list_to_string(struct brd_value_list *list) {
                         string[length++] = ',';
                 }
                 string[length++] = ' ';
-                if (IS_VAL(list_strings[i], BRD_VAL_HEAP)) {
+                if (new_string[i]) {
                         brd_heap_destroy(list_strings[i].as.heap);
                 }
         }
@@ -88,6 +89,7 @@ brd_value_list_to_string(struct brd_value_list *list) {
         string[length++] = ']';
         string[length] = '\0';
         free(list_strings);
+        free(new_string);
 
         return string;
 }

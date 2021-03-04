@@ -31,48 +31,38 @@ end
 @writeln()
 
 set typeof = Tester("typeof test", @typeof)
-
-typeof::test(17.2)
-typeof::test(true)
-typeof::test("hi")
-typeof::test([8, "", "" .. "", unit])
-typeof::test(response)
-typeof::test(unit)
-typeof::test(Tester)
-typeof::test(typeof)
-typeof::test(typeof::test)
-typeof::test(@string)
-typeof::test(is_callable)
-
-@writeln()
 set string = Tester("string test", @string)
-
-string::test(17.2)
-string::test(true)
-string::test("hi")
-string::test([8, [1,2], unit])
-string::test(response)
-string::test(unit)
-string::test(Tester)
-string::test(typeof)
-string::test(typeof::test)
-string::test(@string)
-string::test(is_callable)
-
-@writeln()
 set callable = Tester("callable test", is_callable)
 
-callable::test(17.2)
-callable::test(true)
-callable::test("hi")
-callable::test([8, [1,2], unit])
-callable::test(response)
-callable::test(unit)
-callable::test(Tester)
-callable::test(typeof)
-callable::test(typeof::test)
-callable::test(@string)
-callable::test(is_callable)
+set test_cases = [
+  17.2,
+  true,
+  "hi",
+  [8, [1,2], "" .. "", unit],
+  response,
+  unit,
+  Tester,
+  typeof,
+  typeof::test,
+  @string,
+  is_callable,
+]
+
+for i = 0, @length(test_cases) do
+  typeof::test(test_cases[i])
+end
+
+@writeln()
+
+for i = 0, @length(test_cases) do
+  string::test(test_cases[i])
+end
+
+@writeln()
+
+for i = 0, @length(test_cases) do
+  callable::test(test_cases[i])
+end
 
 @writeln()
 
