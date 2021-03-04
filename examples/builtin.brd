@@ -10,6 +10,12 @@ set Tester = subclass(@Object)
     @writeln(this.msg, " ", this.num, ": ", this.fn(val))
     set this.num += 1
   end
+
+  set test_all = func(vals)
+    for i = 0, @length(vals) do
+      this::test(vals[i])
+    end
+  end
 end
 
 @write("write\n")
@@ -48,22 +54,11 @@ set test_cases = [
   is_callable,
 ]
 
-for i = 0, @length(test_cases) do
-  typeof::test(test_cases[i])
-end
-
+typeof::test_all(test_cases)
 @writeln()
-
-for i = 0, @length(test_cases) do
-  string::test(test_cases[i])
-end
-
+string::test_all(test_cases)
 @writeln()
-
-for i = 0, @length(test_cases) do
-  callable::test(test_cases[i])
-end
-
+callable::test_all(test_cases)
 @writeln()
 
 @writeln("sleeping...")
