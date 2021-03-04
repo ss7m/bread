@@ -40,7 +40,6 @@ brd_token_list_peek(struct brd_token_list *list)
                 return BRD_TOK_EOF;
         }
 
-
         if (skip_newlines) {
                 do {
                         tok = *(enum brd_token *)data;

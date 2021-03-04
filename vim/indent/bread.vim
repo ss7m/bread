@@ -24,7 +24,7 @@ function! GetBreadIndent()
 
     let ind = indent(prevlnum)
     let prevline = getline(prevlnum)
-    let midx = match(prevline, '\%(\<begin\>\|\<subclass\>\|\<then\>\|\<do\>\)\s*$')
+    let midx = match(prevline, '\%(\<else\>\|\<begin\>\|\<subclass\>\|\<then\>\|\<do\>\)\s*$')
 
     if midx == -1
         let midx = match(prevline, '(\s*$')
