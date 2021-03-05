@@ -145,7 +145,10 @@ brd_heap_new(enum brd_heap_type htype) {
                 heap->as.class = malloc(sizeof(struct brd_value_class));
                 break;
         case BRD_HEAP_OBJECT:
-                heap->as.class = malloc(sizeof(struct brd_value_object));
+                heap->as.object = malloc(sizeof(struct brd_value_object));
+                break;
+        case BRD_HEAP_DICT:
+                heap->as.dict = malloc(sizeof(struct brd_value_dict));
                 break;
         }
 
@@ -176,6 +179,10 @@ void brd_heap_destroy(struct brd_heap_entry *entry)
                         brd_value_object_destroy(entry->as.object);
                 }
                 free(entry->as.object);
+                break;
+        case BRD_HEAP_DICT:
+                brd_value_dict_destroy(entry->as.dict);
+                free(entry->as.dict);
                 break;
         }
         free(entry);
@@ -215,6 +222,12 @@ brd_value_gc_mark(struct brd_value *value)
                         v = brd_heap_value(class, entry->as.object->class);
                         brd_value_gc_mark(&v);
                         brd_value_map_mark(&entry->as.object->fields);
+                        break;
+                case BRD_HEAP_DICT:
+                        for (size_t i = 0; i < entry->as.dict->keys.length; i++) {
+                                brd_value_gc_mark(&entry->as.dict->keys.items[i]);
+                        }
+                        brd_value_map_mark(&entry->as.dict->map);
                         break;
                 }
         } else if (value->vtype == BRD_VAL_METHOD) {
@@ -394,6 +407,20 @@ brd_value_object_destroy(struct brd_value_object *object)
         brd_value_map_destroy(&object->fields);
 }
 
+void
+brd_value_dict_init(struct brd_value_dict *dict)
+{
+        brd_value_list_init(&dict->keys);
+        brd_value_map_init(&dict->map);
+}
+
+void
+brd_value_dict_destroy(struct brd_value_dict *dict)
+{
+        free(dict->keys.items);
+        brd_value_map_destroy(&dict->map);
+}
+
 int
 brd_comparison_eq(struct brd_comparison cmp)
 {
@@ -449,6 +476,9 @@ brd_value_debug(struct brd_value *value)
                 case BRD_HEAP_OBJECT:
                         printf("<< object >>");
                         break;
+                case BRD_HEAP_DICT:
+                        printf("<< dict >>");
+                        break;
                 }
         }
 }
@@ -496,6 +526,8 @@ brd_value_coerce_num(struct brd_value *value)
                 case BRD_HEAP_OBJECT:
                         BARF("can't coerce an object into a number");
                         break;
+                case BRD_HEAP_DICT:
+                        BARF("can't coerce a dict into a number");
                 }
                 break;
         }
@@ -554,6 +586,10 @@ brd_value_coerce_string(struct brd_value *value)
                 case BRD_HEAP_OBJECT:
                         value->vtype = BRD_VAL_STRING;
                         value->as.string = &object_string;
+                        return false;
+                case BRD_HEAP_DICT:
+                        value->vtype = BRD_VAL_STRING;
+                        value->as.string = &dict_string;
                         return false;
                 }
                 break;
@@ -637,6 +673,9 @@ brd_value_truthify(struct brd_value *value)
                 case BRD_HEAP_CLASS:
                         return true;
                 case BRD_HEAP_OBJECT:
+                        return true;
+                case BRD_HEAP_DICT:
+                        // TODO: truthy iff not empty
                         return true;
                 }
         }
@@ -877,6 +916,9 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
                         case BRD_HEAP_OBJECT:
                                 printf("<< object >>");
                                 break;
+                        case BRD_HEAP_DICT:
+                                printf("<< dict >>");
+                                break;
                         }
                 }
         }
@@ -996,6 +1038,9 @@ _builtin_typeof(struct brd_value *args, size_t num_args, struct brd_value *out)
                         break;
                 case BRD_HEAP_OBJECT:
                         out->as.string = &object_string;
+                        break;
+                case BRD_HEAP_DICT:
+                        out->as.string = &dict_string;
                         break;
                 }
         }
@@ -1118,6 +1163,20 @@ _builtin_insert(struct brd_value *args, size_t num_args, struct brd_value *out)
         return false;
 }
 
+static int
+_builtin_dict(struct brd_value *args, size_t num_args, struct brd_value *out)
+{
+        (void)args;
+        if (num_args > 0) {
+                BARF("@dict takes no arguments");
+        }
+
+        out->vtype = BRD_VAL_HEAP;
+        out->as.heap = brd_heap_new(BRD_HEAP_DICT);
+        brd_value_dict_init(out->as.heap->as.dict);
+        return true;
+}
+
 enum brd_builtin brd_lookup_builtin(char *builtin)
 {
         for (int i = 0; i < BRD_NUM_BUILTIN; i++) {
@@ -1143,6 +1202,7 @@ const builtin_fn_dec builtin_function[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_STRING] = _builtin_string,
         [BRD_BUILTIN_PUSH] = _builtin_push,
         [BRD_BUILTIN_INSERT] = _builtin_insert,
+        [BRD_BUILTIN_DICT] = _builtin_dict,
 };
 
 const char *builtin_name[BRD_NUM_BUILTIN] = {
@@ -1155,6 +1215,7 @@ const char *builtin_name[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_STRING] = "string",
         [BRD_BUILTIN_PUSH] = "push",
         [BRD_BUILTIN_INSERT] = "insert",
+        [BRD_BUILTIN_DICT] = "dict",
 };
 
 #define MK_BUILTIN_STRING(str) { str, sizeof(str) - 1 }
@@ -1169,6 +1230,7 @@ struct brd_value_string builtin_string[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_STRING]  = MK_BUILTIN_STRING("@string"),
         [BRD_BUILTIN_PUSH] = MK_BUILTIN_STRING("@push"),
         [BRD_BUILTIN_INSERT] = MK_BUILTIN_STRING("@insert"),
+        [BRD_BUILTIN_DICT] = MK_BUILTIN_STRING("@dict"),
 };
 
 struct brd_value_string number_string = MK_BUILTIN_STRING("number");
@@ -1180,6 +1242,7 @@ struct brd_value_string list_string = MK_BUILTIN_STRING("list");
 struct brd_value_string closure_string = MK_BUILTIN_STRING("closure");
 struct brd_value_string class_string = MK_BUILTIN_STRING("class");
 struct brd_value_string object_string = MK_BUILTIN_STRING("object");
+struct brd_value_string dict_string = MK_BUILTIN_STRING("dict");
 struct brd_value_string true_string = MK_BUILTIN_STRING("true");
 struct brd_value_string false_string = MK_BUILTIN_STRING("false");
 

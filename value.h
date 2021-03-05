@@ -37,6 +37,7 @@ struct brd_value_map;
 struct brd_value_string;
 struct brd_value_class;
 struct brd_value_object;
+struct brd_value_dict;
 
 enum brd_heap_type {
         BRD_HEAP_STRING,
@@ -44,6 +45,7 @@ enum brd_heap_type {
         BRD_HEAP_CLOSURE,
         BRD_HEAP_CLASS,
         BRD_HEAP_OBJECT,
+        BRD_HEAP_DICT,
 };
 
 struct brd_value_list {
@@ -74,6 +76,7 @@ struct brd_heap_entry {
                 struct brd_value_closure *closure;
                 struct brd_value_class *class;
                 struct brd_value_object *object;
+                struct brd_value_dict *dict;
         } as;
 
         int marked; /* for GC */
@@ -162,6 +165,14 @@ void brd_value_object_init(struct brd_value_object *object, struct brd_value_cla
 void brd_value_object_destroy(struct brd_value_object *object);
 void brd_value_object_super(struct brd_value_object *this, struct brd_value_object *super);
 
+struct brd_value_dict {
+        struct brd_value_list keys;
+        struct brd_value_map map;
+};
+
+void brd_value_dict_init(struct brd_value_dict *dict);
+void brd_value_dict_destroy(struct brd_value_dict *dict);
+
 struct brd_comparison {
         signed char cmp;
         char is_ord;
@@ -196,6 +207,7 @@ enum brd_builtin {
         BRD_BUILTIN_STRING,
         BRD_BUILTIN_PUSH,
         BRD_BUILTIN_INSERT,
+        BRD_BUILTIN_DICT,
         BRD_NUM_BUILTIN,
         BRD_GLOBAL_OBJECT,
 };
@@ -222,6 +234,7 @@ extern struct brd_value_string list_string;
 extern struct brd_value_string closure_string;
 extern struct brd_value_string class_string;
 extern struct brd_value_string object_string;
+extern struct brd_value_string dict_string;
 extern struct brd_value_string true_string;
 extern struct brd_value_string false_string;
 
