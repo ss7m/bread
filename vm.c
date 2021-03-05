@@ -788,28 +788,44 @@ brd_vm_run(void)
                 case BRD_VM_GET_IDX:
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_pop(&vm.stack);
-                        if (!IS_VAL(value1, BRD_VAL_NUM)) {
-                                BARF("attempted to index with a non-number");
+                        if (IS_HEAP(value2, BRD_HEAP_DICT)) {
+                                valuep = brd_value_dict_get(
+                                        value2.as.heap->as.dict,
+                                        &value1
+                                );
+                                if (valuep == NULL) {
+                                        value1.vtype = BRD_VAL_UNIT;
+                                        brd_stack_push(&vm.stack, &value1);
+                                } else {
+                                        brd_stack_push(&vm.stack, valuep);
+                                }
+                        } else {
+                                brd_value_coerce_num(&value1);
+                                if (brd_value_index(&value2, floorl(value1.as.num))) {
+                                        brd_vm_allocate(value2.as.heap);
+                                }
+                                brd_stack_push(&vm.stack, &value2);
                         }
-                        if (brd_value_index(&value2, floorl(value1.as.num))) {
-                                brd_vm_allocate(value2.as.heap);
-                        }
-                        brd_stack_push(&vm.stack, &value2);
                         break;
                 case BRD_VM_SET_IDX:
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_pop(&vm.stack);
-                        if (!IS_HEAP(value2, BRD_HEAP_LIST)) {
-                                BARF("attempted to index a non-list");
-                        } else if (!IS_VAL(value1, BRD_VAL_NUM)) {
-                                BARF("attempted to index with a non-number");
-                        }
                         value3 = *brd_stack_pop(&vm.stack);
-                        brd_value_list_set(
-                                value2.as.heap->as.list,
-                                floorl(value1.as.num),
-                                &value3
-                        );
+                        if (IS_HEAP(value2, BRD_HEAP_DICT)) {
+                                brd_value_dict_set(
+                                        value2.as.heap->as.dict,
+                                        &value1, &value3
+                                );
+                        } else if (IS_HEAP(value2, BRD_HEAP_LIST)) {
+                                brd_value_coerce_num(&value1);
+                                brd_value_list_set(
+                                        value2.as.heap->as.list,
+                                        floorl(value1.as.num),
+                                        &value3
+                                );
+                        } else {
+                                BARF("bad type for set index");
+                        }
                         brd_stack_push(&vm.stack, &value3);
                         break;
                 case BRD_VM_PUSH:
