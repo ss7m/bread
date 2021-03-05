@@ -160,6 +160,7 @@ brd_parse_string_literal(char **string, char *out)
                         switch (**string) {
                         case 'n': *p = '\n'; break;
                         case 't': *p = '\t'; break;
+                        case '\\': *p = '\\'; break;
                         case '"': *p = '"'; break;
                         default:
                                   error_message = "Bad escape character: ";
