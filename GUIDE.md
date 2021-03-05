@@ -102,6 +102,14 @@ an object is an instance of (the syntax for this will be shown later).
 Objects cannot be coerced into a number. When coerced into a string, an object
 becomes the string `"object"`. All objects are truthy.
 
+## dict
+
+Dictionaries map strings to values. Syntax for dictionary literals is a WIP,
+currently a dictionary must be initialized with the `@dict` builtin.
+
+Dictionaries cannot be coerced into a number. When coerced into a string,
+a dictionary becomes the string `"dict"`. All dictionaries are truthy.
+
 ## method
 
 Methods are closures which also carry a reference to some object. They behave
@@ -173,12 +181,17 @@ binary operator binds tighter than concatenation.
 ## Indexing
 
 Lists and strings can be indexed with square brackets. The value inside the brackets
-must be a number. If the number has a decimal part, it will be truncated before
-indexing. If the index is greater than the length of the string/list, indexing
+will be coerced into a number.  If the number has a decimal part, it will be truncated
+before indexing. If the index is greater than the length of the string/list, indexing
 is performed modulo the length. If the index is less than 0, then indexing is performed
 off of the end of the string/list. In this way, `"Hello"[4]`, `"Hello"[9]`,
 `"Hello"[-1]`, and `"Hello"[-6]` all return the string `"o"`. If the string/list
 has length 0, then any indexing will return `unit`.
+
+Dictionaries can also be indexed with square brackets. The value inside
+the brackets must be a string. This string will be looked up in the dictionary.
+If it is indeed a key of the dictionary, then the corresponding value is returned.
+Otherwise, `unit` is returned.
 
 ## Object Syntax
 
@@ -202,9 +215,10 @@ the superclass.
 
 Set expressions are used to set some value. Set expressions take the form
 `set LVALUE = EXPRESSION`, where `LVALUE` is the name of a variable, an index
-into an lvalue, or accessing the field of an lvalue. Indexing is only valid on lists,
-and accessing fields is only valid on objects. The value of a set expression
-is the value of the expression on the right hand side of the equals sign.
+into an lvalue, or accessing the field of an lvalue. Indexing is valid on lists
+and dictionaries, and accessing fields is only valid on objects.
+The value of a set expression is the value of the expression on the right hand side
+of the equals sign.
 
 ## Begin/End expressions
 
