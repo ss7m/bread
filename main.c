@@ -109,7 +109,7 @@ start_loop:
 
                 if (brd_stack_peek(&vm.stack)->vtype != BRD_VAL_UNIT) {
                         struct brd_value *val = brd_stack_pop(&vm.stack);
-                        brd_value_map_set(&vm.frame[0].vars, "_", val);
+                        brd_value_map_set(&vm.frame[0].locals, "_", val);
                         brd_value_debug(val);
                         printf("\n");
                 }

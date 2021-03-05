@@ -449,8 +449,8 @@ brd_value_dict_set(
         brd_value_map_set(&dict->map, k, value);
 
         // keep heap-allocated keys alive
-        if (IS_VAL(*value, BRD_VAL_HEAP)) {
-                brd_value_list_push(&dict->keys, value);
+        if (IS_VAL(*key, BRD_VAL_HEAP)) {
+                brd_value_list_push(&dict->keys, key);
         }
 }
 

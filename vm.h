@@ -81,7 +81,7 @@ struct brd_stack {
 
 struct brd_frame {
         size_t pc;
-        struct brd_value_map vars;
+        struct brd_value_map globals, locals;
 };
 
 struct brd_string_constant_list {

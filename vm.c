@@ -425,7 +425,8 @@ brd_vm_destroy(void)
                 vm.strings = n;
         }
 
-        brd_value_map_destroy(&vm.frame[0].vars);
+        brd_value_map_destroy(&vm.frame[0].globals);
+        brd_value_map_destroy(&vm.frame[0].locals);
         free(vm.bytecode);
 }
 
@@ -457,7 +458,8 @@ brd_vm_init(void)
 
         vm.fp = 0;
         vm.frame[0].pc = 0;
-        brd_value_map_init(&vm.frame[0].vars);
+        brd_value_map_init(&vm.frame[0].globals);
+        brd_value_map_init(&vm.frame[0].locals);
 }
 
 static void
@@ -472,10 +474,11 @@ brd_value_call_closure(struct brd_value_closure *closure, struct brd_value*args,
 
         vm.fp++;
         vm.frame[vm.fp].pc = closure->pc;
-        vm.frame[vm.fp].vars = closure->env;
+        vm.frame[vm.fp].globals = closure->env;
+        brd_value_map_init(&vm.frame[vm.fp].locals);
 
         for (size_t i = 0; i < num_args; i++) {
-                brd_value_map_set(&vm.frame[vm.fp].vars, closure->args[i], &args[i]);
+                brd_value_map_set(&vm.frame[vm.fp].locals, closure->args[i], &args[i]);
         }
 }
 
@@ -598,10 +601,15 @@ brd_vm_run(void)
                 case BRD_VM_GET_VAR:
                         READ_STRING_INTO(value1.as.string);
                         id = value1.as.string->s;
-                        valuep = brd_value_map_get(&vm.frame[vm.fp].vars, id);
+                        valuep = brd_value_map_get(&vm.frame[vm.fp].locals, id);
                         if (valuep == NULL) {
-                                value1.vtype = BRD_VAL_UNIT;
-                                brd_stack_push(&vm.stack, &value1);
+                                valuep = brd_value_map_get(&vm.frame[vm.fp].globals, id);
+                                if (valuep == NULL) {
+                                        value1.vtype = BRD_VAL_UNIT;
+                                        brd_stack_push(&vm.stack, &value1);
+                                } else {
+                                        brd_stack_push(&vm.stack, valuep);
+                                }
                         } else {
                                 brd_stack_push(&vm.stack, valuep);
                         }
@@ -720,7 +728,12 @@ brd_vm_run(void)
                         READ_STRING_INTO(value1.as.string);
                         id = value1.as.string->s;
                         value1 = *brd_stack_pop(&vm.stack);
-                        brd_value_map_set(&vm.frame[vm.fp].vars, id, &value1);
+                        valuep = brd_value_map_get(&vm.frame[vm.fp].globals, id);
+                        if (valuep != NULL) {
+                                *valuep = value1;
+                        } else {
+                                brd_value_map_set(&vm.frame[vm.fp].locals, id, &value1);
+                        }
                         brd_stack_push(&vm.stack, &value1);
                         break;
                 case BRD_VM_JMP:
@@ -767,14 +780,14 @@ brd_vm_run(void)
                                 vm.frame[vm.fp].pc
                                 + sizeof(enum brd_bytecode) + sizeof(size_t)
                         );
+                        brd_value_map_copy( // TODO may want to alter this behavior
+                                &value1.as.heap->as.closure->env,
+                                &vm.frame[vm.fp].locals
+                        );
                         brd_value_map_set( /* for recursive functions */
                                 &value1.as.heap->as.closure->env,
                                 "self",
                                 &value1
-                        );
-                        brd_value_map_copy(
-                                &value1.as.heap->as.closure->env,
-                                &vm.frame[vm.fp].vars
                         );
                         brd_stack_push(&vm.stack, &value1);
                         break;
@@ -900,6 +913,7 @@ brd_vm_run(void)
                         if (vm.fp == 0) {
                                 goto exit_loop;
                         } else {
+                                brd_value_map_destroy(&vm.frame[vm.fp].locals);
                                 vm.fp--;
                         }
                         break;
@@ -941,7 +955,8 @@ brd_vm_gc(void)
 
         /* mark values held by variables */
         for (size_t i = 0; i <= vm.fp; i++) {
-                brd_value_map_mark(&vm.frame[i].vars);
+                brd_value_map_mark(&vm.frame[i].globals);
+                brd_value_map_mark(&vm.frame[i].locals);
         }
 
         prev = vm.heap;
