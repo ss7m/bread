@@ -155,7 +155,8 @@ brd_heap_new(enum brd_heap_type htype) {
         return heap;
 }
 
-void brd_heap_destroy(struct brd_heap_entry *entry)
+void
+brd_heap_destroy(struct brd_heap_entry *entry)
 {
         switch(entry->htype) {
         case BRD_HEAP_STRING:
@@ -417,8 +418,40 @@ brd_value_dict_init(struct brd_value_dict *dict)
 void
 brd_value_dict_destroy(struct brd_value_dict *dict)
 {
-        free(dict->keys.items);
         brd_value_map_destroy(&dict->map);
+        free(dict->keys.items);
+}
+
+struct brd_value *
+brd_value_dict_get(struct brd_value_dict *dict, struct brd_value *key)
+{
+        if (IS_STRING(*key)) {
+                char *k = AS_STRING(*key)->s;
+                return brd_value_map_get(&dict->map, k);
+        } else {
+                BARF("dict key must be a string");
+                return NULL;
+        }
+}
+
+void
+brd_value_dict_set(
+        struct brd_value_dict *dict,
+        struct brd_value *key,
+        struct brd_value *value)
+{
+        char *k;
+        if (!IS_STRING(*key)) {
+                BARF("dict key must be a string");
+        }
+        
+        k = AS_STRING(*key)->s;
+        brd_value_map_set(&dict->map, k, value);
+
+        // keep heap-allocated keys alive
+        if (IS_VAL(*value, BRD_VAL_HEAP)) {
+                brd_value_list_push(&dict->keys, value);
+        }
 }
 
 int
