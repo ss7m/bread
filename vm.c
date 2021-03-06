@@ -915,6 +915,7 @@ brd_vm_run(void)
                         } else {
                                 brd_value_map_destroy(&vm.frame[vm.fp].locals);
                                 vm.fp--;
+                                brd_vm_gc();
                         }
                         break;
                 case BRD_VM_POP:
@@ -926,7 +927,6 @@ brd_vm_run(void)
 #else
                         brd_stack_pop(&vm.stack);
 #endif
-                        brd_vm_gc();
                         break;
                 }
         }
