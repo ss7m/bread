@@ -27,7 +27,7 @@ function! GetBreadIndent()
     let midx = match(prevline, '\%(\<else\>\|\<begin\>\|\<subclass\>\|\<then\>\|\<do\>\)\s*$')
 
     if midx == -1
-        let midx = match(prevline, '(\s*$')
+        let midx = match(prevline, '\%({\|(\)\s*$')
         if midx == -1
           let midx = match(prevline, '\(\<func\|\<constructor\|\<subclass\)\s*(')
         endif
@@ -42,7 +42,7 @@ function! GetBreadIndent()
     let midx = match(getline(v:lnum), '^\s*\%(end\>\|else\>\|elif\>\)')
     
     if midx == -1
-        let midx = match(getline(v:lnum), ')\s*$')
+        let midx = match(getline(v:lnum), '\%(}\|)\)\s*$')
     endif
 
     if midx != -1 && synIDattr(synID(v:lnum, midx + 1, 1), "name") != "breadComment"
