@@ -1102,3 +1102,62 @@ error_exit:
         return NULL;
 }
 
+struct brd_node *
+brd_parse_dict(struct brd_token_list *tokens)
+{
+        /* first { has already been parsed */
+        struct brd_node_dict_pair *pairs;
+        size_t length; size_t capacity;
+        int skip_copy = skip_newlines;
+
+        skip_newlines = true;
+        capacity = 4;
+        length = 0;
+        pairs = malloc(sizeof(*pairs) * capacity);
+
+        for(;;) {
+                char *key;
+                struct brd_node *value;
+
+                if (brd_token_list_pop_token(tokens) != BRD_TOK_VAR) {
+                        break;
+                }
+
+                key = brd_token_list_pop_string(tokens);
+                if (brd_token_list_pop_token(tokens) != BRD_TOK_COLON) {
+                        error_message = "expected a :";
+                        goto error_exit;
+                }
+
+                value = brd_parse_expression(tokens);
+                if (value == NULL) {
+                        goto error_exit;
+                }
+
+                if (length == capacity) {
+                        capacity *= GROW;
+                        pairs = realloc(pairs, sizeof(*pairs) * capacity);
+                }
+
+                pairs[length].key = strdup(key);
+                pairs[length].value = value;
+                length++;
+
+                if (brd_token_list_peek(tokens) == BRD_TOK_COMMA) {
+                        brd_token_list_pop_token(tokens);
+                } else {
+                        break;
+                }
+        }
+
+        skip_newlines = skip_copy;
+        return brd_node_dict_new(pairs, length);
+
+error_exit:
+        for (size_t i = 0; i < length; i++) {
+                free(pairs[i].key);
+                brd_node_destroy(pairs[i].value);
+        }
+        free(pairs);
+        return NULL;
+}
