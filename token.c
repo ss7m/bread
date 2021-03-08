@@ -292,6 +292,14 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                         brd_token_list_add_token(list, BRD_TOK_RBRACKET);
                         string++;
                         break;
+                case '{':
+                        brd_token_list_add_token(list, BRD_TOK_LBRACE);
+                        string++;
+                        break;
+                case '}':
+                        brd_token_list_add_token(list, BRD_TOK_RBRACE);
+                        string++;
+                        break;
                 case '\n':
                         brd_token_list_add_token(list, BRD_TOK_NEWLINE);
                         string++;
@@ -361,9 +369,8 @@ brd_token_list_tokenize(struct brd_token_list *list, char *string)
                                 brd_token_list_add_token(list, BRD_TOK_ACC_OBJ);
                                 string += 2;
                         } else {
-                                error_message =
-                                        "':' is not a valid token, did you mean '::'?";
-                                return false;
+                                brd_token_list_add_token(list, BRD_TOK_COLON);
+                                string++;
                         }
                         break;
                 case '!':

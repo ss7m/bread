@@ -17,6 +17,9 @@ enum brd_token {
         BRD_TOK_RPAREN,
         BRD_TOK_LBRACKET, /* [ ] */
         BRD_TOK_RBRACKET,
+        BRD_TOK_LBRACE, /* { } */
+        BRD_TOK_RBRACE,
+        BRD_TOK_COLON,
         BRD_TOK_NEWLINE,
         BRD_TOK_EOF,
 
