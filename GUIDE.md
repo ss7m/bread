@@ -104,8 +104,11 @@ becomes the string `"object"`. All objects are truthy.
 
 ## dict
 
-Dictionaries map strings to values. Syntax for dictionary literals is a WIP,
-currently a dictionary must be initialized with the `@dict` builtin.
+Dictionaries map strings to values.
+Dictionary literals are comma separated key-value pairs surrounded by a pair
+of curly braces, where the key is a string literal and the key and value are separated
+by a colon (not dissimilar to JSON).
+An empty dictionary may also be initialized with the `@dict` builtin.
 
 Dictionaries cannot be coerced into a number. When coerced into a string,
 a dictionary becomes the string `"dict"`. All dictionaries are truthy.
