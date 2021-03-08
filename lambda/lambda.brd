@@ -1,0 +1,682 @@
+# This is a simple interpreter for a simple functional programming language
+
+set Set = subclass(@Object)
+  constructor()
+    set this.items = @dict()
+    this
+  end
+
+  set contains = func(val) this.items[val] = 1 end
+
+  set add = func(val) set this.items[val] = 1 end
+
+  set remove = func(val) set this.items[val] = unit end
+end
+
+set NameGen = subclass(@Object)
+  constructor(a_set)
+    set this.names = a_set
+    set this.idx = 0
+    this
+  end
+
+  set next = func()
+    set var = "a"
+    while* this.names::contains(var) do
+      set var = "a" .. this.idx
+      set this.idx += 1
+    end
+    var
+  end
+end
+
+set Lambda = subclass(@Object)
+  constructor(exp, globals)
+    set this.exp = exp
+    set this.globals = globals
+    set names = Set()
+    this.exp::collect_names(names)
+    set this.name_gen = NameGen(names)
+    this
+  end
+
+  set eval = func()
+    set new_exp = this.exp
+    while* new_exp do
+      set this.exp = new_exp
+      #@writeln(">> ", this.exp::to_string())
+      set new_exp = this.exp::step(this.name_gen, this.globals)
+    end
+    this.exp
+  end
+end
+
+set LambdaExp = subclass(@Object)
+  constructor() unit end
+
+  set is_variable = func() false end
+  set is_abstraction = func() false end
+  set is_application = func() false end
+  set is_bool_literal = func() false end
+  set is_true = func() false end
+  set is_false = func() false end
+  set is_if = func() false end
+  set is_num = func() false end
+  set is_num_exp = func() false end
+  set is_error = func() false end
+  set is_io_abstraction = func() false end
+  set is_io = func() false end
+  set is_value = func() false end
+  set free_vars = func(a_set) a_set end
+  set collect_names = func(a_set) this::free_vars(a_set) end
+  set subsitute = func(name_gen, name, exp) this end
+  set step = func(name_gen, globals) unit end
+end
+
+set LambdaVar = subclass(LambdaExp)
+  constructor(name)
+    set this.name = name
+    this
+  end
+
+  set dup = func() this::class(this.name) end
+  set is_variable = func() true end
+  set to_string = func() this.name end
+
+  set free_vars = func(a_set)
+    a_set::add(this.name)
+    a_set
+  end
+
+  set subsitute = func(name_gen, name, exp)
+    if this.name = name then exp::dup() else this end
+  end
+
+  set step = func(name_gen, globals)
+    (set x = globals[this.name]) and x::dup()
+  end
+end
+
+set LambdaAbs = subclass(LambdaExp)
+  constructor(var, body)
+    set this.var = var
+    set this.body = body
+    this
+  end
+
+  set dup = func() this::class(this.var, this.body::dup()) end
+
+  set is_abstraction = func() true end
+  set is_value = func() true end
+
+  set free_vars = func(a_set)
+    this.body::free_vars(a_set)
+    a_set::remove(this.var)
+    a_set
+  end
+
+  set to_string = func() "(\\" .. this.var .. "." .. this.body::to_string() .. ")" end
+
+  set collect_names = func(a_set)
+    this.body::free_vars(a_set)
+    a_set::add(this.var)
+    a_set
+  end
+
+  set subsitute = func(name_gen, name, exp)
+    if this.var != name then
+      set new_name = name_gen::next()
+      set this.body = body::subsitute(name_gen, this.var, LambdaVar(new_name))
+      set this.body = body::subsitute(name_gen, name, exp)
+      set this.var = new_name
+    end
+
+    this
+  end
+end
+
+set LambdaApp = subclass(LambdaExp)
+  constructor(rator, rand)
+    set this.rator = rator
+    set this.rand = rand
+    this
+  end
+
+  set dup = func() this::class(this.rator::dup(), this.rand::dup()) end
+  set is_application = func() true end
+
+  set free_vars = func(a_set)
+    this.rator::free_vars(a_set)
+    this.rand::free_vars(a_set)
+    a_set
+  end
+
+  set to_string = func()
+    "(" .. this.rator::to_string() .. " " .. this.rand::to_string() .. ")"
+  end
+
+  set subsitute = func(name_gen, name, exp)
+    set this.rator = this.rator::subsitute(name_gen, name, exp)
+    set this.rand = this.rand::subsitute(name_gen, name, exp)
+    this
+  end
+
+  set beta = func(name_gen)
+    this.rator.body::subsitute(name_gen, this.rator.var, this.rand)
+  end
+
+  set step = func(name_gen, globals)
+    if this.rator::is_error() then
+      LambdaError()
+    elif this.rator::is_value() and this.rand::is_error() then
+      LambdaError()
+    elif this.rator::is_abstraction() then
+      this::beta(name_gen)
+    elif this.rator::is_io_abstraction() then
+      this.rator::apply(this.rand)
+    else
+      set new_rator = this.rator::step(name_gen, globals)
+      if new_rator then
+        set this.rator = new_rator
+        this
+      else
+        unit
+      end
+    end
+  end
+end
+
+set LambdaBoolLiteral = subclass(LambdaExp)
+  constructor() unit end
+
+  set is_bool_literal = func() true end
+  set is_value = func() true end
+end
+
+set LambdaTrue = subclass(LambdaBoolLiteral)
+  constructor() this end
+
+  set value = func() true end
+  set dup = func() this::class() end
+  set is_true = func() true end
+  set to_string = func() "true" end
+end
+
+set LambdaFalse = subclass(LambdaBoolLiteral)
+  constructor() this end
+
+  set value = func() false end
+  set dup = func() this::class() end
+  set is_false = func() true end
+  set to_string = func() "false" end
+end
+
+set LambdaIf = subclass(LambdaExp)
+  constructor(cond, thenExp, elseExp)
+    set this.cond = cond
+    set this.thenExp = thenExp
+    set this.elseExp = elseExp
+    this
+  end
+
+  set dup = func()
+    this::class(this.cond::dup(), this.thenExp::dup(), this.elseExp::dup())
+  end
+
+  set is_if = func() true end
+
+  set free_vars = func(a_set)
+    this.cond::free_vars(a_set)
+    this.elseExp::free_vars(a_set)
+    this.thenExp::free_vars(a_set)
+    a_set
+  end
+
+  set to_string = func()
+    "(if " .. this.cond::to_string() .. " then " .. this.thenExp::to_string() .. " else " .. this.elseExp::to_string() .. ")"
+  end
+
+  set subsitute = func(name_gen, name, exp)
+    set this.cond = this.cond::subsitute(name_gen, name, exp)
+    set this.thenExp = this.thenExp::subsitute(name_gen, name, exp)
+    set this.elseExp = this.elseExp::subsitute(name_gen, name, exp)
+    this
+  end
+
+  set step = func(name_gen, globals)
+    if this.cond::is_true() then
+      this.thenExp
+    elif this.cond::is_false() then
+      this.elseExp
+    else
+      set new_condition = this.cond::step(name_gen, globals)
+      if new_condition then
+        set this.cond = new_condition
+        this
+      else
+        unit
+      end
+    end
+  end
+end
+
+set LambdaNum = subclass(LambdaExp)
+  constructor(value)
+    set this.value = value
+    this
+  end
+
+  set dup = func() this::class(this.value) end
+
+  set value = func() this.value end
+  set is_num = func() true end
+  set is_value = func() true end
+  set to_string = func() @string(this.value) end
+end
+
+set LambdaNumExp = subclass(LambdaExp)
+  constructor(op, left, right)
+    set this.op = op
+    set this.left = left
+    set this.right = right
+    this
+  end
+
+  set dup = func() this::class(this.op, this.left::dup(), this.right::dup()) end
+  set is_num_exp = func() true end
+
+  set free_vars = func(a_set)
+    this.left::free_vars(a_set)
+    this.right::free_vars(a_set)
+    a_set
+  end
+
+  set to_string = func()
+    "(" .. this.op .. " " .. this.left::to_string() .. " " .. this.right::to_string() .. ")"
+  end
+
+  set subsitute = func(name_gen, name, exp)
+    set this.left = this.left::subsitute(name_gen, name, exp)
+    set this.right = this.right::subsitute(name_gen, name, exp)
+    this
+  end
+
+  set step = func(name_gen, globals)
+    if this.left::is_error() or this.right::is_error() then
+      LambdaError()
+    elif this.left::is_num() and this.right::is_num() then
+      set f = if this.op = "+" then
+        func(a, b) a + b end
+      elif this.op = "-" then
+        func(a, b) if (set x = a - b) > 0 then x else 0 end end
+      elif this.op = "*" then
+        func(a, b) a * b end
+      elif this.op = "=" then
+        func(a, b) a = b end
+      end
+
+      set res = f(this.left::value(), this.right::value())
+      if @typeof(res) = "boolean" then
+        if res then LambdaTrue() else LambdaFalse() end
+      else
+        LambdaNum(res)
+      end
+    else
+      set new_left = this.left::step(name_gen, globals)
+      if new_left then
+        set this.left = new_left
+        this
+      else
+        set new_right = this.right::step(name_gen, globals)
+        if new_right then
+          set this.right = new_right
+          this
+        else
+          unit
+        end
+      end
+    end
+  end
+end
+
+set LambdaError = subclass(LambdaExp)
+  constructor() this end
+  set dup = func() this::class() end
+  set is_error = func() true end
+  set is_value = func() true end
+  set to_string = func() "error" end
+end
+
+set LambdaIOAbs = subclass(LambdaExp)
+  constructor(cons)
+    set this.cons = cons
+    this
+  end
+
+  set dup = func() this::class(this.cons) end
+  set is_io_abstraction = func() true end
+  set is_value = func() true end
+
+  set apply = func(exp) this.cons(exp) end
+  set to_string = func() "IOAbs" end
+end
+
+set LambdaIO = subclass(LambdaExp)
+  constructor() unit end
+  set is_io = func() true end
+  set is_value = func() true end
+  set to_string = func() "IO" end
+end
+
+set LambdaReadNum = subclass(LambdaIO)
+  constructor() this end
+  set dup = func() this::class() end
+
+  set perform_io = func(globals, heap)
+    set val = 0 + @readln()
+    if val < 0 then set val = 0 end
+    LambdaNum(val)
+  end
+end
+
+set LambdaWriteNum = subclass(LambdaIO)
+  constructor(exp)
+    set this.exp = exp
+    this
+  end
+
+  set dup = func() this::class(this.exp::dup()) end
+
+  # need to define Lambda at top of file
+  set perform_io = func(globals, heap)
+    set e = Lambda(this.exp::dup(), globals)
+    set v = e::eval()
+    @writeln(v::to_string())
+    v
+  end
+
+  set subsitute = func(name_gen, name, exp)
+    set this.exp = this.exp::subsitute(name_gen, name, exp)
+    this
+  end
+end
+
+set LambdaBinding = subclass(LambdaIO)
+  constructor(left, right)
+    set this.left = left
+    set this.right = right
+    this
+  end
+
+  set dup = func() this::class(this.left::dup(), this.right::dup()) end
+
+  set perform_io = func(globals, heap)
+    set e = Lambda(this.left, globals)
+    set tmp = e::eval()
+    set tmp = tmp::perform_io(globals, heap)
+    set exp = LambdaApp(this.right, tmp)
+    set e = Lambda(exp, globals)
+    set tmp = e::eval()
+    tmp::perform_io(globals, heap)
+  end
+
+  set subsitute = func(name_gen, name, exp)
+    set this.left = this.left::subsitute(name_gen, name, exp)
+    set this.right = this.right::subsitute(name_gen, name, exp)
+    this
+  end
+end
+
+set LambdaCurryBinding = subclass(LambdaIOAbs)
+  constructor(left)
+    set this.left = left
+    this
+  end
+  set dup = func() this::class(this.left::dup()) end
+  set apply = func(exp) LambdaBinding(this.left, exp) end
+
+  set subsitute = func(name_gen, name, exp)
+    set this.left = this.left::subsitute(name_gen, name, exp)
+    this
+  end
+end
+
+set is_alphanum = func(s)
+  @length(s) = 1 and (
+    s >= "a" and s <= "z" or
+    s >= "A" and s <= "Z" or
+    s >= "0" and s <= "9"
+  )
+end
+
+set LambdaParser = subclass(@Object)
+  constructor(text)
+    set this.text = text
+    set this.index = 0
+    set this.tok = ""
+    this
+  end
+
+  set token = func()
+    #@writeln("token")
+    set this.index += @length(this.tok)
+    set i = this.index
+    set s = this.text[i]
+
+    if i >= @length(this.text) then
+      set this.tok = unit
+    elif s = " " or s = "\t" or s = "\n" then
+      set this.tok = " "
+      this::token()
+    elif is_alphanum(s) then
+      set this.tok = ""
+      while i < @length(this.text) and is_alphanum(set s = this.text[i]) do
+        set this.tok ..= s
+        set i += 1
+      end
+    else
+      set this.tok = s
+    end
+
+    this.tok
+  end
+
+  set parse_file = func(globals)
+    #@writeln("parse_file")
+    while* this::token() != unit do
+      set var = this.tok
+      if this::token() != "=" then
+        @writeln("Expected =")
+        4[4]
+      end
+
+      set exp = this::parse_application()
+      if this.tok != ";" then
+        @writeln("Expected ;")
+        4[4]
+      end
+
+      set globals[var] = exp
+    end
+    globals
+  end
+
+  set parse = func()
+    #@writeln("parse")
+    set r = this::parse_application()
+    if not r then
+      @writeln("parse failure")
+      4[4]
+    end
+    if this.tok != unit then
+      @writeln("unterminated expression")
+      4[4]
+    end
+    r
+  end
+
+  set parse_application = func()
+    #@writeln("parse_application")
+    set cur = unit
+    set go = true
+
+    while* go and this::token() != unit do
+      set next = this::parse_non_application()
+      if not next then
+        set go = false
+      elif not cur then
+        set cur = next
+      else
+        set cur = LambdaApp(cur, next)
+      end
+    end
+
+    cur
+  end
+
+  set parse_non_application = func()
+    #@writeln("parse_non_application")
+    if this.tok = "(" then
+      this::parse_parenthetical()
+    elif this.tok = "\\" then
+      this::parse_abstraction()
+    elif this.tok = "true" then
+      LambdaTrue()
+    elif this.tok = "false" then
+      LambdaFalse()
+    elif this.tok = "if" then
+      this::parse_if()
+    elif this.tok = "then" or this.tok = "else" then
+      unit
+    elif this.tok[0] >= "0" and this.tok[0] <= "9" then
+      #@writeln("number!")
+      LambdaNum(0 + this.tok)
+    elif this.tok = "+" or this.tok = "-" or this.tok = "*" or this.tok = "=" then
+      this::parse_num_exp()
+    elif this.tok = "error" then
+      LambdaError()
+    elif this.tok = "[" then
+      this::parse_tuple()
+    elif this.tok = "let" then
+      this::parse_let()
+    elif this.tok = "in" then
+      unit
+    elif is_alphanum(this.tok[0]) then
+      this::parse_variable()
+    else
+      unit
+    end
+  end
+
+  set parse_parenthetical = func()
+    #@writeln("parse_parenthetical")
+    set r = this::parse_application()
+    if this.tok != ")" then
+      @writeln("expected )")
+      4[4]
+    end
+    r
+  end
+
+  set parse_abstraction = func()
+    #@writeln("parse_abstraction")
+    this::token()
+    set var = this.tok
+
+    this::token()
+    if this.tok != "." then
+      @writeln("Expected .")
+      4[4]
+    end
+
+    set body = this::parse_application()
+    set this.tok = ""
+    LambdaAbs(var, body)
+  end
+
+  set parse_variable = func()
+    #@writeln("parse_variable")
+    LambdaVar(this.tok)
+  end
+
+  set parse_if = func()
+    #@writeln("parse_if")
+    set cond = this::parse_application()
+    if this.tok != "then" then
+      @writeln("Expected then")
+      4[4]
+    end
+    set thenExp = this::parse_application()
+    if this.tok != "else" then
+      @writeln("Expected else")
+      4[4]
+    end
+    set elseExp = this::parse_application()
+
+    set this.tok = ""
+    LambdaIf(cond, thenExp, elseExp)
+  end
+
+  set parse_num_exp = func()
+    #@writeln("parse_num_exp")
+    set op = this.tok
+    set app = this::parse_application()
+    if not app::is_application() then
+      @writeln("expected multiple expressions")
+      4[4]
+    end
+
+    set this.tok = ""
+    LambdaNumExp(op, app.rator, app.rand)
+  end
+end
+
+set run_lambda = func(string)
+  set globals = @dict()
+  set globals["readNum"] = LambdaReadNum()
+  set globals["writeNum"] = LambdaIOAbs(LambdaWriteNum)
+  set globals["bind"] = LambdaIOAbs(LambdaCurryBinding)
+  set globals["not"] = LambdaParser("\\x.if x then false else true")::parse()
+  set globals["le"] = LambdaParser("\\x.\\y. (= (- x y) 0)")::parse()
+  set globals["ge"] = LambdaParser("\\x.\\y. le y x")::parse()
+  set globals["gt"] = LambdaParser("\\x.\\y. lt y x")::parse()
+  set p = LambdaParser(string)::parse_file(globals)
+  set e = p["main"]
+
+  set h = Lambda(e::dup(), p)
+  set e = h::eval()
+  if e::is_io() then
+    set heap = @dict()
+    set e = e::perform_io(p, heap)
+  end
+
+  e
+end
+
+#run_lambda(
+#  "
+#  y = \\x. + (x 1) (x 2);
+#  main = writeNum (y (\\b.b));
+#  "
+#)
+#
+#@writeln()
+
+run_lambda(
+  "
+  main = writeNum ((\\x.x) (\\x.x) 4);
+  "
+)
+
+run_lambda(
+  "
+  factorial = \\x. if (= x 0) then 1 else * x (factorial (- x 1));
+  main = writeNum (factorial 9);
+  "
+)
+
+#run_lambda(
+#  "
+#  main = bind readNum (\\x. writeNum (+ x 10));
+#  "
+#)
