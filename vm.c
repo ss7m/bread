@@ -391,6 +391,9 @@ mkbinop:
                         ADD_STR(AS(subclass, node)->decs[i].id);
                 }
                 break;
+        case BRD_NODE_DICT:
+                BARF("compile dict literal");
+                break;
         case BRD_NODE_PROGRAM:
                 for (size_t i = 0; i < AS(program, node)->num_stmts; i++) {
                         brd_node_compile(AS(program, node)->stmts[i]);

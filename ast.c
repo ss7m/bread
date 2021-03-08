@@ -615,6 +615,40 @@ brd_node_subclass_new(
         return (struct brd_node *)n;
 }
 
+static struct brd_node *
+brd_node_dict_copy(struct brd_node *n)
+{
+        struct brd_node_dict *d = (struct brd_node_dict *)n;
+        struct brd_node_dict_pair *pairs =
+                malloc(sizeof(struct brd_node_dict_pair) * d->num_pairs);
+        for (size_t i = 0; i < d->num_pairs; i++) {
+                pairs[i].key = strdup(d->pairs[i].key);
+                pairs[i].value = brd_node_copy(d->pairs[i].value);
+        }
+        return brd_node_dict_new(pairs, d->num_pairs);
+}
+
+static void
+brd_node_dict_destroy(struct brd_node *n)
+{
+        struct brd_node_dict *d = (struct brd_node_dict *)n;
+        for (size_t i = 0; i < d->num_pairs; i++) {
+                free(d->pairs[i].key);
+                brd_node_destroy(d->pairs[i].value);
+        }
+        free(d->pairs);
+}
+
+struct brd_node *
+brd_node_dict_new(struct brd_node_dict_pair *pairs, size_t num_pairs) {
+        struct brd_node_dict *n = malloc(sizeof(*n));
+        n->_node.ntype = BRD_NODE_DICT;
+        n->_node.line_number = line_number;
+        n->pairs = pairs;
+        n->num_pairs = num_pairs;
+        return (struct brd_node *)n;
+}
+
 void
 brd_node_destroy(struct brd_node *node)
 {
@@ -638,6 +672,7 @@ brd_node_destroy(struct brd_node *node)
         case BRD_NODE_FIELD: brd_node_field_destroy(node); break;
         case BRD_NODE_ACC_OBJ: brd_node_acc_obj_destroy(node); break;
         case BRD_NODE_SUBCLASS: brd_node_subclass_destroy(node); break;
+        case BRD_NODE_DICT: brd_node_dict_destroy(node); break;
         case BRD_NODE_PROGRAM: brd_node_program_destroy(node); break;
         }
         free(node);
@@ -666,6 +701,7 @@ brd_node_copy(struct brd_node *node)
         case BRD_NODE_FIELD: return brd_node_field_copy(node);
         case BRD_NODE_ACC_OBJ: return brd_node_acc_obj_copy(node);
         case BRD_NODE_SUBCLASS: return brd_node_subclass_copy(node);
+        case BRD_NODE_DICT: brd_node_dict_copy(node); break;
         case BRD_NODE_PROGRAM: return brd_node_program_copy(node);
         }
         BARF("what?");

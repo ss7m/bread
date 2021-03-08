@@ -25,6 +25,7 @@ enum brd_node_type {
         BRD_NODE_FIELD,
         BRD_NODE_ACC_OBJ,
         BRD_NODE_SUBCLASS,
+        BRD_NODE_DICT,
 
         BRD_NODE_PROGRAM, /* the top level program */
 };
@@ -206,6 +207,17 @@ struct brd_node_subclass {
         size_t num_decs;
 };
 
+struct brd_node_dict_pair {
+        char *key;
+        struct brd_node *value;
+};
+
+struct brd_node_dict {
+        struct brd_node _node;
+        struct brd_node_dict_pair *pairs;
+        size_t num_pairs;
+};
+
 struct brd_node *brd_node_program_new(struct brd_node **stmts, size_t num_stmts);
 struct brd_node *brd_node_assign_new(struct brd_node *l, struct brd_node *r);
 struct brd_node *brd_node_binop_new(enum brd_binop btype, struct brd_node *l, struct brd_node *r);
@@ -228,6 +240,7 @@ struct brd_node *brd_node_while_new(int no_list, struct brd_node *cond, struct b
 struct brd_node *brd_node_field_new(struct brd_node *object, char *field);
 struct brd_node *brd_node_acc_obj_new(struct brd_node *object, char *id);
 struct brd_node *brd_node_subclass_new(struct brd_node *super, struct brd_node *constructor, struct brd_node_subclass_set *decs, size_t num_decs);
+struct brd_node *brd_node_dict_new(struct brd_node_dict_pair *pairs, size_t num_pairs);
 
 void brd_node_destroy(struct brd_node *node);
 struct brd_node *brd_node_copy(struct brd_node *node);
