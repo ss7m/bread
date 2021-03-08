@@ -72,6 +72,7 @@ enum brd_bytecode {
         BRD_VM_LIST, /* initializes an empty list */
         /* this is poorly named, it's a list operation */
         BRD_VM_PUSH, /* x = pop(), peek().push(x) */
+        BRD_VM_PUSH_DICT,
 };
 
 struct brd_stack {

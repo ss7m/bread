@@ -588,6 +588,9 @@ brd_parse_base(struct brd_token_list *tokens)
         case BRD_TOK_SUBCLASS:
                 brd_token_list_pop_token(tokens);
                 return brd_parse_subclass(tokens);
+        case BRD_TOK_LBRACE:
+                brd_token_list_pop_token(tokens);
+                return brd_parse_dict(tokens);
         default:
                 error_message = "expected... something";
                 return NULL;
@@ -1119,10 +1122,11 @@ brd_parse_dict(struct brd_token_list *tokens)
                 char *key;
                 struct brd_node *value;
 
-                if (brd_token_list_pop_token(tokens) != BRD_TOK_VAR) {
+                if (brd_token_list_peek(tokens) != BRD_TOK_STR) {
                         break;
                 }
 
+                brd_token_list_pop_token(tokens);
                 key = brd_token_list_pop_string(tokens);
                 if (brd_token_list_pop_token(tokens) != BRD_TOK_COLON) {
                         error_message = "expected a :";
@@ -1148,6 +1152,11 @@ brd_parse_dict(struct brd_token_list *tokens)
                 } else {
                         break;
                 }
+        }
+
+        if (brd_token_list_pop_token(tokens) != BRD_TOK_RBRACE) {
+                error_message = "expected a }";
+                goto error_exit;
         }
 
         skip_newlines = skip_copy;

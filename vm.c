@@ -48,6 +48,7 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_BUILTIN: printf("BRD_VM_BUILTIN\n"); return;
         case BRD_VM_LIST: printf("BRD_VM_LIST\n"); return;
         case BRD_VM_PUSH: printf("BRD_VM_PUSH\n"); return;
+        case BRD_VM_PUSH_DICT: printf("BRD_VM_PUSH_DICT\n"); return;
         case BRD_VM_GET_IDX: printf("BRD_VM_GET_IDX\n"); return;
         case BRD_VM_SET_IDX: printf("BRD_VM_SET_IDX\n"); return;
         case BRD_VM_GET_FIELD: printf("BRD_VM_GET_FIELD\n"); return;
@@ -56,7 +57,7 @@ brd_bytecode_debug(enum brd_bytecode op)
         case BRD_VM_SUBCLASS: printf("BRD_VM_SUBCLASS\n"); return;
         case BRD_VM_SET_CLASS: printf("BRD_VM_SET_CLASS\n"); return;
         }
-        printf("oops\n");
+        printf("oops: %d\n", op);
 }
 #endif
 
@@ -392,7 +393,15 @@ mkbinop:
                 }
                 break;
         case BRD_NODE_DICT:
-                BARF("compile dict literal");
+                ADD_OP(BRD_VM_BUILTIN); // kind of a hack, but it works
+                ADD_SIZET(BRD_BUILTIN_DICT); // and I don't have to add
+                ADD_OP(BRD_VM_CALL); // a new bytecode op
+                ADD_SIZET(0);
+                for (size_t i = 0; i < AS(dict, node)->num_pairs; i++) {
+                        brd_node_compile(AS(dict, node)->pairs[i].value);
+                        ADD_OP(BRD_VM_PUSH_DICT);
+                        ADD_STR(AS(dict, node)->pairs[i].key);
+                }
                 break;
         case BRD_NODE_PROGRAM:
                 for (size_t i = 0; i < AS(program, node)->num_stmts; i++) {
@@ -857,6 +866,13 @@ brd_vm_run(void)
                         value1 = *brd_stack_pop(&vm.stack);
                         value2 = *brd_stack_peek(&vm.stack);
                         brd_value_list_push(value2.as.heap->as.list, &value1);
+                        break;
+                case BRD_VM_PUSH_DICT:
+                        value1.vtype = BRD_VAL_STRING;
+                        READ_STRING_INTO(value1.as.string);
+                        value2 = *brd_stack_pop(&vm.stack);
+                        value3 = *brd_stack_peek(&vm.stack);
+                        brd_value_dict_set(value3.as.heap->as.dict, &value1, &value2);
                         break;
                 case BRD_VM_GET_FIELD:
                         READ_STRING_INTO(value1.as.string);
