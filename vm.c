@@ -463,11 +463,15 @@ brd_vm_init(void)
 }
 
 static void
-brd_value_call_closure(struct brd_value_closure *closure, struct brd_value*args, size_t num_args)
+brd_value_call_closure(
+        struct brd_value_closure *closure,
+        struct brd_value*args,
+        size_t num_args,
+        struct brd_value *this)
 {
 
         if (vm.fp >= FRAME_SIZE - 1) {
-                BARF("stack overflow error");
+                BARF("frame overflow error");
         } else if (num_args != closure->num_args) {
                 BARF("wrong number of arguments");
         }
@@ -476,6 +480,9 @@ brd_value_call_closure(struct brd_value_closure *closure, struct brd_value*args,
         vm.frame[vm.fp].pc = closure->pc;
         vm.frame[vm.fp].globals = closure->env;
         brd_value_map_init(&vm.frame[vm.fp].locals);
+        if (this != NULL) {
+                brd_value_map_set(&vm.frame[vm.fp].locals, "this", this);
+        }
 
         for (size_t i = 0; i < num_args; i++) {
                 brd_value_map_set(&vm.frame[vm.fp].locals, closure->args[i], &args[i]);
@@ -492,7 +499,7 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                 }
                 brd_stack_push(&vm.stack, &out);
         } else if (IS_HEAP(*f, BRD_HEAP_CLOSURE)) {
-                brd_value_call_closure(f->as.heap->as.closure, args, num_args);
+                brd_value_call_closure(f->as.heap->as.closure, args, num_args, NULL);
         } else if (IS_HEAP(*f, BRD_HEAP_CLASS)) {
                 struct brd_value object;
 
@@ -510,15 +517,17 @@ brd_value_call(struct brd_value *f, struct brd_value *args, size_t num_args)
                 if (f->as.heap->as.class == object_class.as.heap->as.class) {
                         brd_stack_push(&vm.stack, &object);
                 } else {
-                        struct brd_value_class *class = f->as.heap->as.class;
-                        brd_value_map_set(&(**class->constructor).env, "this", &object);
-                        brd_value_call_closure(*class->constructor, args, num_args);
+                        brd_value_call_closure(
+                                *f->as.heap->as.class->constructor,
+                                args,
+                                num_args,
+                                &object
+                        );
                 }
         } else if (IS_VAL(*f, BRD_VAL_METHOD)) {
                 struct brd_value_method method = f->as.method;
                 struct brd_value this = brd_heap_value(object, method.this);
-                brd_value_map_set(&(**method.fn).env, "this", &this);
-                brd_value_call_closure(*method.fn, args, num_args);
+                brd_value_call_closure(*method.fn, args, num_args, &this);
         } else {
                 BARF("attempted to call a non-callable");
         }
