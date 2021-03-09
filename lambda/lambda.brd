@@ -679,8 +679,8 @@ run_lambda(
 
 run_lambda(
   "
-  fib = \\x. if (le x 1) then 1 else (+ (fib (- x 1) (- x 2)));
-  main = writeNum (fib 26);
+  fib = \\x. if (le x 1) then 1 else (+ (fib (- x 1)) (fib (- x 2)));
+  main = writeNum (fib 10);
   "
 )
 
