@@ -8,6 +8,8 @@
 /* so you can only do recursion 64 calls deep */
 #define FRAME_SIZE 64
 
+#define INITIAL_THRESHOLD 100
+
 /* VM bytecode */
 /* Stack based virtual machine */
 
@@ -98,6 +100,7 @@ struct brd_vm {
         size_t bc_length, bc_capacity;
         size_t fp;
         struct brd_frame frame[FRAME_SIZE];
+        unsigned int threshold, heap_size;
 };
 
 extern struct brd_vm vm;

@@ -34,8 +34,7 @@ set Lambda = subclass(@Object)
   constructor(exp, globals)
     set this.exp = exp
     set this.globals = globals
-    set names = Set()
-    this.exp::collect_names(names)
+    set names = this.exp::collect_names(Set())
     set this.name_gen = NameGen(names)
     this
   end

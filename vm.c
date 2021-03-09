@@ -91,6 +91,7 @@ brd_stack_peek(struct brd_stack *stack)
 void
 brd_vm_allocate(struct brd_heap_entry *entry)
 {
+        vm.heap_size++;
         entry->next = vm.heap->next;
         vm.heap->next = entry;
 }
@@ -472,6 +473,9 @@ brd_vm_init(void)
         vm.frame[0].pc = 0;
         brd_value_map_init(&vm.frame[0].globals);
         brd_value_map_init(&vm.frame[0].locals);
+
+        vm.threshold = INITIAL_THRESHOLD;
+        vm.heap_size = 0;
 }
 
 static void
@@ -969,6 +973,13 @@ brd_vm_gc(void)
 {
         struct brd_heap_entry *heap, *prev;
 
+        if (vm.heap_size < vm.threshold) {
+                return;
+        }
+#ifdef DEBUG
+        printf("GC starting... ");
+#endif
+
         heap = vm.heap->next;
         while (heap != NULL) {
                 heap->marked = false;
@@ -997,8 +1008,18 @@ brd_vm_gc(void)
                         continue;
                 }
 
+                vm.heap_size--;
                 prev->next = next;
                 brd_heap_destroy(heap);
                 heap = next;
         }
+
+        if (vm.heap_size >= vm.threshold) {
+                vm.threshold *= 1.5;
+        } else if (vm.heap_size < INITIAL_THRESHOLD) {
+                vm.threshold = INITIAL_THRESHOLD;
+        }
+#ifdef DEBUG
+        printf("finished\n");
+#endif
 }
