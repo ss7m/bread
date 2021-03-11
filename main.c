@@ -70,6 +70,8 @@ brd_repl(void)
         int empty_line;
         enum brd_compiler_status compiler_status;
 
+        printf("Welcome to the repl!\n");
+
         for (;;) {
 start_loop:
                 printf(">>> ");
@@ -114,6 +116,8 @@ start_loop:
                         printf("\n");
                 }
         }
+
+        printf("\nGoodbye!\n");
 }
 
 static void
@@ -156,16 +160,33 @@ brd_run_file(char *file_name)
         brd_vm_run();
 }
 
+const char *help =
+        "bread usage:\n"
+        "\n"
+        "    bread                    Run the bread REPL\n"
+        "    bread --help             Print this message and exit\n"
+        "    bread [ file ... ]       Run the given files\n"
+        "    bread [ file ... ] -     Run the given files, then start a REPL\n"
+        "\n"
+;
+
 int
 main(int argc, char **argv)
 {
         brd_vm_init();
         if (argc == 1) {
-                printf("Welcome to the repl!\n");
                 brd_repl();
-                printf("\nGoodbye!\n");
         } else {
-                brd_run_file(argv[1]);
+                for (int i = 1; i < argc; i++) {
+                        if (strcmp(argv[i], "-") == 0) {
+                                brd_repl();
+                                break;
+                        } else if (strcmp(argv[i], "--help") == 0) {
+                                printf("%s", help);
+                        } else {
+                                brd_run_file(argv[i]);
+                        }
+                }
         }
         brd_vm_destroy();
 }
