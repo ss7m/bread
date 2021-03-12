@@ -339,6 +339,51 @@ greeter::greet() # prints: "Hello, Dave"
 ```
 
 Note how the constructor returns the `this` object --- this is necessary, and I
-haven't decided whether this was a good design decision or not.
-Unlike functions, conditionals, and loops, subclass definitions cannot be written
-in a single line.
+haven't decided whether this was a good design decision or not (it does
+have the benefit of allowing for non-constructable classes by way of returning
+`unit`). Unlike functions, conditionals, and loops, subclass definitions
+cannot be written in a single line.
+
+# Design Limitations/Questionable Decisions
+
+Here I list some decisions I made which are either objectively bad,
+or just subjectively bad.
+
+## Undefined Symbols
+
+If you attempt to access a variable, field of an object, method of a class,
+or entry of a dict which doesn't exist, `unit` is returned. In all cases,
+there is no way to tell as a user whether the value has been set to `unit` or
+whether it doesn't exist. For dictionaries, keys with the value set to `unit`
+aren't even included in the string representation or count towards the length.
+One could argue that this diminishes the usefulness of `unit`.
+
+## Scoping
+
+With the way scoping works for closures, as far as I can tell mutual recursion
+isn't possible (and if it is, it would be non-obvious to implement). Worse,
+I don't think it's possible for two classes to refer to each other in their methods.
+I have a few ideas about how I could change the scoping semantics to make this possible,
+but I'm not sure what would be the best fit here.
+
+## Classes Don't Know Their Name
+
+As a consequence of `bread`'s expression based syntax, and in contrast
+to object-oriented languages like Python or Java, classes in `bread` don't
+know their name. This has a handful of consequences.
+If you want to refer to the name of a class within one of its methods, you
+have to use the workaround `this::class`.
+In Python, knowing the name of the class can be useful for debugging purposes.
+Similar features in `bread` would have to be implemented by the user.
+
+## Control Flow
+
+`bread` is noticeably missing several common control flow operators for imperative
+languages, namely `break`, `continue`, and `return`. If I'm being honest, part
+of the reason I didn't implement them is that they'd be kind of annoying to implement
+(compiling control flow operations down to bytecode is surprisingly tedious).
+There are reasons besides that, though.
+For `break` and `continue`, I'm not sure how I would want them to interact with the
+list-building properties of loops.
+For `return`, for me it doesn't fit aesthetically with the language design, and I
+find that it's omission from the language encourages short functions, which I like.
