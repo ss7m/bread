@@ -175,6 +175,7 @@ void brd_value_dict_init(struct brd_value_dict *dict);
 void brd_value_dict_destroy(struct brd_value_dict *dict);
 struct brd_value *brd_value_dict_get(struct brd_value_dict *dict, struct brd_value *key);
 void brd_value_dict_set(struct brd_value_dict *dict, struct brd_value *key, struct brd_value *value);
+char *brd_value_dict_to_string(struct brd_value_dict *dict);
 
 struct brd_comparison {
         signed char cmp;

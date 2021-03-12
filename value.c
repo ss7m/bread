@@ -471,6 +471,65 @@ brd_value_dict_set(
         }
 }
 
+char *
+brd_value_dict_to_string(struct brd_value_dict *dict)
+{
+        char *s, **strings = malloc(sizeof(char *) * dict->size);
+        int *lengths = malloc(sizeof(int) * dict->size);
+        struct brd_value value;
+        int new, idx = 0, total_length;
+
+        total_length = 4 + 2 * dict->size;
+
+        for (int i = 0; i < BUCKET_SIZE; i++) {
+                struct brd_value_map_list *list = dict->map.bucket[i].next;
+
+                while (list != NULL) {
+                        if (IS_VAL(list->val, BRD_VAL_UNIT)) {
+                                list = list->next;
+                                continue;
+                        }
+                        value = list->val;
+                        new = brd_value_coerce_string(&value);
+                        s = malloc(strlen(list->key) + AS_STRING(value)->length + 6);
+
+                        lengths[idx] = sprintf(
+                                s, "\"%s\" : %s",
+                                list->key, AS_STRING(value)->s
+                        );
+                        strings[idx] = s;
+                        total_length += lengths[idx];
+                        idx++;
+                        if (new) {
+                                brd_heap_destroy(value.as.heap);
+                        }
+                        list = list->next;
+                }
+        }
+
+        idx = 0;
+        s = malloc(sizeof(char) * total_length);
+        s[idx++] = '{';
+        s[idx++] = ' ';
+
+        for (size_t i = 0; i < dict->size; i++) {
+                strcpy(s + idx, strings[i]);
+                idx += lengths[i];
+                if (i < dict->size - 1) {
+                        s[idx++] = ',';
+                }
+                s[idx++] = ' ';
+                free(strings[i]);
+        }
+
+        s[idx++] = '}';
+        s[idx] = '\0';
+        free(strings);
+        free(lengths);
+
+        return s;
+}
+
 int
 brd_comparison_eq(struct brd_comparison cmp)
 {
@@ -638,9 +697,11 @@ brd_value_coerce_string(struct brd_value *value)
                         value->as.string = &object_string;
                         return false;
                 case BRD_HEAP_DICT:
-                        value->vtype = BRD_VAL_STRING;
-                        value->as.string = &dict_string;
-                        return false;
+                        string = brd_value_dict_to_string(value->as.heap->as.dict);
+                        value->vtype = BRD_VAL_HEAP;
+                        value->as.heap = brd_heap_new(BRD_HEAP_STRING);
+                        brd_value_string_init(value->as.heap->as.string, string);
+                        return true;
                 }
                 break;
         }
@@ -916,60 +977,10 @@ _builtin_write(struct brd_value *args, size_t num_args, struct brd_value *out)
         }
 
         for (size_t i = 0; i < num_args; i++) {
-                struct brd_value value = args[i];
-
-                switch (value.vtype) {
-                case BRD_VAL_NUM:
-                        printf("%.10Lg", value.as.num);
-                        break;
-                case BRD_VAL_STRING:
-                        printf("%s", value.as.string->s);
-                        break;
-                case BRD_VAL_BOOL:
-                        printf("%s", value.as.boolean ? "true" : "false");
-                        break;
-                case BRD_VAL_UNIT:
-                        printf("unit");
-                        break;
-                case BRD_VAL_BUILTIN:
-                        printf("%s", builtin_name[value.as.builtin]);
-                        break;
-                case BRD_VAL_METHOD:
-                        printf("<< method >>");
-                        break;
-                case BRD_VAL_HEAP:
-                        switch (value.as.heap->htype) {
-                        case BRD_HEAP_STRING:
-                                printf("%s", value.as.heap->as.string->s);
-                                break;
-                        case BRD_HEAP_LIST:
-                                printf("[ ");
-                                for (size_t j = 0; j < value.as.heap->as.list->length; j++) {
-                                        _builtin_write(
-                                                &value.as.heap->as.list->items[j],
-                                                1,
-                                                NULL
-                                        );
-                                        if (j < value.as.heap->as.list->length - 1) {
-                                                printf(",");
-                                        }
-                                        printf(" ");
-                                }
-                                printf("]");
-                                break;
-                        case BRD_HEAP_CLOSURE:
-                                printf("<< closure >>");
-                                break;
-                        case BRD_HEAP_CLASS:
-                                printf("<< class >>");
-                                break;
-                        case BRD_HEAP_OBJECT:
-                                printf("<< object >>");
-                                break;
-                        case BRD_HEAP_DICT:
-                                printf("<< dict >>");
-                                break;
-                        }
+                int new = brd_value_coerce_string(&args[i]);
+                printf("%s", AS_STRING(args[i])->s);
+                if (new) {
+                        brd_heap_destroy(args[i].as.heap);
                 }
         }
 
