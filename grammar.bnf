@@ -87,6 +87,7 @@ base =
     | func ( $argList ) $body end
     | begin $body end
     | $subclass
+    | { ( $string : $expression )* }
 
 subclass =
     | subclass($expression)
