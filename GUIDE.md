@@ -69,7 +69,8 @@ A list is in fact an array of non-homogeneous elements. List literals
 are comma separated expressions surrounded by a pair of square brackets.
 
 Lists cannot be coerced into a number. When coerced into a string, a list
-becomes a string representation of the list. All non-empty lists are truthy.
+becomes the comma separated string representation of it's values surrounded
+by a pair of square brackets.
 
 ## closure
 
@@ -113,7 +114,9 @@ Note that keys whose value is `unit` in the dictionary do not count towards the
 length of the dict.
 
 Dictionaries cannot be coerced into a number. When coerced into a string,
-a dictionary becomes the string `"dict"`. All dictionaries are truthy.
+a dictionary becomes the string representation of the key-value pairs (separated by
+a colon), each pair is separated by commas, and surrounded by a pair of curly braces.
+All dictionaries are truthy.
 
 ## method
 
