@@ -168,6 +168,7 @@ void brd_value_object_super(struct brd_value_object *this, struct brd_value_obje
 struct brd_value_dict {
         struct brd_value_list keys;
         struct brd_value_map map;
+        size_t size;
 };
 
 void brd_value_dict_init(struct brd_value_dict *dict);

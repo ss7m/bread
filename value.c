@@ -270,6 +270,7 @@ brd_value_map_destroy(struct brd_value_map *map)
 void
 brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val)
 {
+        /* return true if key already in dict */
         unsigned long h = hash(key) % BUCKET_SIZE;
         struct brd_value_map_list *list = &map->bucket[h];
 
@@ -293,6 +294,7 @@ brd_value_map_set(struct brd_value_map *map, char *key, struct brd_value *val)
         list->next->key = key;
         list->next->val = *val;
         list->next->next = NULL;
+        return;
 }
 
 struct brd_value *
@@ -413,6 +415,7 @@ brd_value_dict_init(struct brd_value_dict *dict)
 {
         brd_value_list_init(&dict->keys);
         brd_value_map_init(&dict->map);
+        dict->size = 0;
 }
 
 void
@@ -441,16 +444,30 @@ brd_value_dict_set(
         struct brd_value *value)
 {
         char *k;
+        struct brd_value *vp;
+
         if (!IS_STRING(*key)) {
                 BARF("dict key must be a string");
         }
         
         k = AS_STRING(*key)->s;
-        brd_value_map_set(&dict->map, k, value);
+        vp = brd_value_map_get(&dict->map, k);
 
-        // keep heap-allocated keys alive
-        if (IS_VAL(*key, BRD_VAL_HEAP)) {
-                brd_value_list_push(&dict->keys, key);
+        if (vp == NULL) {
+                if (!IS_VAL(*value, BRD_VAL_UNIT)) {
+                        dict->size++;
+                }
+                if (IS_VAL(*key, BRD_VAL_HEAP)) {
+                        brd_value_list_push(&dict->keys, key);
+                }
+                brd_value_map_set(&dict->map, k, value);
+        } else {
+                if (IS_VAL(*vp, BRD_VAL_UNIT) && !IS_VAL(*value, BRD_VAL_UNIT)) {
+                        dict->size++;
+                } else if (!IS_VAL(*vp, BRD_VAL_UNIT) && IS_VAL(*value, BRD_VAL_UNIT)) {
+                        dict->size--;
+                }
+                *vp = *value;
         }
 }
 
@@ -1003,25 +1020,12 @@ _builtin_length(struct brd_value *args, size_t num_args, struct brd_value *out)
 
         out->vtype = BRD_VAL_NUM;
 
-        switch(args[0].vtype) {
-        case BRD_VAL_STRING:
-                out->as.num = args[0].as.string->length;
-                break;
-        case BRD_VAL_HEAP:
-                switch (args[0].as.heap->htype) {
-                case BRD_HEAP_STRING:
-                        out->as.num = args[0].as.heap->as.string->length;
-                        break;
-                case BRD_HEAP_LIST:
-                        out->as.num = args[0].as.heap->as.list->length;
-                        break;
-                default:
-                        BARF("called length on a non-length-haver");
-                        break;
-                }
-                break;
-        default:
-                BARF("called length on a non-length-haver");
+        if (IS_STRING(args[0])) {
+                out->as.num = AS_STRING(args[0])->length;
+        } else if (IS_HEAP(args[0], BRD_HEAP_LIST)) {
+                out->as.num = args[0].as.heap->as.list->length;
+        } else if (IS_HEAP(args[0], BRD_HEAP_DICT)) {
+                out->as.num = args[0].as.heap->as.dict->size;
         }
 
         return false;

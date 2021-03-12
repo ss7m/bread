@@ -29,6 +29,8 @@ set response = @readln()
 @writeln("your response is ", @length(response), " characters long")
 @writeln("the word \"cow\" is ", @length("cow"), " characters long")
 @writeln("the list ", [1,2,3,4,5], " is ", @length([1, 2, 3, 4, 5]), " entries long")
+@writeln("the dictionary ", { "a": [1,2,3], "b": 16, "c": unit },
+  " has ", @length({ "a": [1,2,3], "b": 16, "c": unit }), " entries")
 
 set is_callable = func(a)
   @typeof(a) = "method" or @typeof(a) = "closure" or @typeof(a)[0] = "@"
@@ -52,6 +54,7 @@ set test_cases = [
   typeof::test,
   @string,
   is_callable,
+  { "a": [1,2,3], "b": 16, "c": unit },
 ]
 
 typeof::test_all(test_cases)
