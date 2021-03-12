@@ -53,7 +53,7 @@ Bread provides the following builtin functions:
 * `@write(args...)` prints the arguments to stdout.
 * `@writeln(args...)` prints the arguments to stdout with an additional newline.
 * `@readln()` takes no arguments and reads a line from stdin (if stdin is closed, `unit` is returned)
-* `@length(arg)` reports the length of a string or list
+* `@length(arg)` reports the length of a string, list, or dict
 * `@typeof(arg)` reports the type of its argument
 * `@system(args...)` runs a shell command, and returns the exit code of the command
 * `@push(list, arg)` pushes a value onto the end of a list
@@ -109,6 +109,8 @@ Dictionary literals are comma separated key-value pairs surrounded by a pair
 of curly braces, where the key is a string literal and the key and value are separated
 by a colon (not dissimilar to JSON).
 An empty dictionary may also be initialized with the `@dict` builtin.
+Note that keys whose value is `unit` in the dictionary do not count towards the
+length of the dict.
 
 Dictionaries cannot be coerced into a number. When coerced into a string,
 a dictionary becomes the string `"dict"`. All dictionaries are truthy.
