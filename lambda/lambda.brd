@@ -16,16 +16,16 @@ end
 set NameGen = subclass(@Object)
   constructor(a_set)
     set this.names = a_set
-    set this.idx = 0
+    set this.idx = 1
     this
   end
 
   set next = func()
-    set var = "a"
-    while* this.names::contains(var) do
+    while* begin
       set var = "a" .. this.idx
       set this.idx += 1
-    end
+      this.names::contains(var)
+    end do unit end
     var
   end
 end
@@ -683,6 +683,13 @@ run_lambda(
   main = writeNum (fib 10);
   "
 )
+
+#run_lambda(
+#  "
+#  flip = \\f. \\a. \\b. f b a;
+#  main = flip bind writeNum readNum;
+#  "
+#)
 
 #run_lambda(
 #  "
