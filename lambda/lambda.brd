@@ -637,7 +637,7 @@ set run_lambda = func(string)
     "bind" : LambdaIOAbs(LambdaCurryBinding),
     "not" : LambdaParser("\\x.if x then false else true")::parse(),
     "le" : LambdaParser("\\x.\\y. (= (- x y) 0)")::parse(),
-    "lt" : LambdaParser("\\x.\\y. if (= x y) then false else (le x y)"),
+    "lt" : LambdaParser("\\x.\\y. if (= x y) then false else (le x y)")::parse(),
     "ge" : LambdaParser("\\x.\\y. le y x")::parse(),
     "gt" : LambdaParser("\\x.\\y. lt y x")::parse(),
   }
