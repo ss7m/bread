@@ -80,6 +80,7 @@ enum brd_bytecode {
 struct brd_stack {
         struct brd_value values[STACK_SIZE];
         struct brd_value *sp;
+        char _p[8];
 };
 
 struct brd_frame {
@@ -101,6 +102,7 @@ struct brd_vm {
         size_t fp;
         struct brd_frame frame[FRAME_SIZE];
         unsigned int threshold, heap_size;
+        char _p[8];
 };
 
 extern struct brd_vm vm;

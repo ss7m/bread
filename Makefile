@@ -29,7 +29,7 @@ RELCFLAGS=-O3 -flto -march=native -mtune=native
 DBGDIR=debug
 DBGEXE=$(DBGDIR)/$(EXE)
 DBGOBJS=$(addprefix $(DBGDIR)/, $(OBJS))
-DBGCFLAGS=-g -Og -DDEBUG
+DBGCFLAGS=-g -Og -DDEBUG -Wpadded -Wno-error=padded
 
 .PHONY: all
 all: prep release debug

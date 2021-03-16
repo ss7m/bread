@@ -37,6 +37,7 @@ typedef struct brd_node * (*brd_node_fn2)(struct brd_node *);
 struct brd_node {
         int line_number;
         enum brd_node_type ntype;
+        char _p[3];
 };
 
 struct brd_node_program {
@@ -80,6 +81,7 @@ struct brd_node_binop {
         struct brd_node _node;
         struct brd_node *l, *r;
         enum brd_binop btype;
+        char _p[7];
 };
 
 enum brd_unary {
@@ -91,6 +93,7 @@ struct brd_node_unary {
         struct brd_node _node;
         struct brd_node *u;
         enum brd_unary utype;
+        char _p[7];
 };
 
 struct brd_node_var {
@@ -100,6 +103,7 @@ struct brd_node_var {
 
 struct brd_node_num_lit {
         struct brd_node _node;
+        char _p[8];
         long double v;
 };
 
@@ -179,6 +183,7 @@ struct brd_node_while {
         struct brd_node *body;
         struct brd_node *inc;
         int no_list;
+        char _p[4];
         // inc can be null
 };
 

@@ -82,6 +82,7 @@ struct brd_heap_entry {
         int marked; /* for GC */
 
         enum brd_heap_type htype;
+        char _p[3];
 };
 
 struct brd_heap_entry *brd_heap_new(enum brd_heap_type htype);
@@ -113,6 +114,7 @@ struct brd_value {
                 struct brd_heap_entry *heap;
         } as;
         enum brd_value_type vtype;
+        char _p[15];
         // not loving that we're wasting 15 bytes here
 };
 
@@ -159,6 +161,7 @@ struct brd_value_object {
         struct brd_value_class **class;
         struct brd_value_map fields;
         int is_super;
+        char _p[4];
 };
 
 void brd_value_object_init(struct brd_value_object *object, struct brd_value_class **class);
