@@ -387,3 +387,6 @@ For `break` and `continue`, I'm not sure how I would want them to interact with 
 list-building properties of loops.
 For `return`, for me it doesn't fit aesthetically with the language design, and I
 find that it's omission from the language encourages short functions, which I like.
+
+That was written before I had read module 7; now I can just say I was inspired
+by Pascal.
