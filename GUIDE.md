@@ -378,7 +378,7 @@ Similar features in `bread` would have to be implemented by the user.
 
 ## Control Flow
 
-`bread` is noticeably missing several common control flow operators for imperative
+`bread` is quite noticeably missing several common control flow operators for imperative
 languages, namely `break`, `continue`, and `return`. If I'm being honest, part
 of the reason I didn't implement them is that they'd be kind of annoying to implement
 (compiling control flow operations down to bytecode is surprisingly tedious).
