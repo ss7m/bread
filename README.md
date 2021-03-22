@@ -29,7 +29,8 @@ the command is
 bread file.brd
 ```
 
-To start a REPL, just run `bread` with no arguments.
+To start a REPL, just run `bread` with no arguments. You can run
+`bread --help` for more detailed usage information.
 
 ## Acknowledgements
 
