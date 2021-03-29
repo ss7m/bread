@@ -40,9 +40,7 @@ brd_parse_program(struct brd_token_list *tokens)
                 }
         }
 
-        if (length == 0) {
-                stmts[length++] = brd_node_unit_lit_new();
-        } else if (!found_eof) {
+        if (!found_eof) {
                 for (size_t i = 0; i < length; i++) {
                         brd_node_destroy(stmts[i]);
                 }
