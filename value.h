@@ -215,6 +215,7 @@ enum brd_builtin {
         BRD_BUILTIN_PUSH,
         BRD_BUILTIN_INSERT,
         BRD_BUILTIN_DICT,
+        BRD_BUILTIN_SUBCLASS,
         BRD_NUM_BUILTIN,
         BRD_GLOBAL_OBJECT,
 };

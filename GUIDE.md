@@ -58,6 +58,7 @@ Bread provides the following builtin functions:
 * `@system(args...)` runs a shell command, and returns the exit code of the command
 * `@push(list, arg)` pushes a value onto the end of a list
 * `@insert(list, arg, idx)` inserts a value into a list at a given index
+* `@issubclassof(A, B)` checks whether `A` is a subclass of `B` (both arguments must be classes)
 
 Builtins cannot be coerced into a number. When coerced into a string,
 a builtin becomes the name of the builtin (including the "@"). All builtins

@@ -1225,6 +1225,33 @@ _builtin_dict(struct brd_value *args, size_t num_args, struct brd_value *out)
         return true;
 }
 
+static int
+_builtin_subclass(struct brd_value *args, size_t num_args, struct brd_value *out)
+{
+        struct brd_value_class *a, *b;
+        if (num_args != 2) {
+                BARF("@issubclassof takes exactly two arguments");
+        }
+
+        if (!IS_HEAP(args[0], BRD_HEAP_CLASS) || !IS_HEAP(args[1], BRD_HEAP_CLASS)) {
+                BARF("both arguments to @issubclassof must be classes");
+        }
+
+        a = args[0].as.heap->as.class;
+        b = args[1].as.heap->as.class;
+
+        out->vtype = BRD_VAL_BOOL;
+        out->as.boolean = false;
+        do {
+                if (a == b || (a = *a->super) == b) {
+                        out->as.boolean = true;
+                        break;
+                }
+        } while (a != object_class.as.heap->as.class);
+
+        return false;
+}
+
 enum brd_builtin brd_lookup_builtin(char *builtin)
 {
         for (int i = 0; i < BRD_NUM_BUILTIN; i++) {
@@ -1251,6 +1278,7 @@ const builtin_fn_dec builtin_function[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_PUSH] = _builtin_push,
         [BRD_BUILTIN_INSERT] = _builtin_insert,
         [BRD_BUILTIN_DICT] = _builtin_dict,
+        [BRD_BUILTIN_SUBCLASS] = _builtin_subclass,
 };
 
 const char *builtin_name[BRD_NUM_BUILTIN] = {
@@ -1264,6 +1292,7 @@ const char *builtin_name[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_PUSH] = "push",
         [BRD_BUILTIN_INSERT] = "insert",
         [BRD_BUILTIN_DICT] = "dict",
+        [BRD_BUILTIN_SUBCLASS] = "issubclassof",
 };
 
 #define MK_BUILTIN_STRING(str) { str, sizeof(str) - 1 }
@@ -1279,6 +1308,7 @@ struct brd_value_string builtin_string[BRD_NUM_BUILTIN] = {
         [BRD_BUILTIN_PUSH] = MK_BUILTIN_STRING("@push"),
         [BRD_BUILTIN_INSERT] = MK_BUILTIN_STRING("@insert"),
         [BRD_BUILTIN_DICT] = MK_BUILTIN_STRING("@dict"),
+        [BRD_BUILTIN_SUBCLASS] = MK_BUILTIN_STRING("@issubclassof"),
 };
 
 struct brd_value_string number_string = MK_BUILTIN_STRING("number");
