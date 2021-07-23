@@ -23,7 +23,9 @@ brd_read_file(const char *file_name)
         if (file == NULL) {
                 return NULL;
         }
-        fseek(file, 0, SEEK_END);
+        if (0 != fseek(file, 0, SEEK_END)) {
+                return NULL;
+        }
         length = ftell(file);
         fseek(file, 0, SEEK_SET);
         contents = malloc(length + 1);
