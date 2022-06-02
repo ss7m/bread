@@ -159,7 +159,7 @@ brd_run_file(char *file_name)
         brd_parse_and_compile(code);
         free(code);
 
-        brd_vm_run();
+        //brd_vm_run();
 }
 
 const char *help =
