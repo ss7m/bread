@@ -570,6 +570,7 @@ brd_parse_base(struct brd_token_list *tokens)
                 } else if (brd_token_list_pop_token(tokens) == BRD_TOK_END) {
                         return node;
                 } else {
+                        brd_node_destroy(node);
                         error_message = "expected an \"end\" token";
                         return NULL;
                 }
